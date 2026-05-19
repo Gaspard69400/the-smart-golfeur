@@ -2114,10 +2114,28 @@ function showPage(pageId) {
 /* Chart registry */
 var _dashCharts = {};
 function _destroyDashCharts() {
-  Object.keys(_dashCharts).forEach(function(k) {
-    try { _dashCharts[k].destroy(); } catch(ex) {}
-    delete _dashCharts[k];
-  });
+  // Méthode la plus robuste : détruire TOUTES les instances Chart.js existantes
+  // (peu importe à quel canvas elles sont attachées)
+  if (typeof Chart !== 'undefined') {
+    // Chart.js v4 garde les instances dans Chart.instances (objet)
+    if (Chart.instances) {
+      Object.keys(Chart.instances).forEach(function(key) {
+        try { Chart.instances[key].destroy(); } catch(ex) {}
+      });
+    }
+    // Fallback : itérer les canvas connus et détruire via getChart
+    if (Chart.getChart) {
+      ['dash-score-chart', 'dash-hcp-chart'].forEach(function(id) {
+        var canvas = document.getElementById(id);
+        if (canvas) {
+          var existing = Chart.getChart(canvas);
+          if (existing) { try { existing.destroy(); } catch(e) {} }
+        }
+      });
+    }
+  }
+  // Vider notre registry locale
+  Object.keys(_dashCharts).forEach(function(k) { delete _dashCharts[k]; });
 }
 function initDashboard() {
   var pg = document.getElementById('page-dashboard');
@@ -3385,8 +3403,13 @@ function saveRound() {
 
 function renderHistory() {
   if (!roundHistory.length) return;
-  document.getElementById('roundHistory-section').style.display = 'flex';
-  const cont = document.getElementById('roundHistory-list');
+  var section = document.getElementById('roundHistory-section');
+  if (section) section.style.display = 'flex';
+  var titleEl = document.getElementById('hist-title');
+  if (titleEl) titleEl.style.display = 'block';
+  // L'ID peut être 'roundHistory-list' ou 'history-list' selon les versions
+  var cont = document.getElementById('roundHistory-list') || document.getElementById('history-list');
+  if (!cont) return;
   cont.innerHTML = roundHistory.slice(0,5).map(e => {
     const vsPar = e.score - e.par;
     const col = vsPar < 0 ? 'var(--ok2)' : vsPar <= 7 ? 'var(--wn2)' : 'var(--ng2)';
