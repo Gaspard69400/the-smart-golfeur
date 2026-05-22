@@ -1956,10 +1956,8 @@ function launchApp() {
 
   // 6. Initialiser la scorecard
   try { initScorecardPage(); } catch(e) { console.warn('SC:', e.message); }
-  // 6b. Initialiser le dashboard avec les vraies données
-  try { initDashboard(); } catch(e) { console.warn('Dashboard:', e.message); }
 
-  // 7. Activer la première page
+  // 7. Activer la première page (showPage appelle buildDashboard avec destroy avant)
   showPage('dashboard');
 
   // 8. Confirmer
@@ -2722,6 +2720,13 @@ function buildDashboard(container) {
     /* Score */
     var sc = document.getElementById('dash-score-chart');
     if (sc) {
+      // Chercher chart par ID string (trouve même si canvas DOM a changé)
+      if (Chart.getChart) {
+        var ex1 = Chart.getChart('dash-score-chart');
+        if (ex1) { try { ex1.destroy(); } catch(e) {} }
+        var ex2 = Chart.getChart(sc);
+        if (ex2) { try { ex2.destroy(); } catch(e) {} }
+      }
       _dashCharts['score'] = new Chart(sc, {
         type: 'line',
         data: {
@@ -2760,6 +2765,13 @@ function buildDashboard(container) {
     /* Handicap */
     var hc = document.getElementById('dash-hcp-chart');
     if (hc) {
+      // Chercher chart par ID string (trouve même si canvas DOM a changé)
+      if (Chart.getChart) {
+        var ex3 = Chart.getChart('dash-hcp-chart');
+        if (ex3) { try { ex3.destroy(); } catch(e) {} }
+        var ex4 = Chart.getChart(hc);
+        if (ex4) { try { ex4.destroy(); } catch(e) {} }
+      }
       _dashCharts['hcp'] = new Chart(hc, {
         type: 'line',
         data: {
