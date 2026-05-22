@@ -1112,29 +1112,34 @@ html, body {
   background: var(--bg);
   border: 1px solid var(--bd-card);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 12px 14px;
   cursor: pointer;
   transition: all 0.15s;
-  min-width: 0;
-  overflow: hidden;
 }
 
 .course-item:hover { border-color: rgba(168,133,30,0.3); background: var(--gold-dim2); }
 .course-item.selected { border-color: var(--gold); background: var(--gold-dim); }
 
 .ci-name {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--tx);
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: normal;
   line-height: 1.35;
-  display: block;
-  max-width: 100%;
+  letter-spacing: -0.2px;
 }
-.ci-meta { font-size: 9px; color: var(--tx3); display: flex; gap: 6px; flex-wrap: wrap; font-weight: 500; }
+.ci-meta {
+  font-size: 10px;
+  color: var(--tx3);
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-weight: 500;
+  margin-top: 2px;
+}
 .ci-tag { background: var(--bg3); padding: 1px 5px; border-radius: 4px; }
 
 /* Course card (info panel) */
@@ -1591,7 +1596,10 @@ html, body {
   border: 1px solid var(--gold-d);
   margin-left: 6px;
 }
+
+.kpi-clickable:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,18,9,0.10) !important; border-color: var(--gold-d) !important; }
 </style>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23C9A84C'/%3E%3Ctext x='50' y='68' font-family='Plus Jakarta Sans, sans-serif' font-size='56' font-weight='700' fill='%231A1209' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
 </head>
 <body>
 
@@ -1966,6 +1974,25 @@ function launchApp() {
 
 /* ─── NAVIGATION UI ─── */
 
+
+function calcHandicapFromRounds() {
+  var rounds = lsGet('rounds') || [];
+  if (rounds.length < 3) return null;
+  // Prendre les 20 dernières parties
+  var recent = rounds.slice(0, 20);
+  // Extraire les différentiels valides
+  var diffs = recent.map(function(r) { return r.diff; }).filter(function(d) {
+    return d !== null && d !== undefined && !isNaN(d);
+  });
+  if (diffs.length < 3) return null;
+  // Trier croissant et prendre les 8 meilleurs (ou moins si peu de parties)
+  diffs.sort(function(a, b) { return a - b; });
+  var n = Math.min(8, Math.max(3, Math.floor(diffs.length * 0.4)));
+  var best = diffs.slice(0, n);
+  var avg = best.reduce(function(a, b) { return a + b; }, 0) / best.length;
+  return Math.round(avg * 10) / 10;
+}
+
 function updateNavUI() {
   if (!currentUser) return;
 
@@ -1981,12 +2008,29 @@ function updateNavUI() {
   var nm = document.getElementById('nav-name');
   if (nm) nm.textContent = currentUser.name;
 
-  // Handicap
+  // Handicap : calculer dynamiquement depuis les parties enregistrées
   var hcp = document.getElementById('nav-hcp');
   if (hcp) {
-    hcp.textContent = (currentUser.hcp !== null && currentUser.hcp !== undefined)
-      ? currentUser.hcp
-      : '\u2014';
+    var calculatedHcp = calcHandicapFromRounds();
+    var displayHcp;
+    if (calculatedHcp !== null) {
+      displayHcp = calculatedHcp;
+      currentUser.hcp = calculatedHcp; // Mettre à jour le profil
+      // Sauvegarder le profil mis à jour
+      var profiles = lsGet('profiles') || DEFAULT_PROFILES;
+      for (var i = 0; i < profiles.length; i++) {
+        if (profiles[i].id === currentUser.id) {
+          profiles[i].hcp = calculatedHcp;
+          break;
+        }
+      }
+      lsSet('profiles', profiles);
+    } else if (currentUser.hcp !== null && currentUser.hcp !== undefined) {
+      displayHcp = currentUser.hcp;
+    } else {
+      displayHcp = '\u2014';
+    }
+    hcp.textContent = displayHcp;
   }
 
   // Badge rôle
@@ -2270,11 +2314,11 @@ function buildDashboard(container) {
 
   /* ── 3. KPIs PRINCIPAUX (5 cards) ── */
   var kpiData = [
-    { label: 'Score moyen',       value: avgScore,        trend: tScore, worse: true  },
-    { label: 'GIR',               value: avgGIR + '%',    trend: tGIR,   worse: false },
-    { label: 'FIR',               value: avgFIR + '%',    trend: 0,      worse: false },
-    { label: 'Putts / tour',      value: avgPutts,        trend: 0,      worse: true  },
-    { label: 'Handicap actuel',   value: hcp,             trend: 0,      worse: true  }
+    { label: 'Score moyen',       value: avgScore,        trend: tScore, worse: true,  key: 'score',  title: 'Évolution du score (20 dernières parties)' },
+    { label: 'GIR',               value: avgGIR + '%',    trend: tGIR,   worse: false, key: 'gir',    title: 'Évolution du GIR % (20 dernières parties)' },
+    { label: 'FIR',               value: avgFIR + '%',    trend: 0,      worse: false, key: 'fir',    title: 'Évolution du FIR % (20 dernières parties)' },
+    { label: 'Putts / tour',      value: avgPutts,        trend: 0,      worse: true,  key: 'putts',  title: 'Évolution des putts/tour (20 dernières parties)' },
+    { label: 'Handicap actuel',   value: hcp,             trend: 0,      worse: true,  key: 'diff',   title: 'Évolution du handicap (20 dernières parties)' }
   ];
 
   var kpiGrid = document.createElement('div');
@@ -2282,7 +2326,12 @@ function buildDashboard(container) {
 
   kpiData.forEach(function(k) {
     var card = document.createElement('div');
-    card.className = 'kpi-card';
+    card.className = 'kpi-card kpi-clickable';
+    card.style.cursor = 'pointer';
+    card.title = 'Cliquez pour voir l\'évolution';
+    card.addEventListener('click', function() {
+      openKpiModal(k.key, k.label, k.title);
+    });
 
     var lbl = document.createElement('div');
     lbl.className = 'kpi-label';
@@ -2318,13 +2367,28 @@ function buildDashboard(container) {
 
   var sgHeader = document.createElement('div');
   sgHeader.className = 'panel-header';
+  var sgTitleWrap = document.createElement('div');
+  sgTitleWrap.style.cssText = 'display:flex;align-items:center;gap:10px';
   var sgTitle = document.createElement('div');
   sgTitle.className = 'panel-title';
-  sgTitle.textContent = 'Strokes Gained';
+  sgTitle.textContent = 'Comparaison à ton niveau';
+  var sgInfo = document.createElement('span');
+  sgInfo.className = 'info-tip';
+  sgInfo.textContent = '?';
+  sgInfo.title = 'Le Strokes Gained (SG) compare ta performance à un joueur de ton niveau (handicap similaire). '
+    + 'Une valeur POSITIVE (verte) signifie que tu joues MIEUX que ton niveau dans cette catégorie. '
+    + 'Une valeur NEGATIVE (rouge) signifie que tu joues MOINS BIEN. '
+    + 'Off the Tee : tes drives et bois. '
+    + 'Approach : tes fers et approches. '
+    + 'Around Green : ton chipping et wedge. '
+    + 'Putting : tes putts sur le green. '
+    + 'Cible donc en priorité la catégorie la plus négative pour progresser le plus vite.';
+  sgTitleWrap.appendChild(sgTitle);
+  sgTitleWrap.appendChild(sgInfo);
   var sgSub = document.createElement('div');
   sgSub.className = 'panel-sub';
-  sgSub.textContent = 'Coups gagn\u00e9s ou perdus vs r\u00e9f\u00e9rence hcp similaire';
-  sgHeader.appendChild(sgTitle);
+  sgSub.textContent = 'Vert = mieux que ton niveau · Rouge = à travailler';
+  sgHeader.appendChild(sgTitleWrap);
   sgHeader.appendChild(sgSub);
   sgPanel.appendChild(sgHeader);
 
@@ -2334,10 +2398,10 @@ function buildDashboard(container) {
   sgGrid.className = 'dash-g4';
 
   var sgData = [
-    { label: 'Off the Tee',   val: parseFloat(sg_tee),  desc: 'Driver & bois' },
-    { label: 'Approach',      val: parseFloat(sg_app),  desc: 'Fers & approches' },
-    { label: 'Around Green',  val: parseFloat(sg_arg),  desc: 'Chipping & wedge' },
-    { label: 'Putting',       val: parseFloat(sg_putt), desc: 'Sur le green' }
+    { label: 'Drive',     val: parseFloat(sg_tee),  desc: 'Driver & bois' },
+    { label: 'Approche',  val: parseFloat(sg_app),  desc: 'Fers du fairway' },
+    { label: 'Jeu court', val: parseFloat(sg_arg),  desc: 'Chip & wedge' },
+    { label: 'Putting',   val: parseFloat(sg_putt), desc: 'Sur le green' }
   ];
 
   sgData.forEach(function(s) {
@@ -2379,11 +2443,21 @@ function buildDashboard(container) {
 
   /* Total SG */
   var sgTotal = parseFloat(sg_tee) + parseFloat(sg_app) + parseFloat(sg_arg) + parseFloat(sg_putt);
+  var sgVerdict;
+  var sgVerdictColor;
+  if (sgTotal >= 0.5) { sgVerdict = 'Tu joues mieux que ton niveau \u2713'; sgVerdictColor = 'var(--ok2)'; }
+  else if (sgTotal >= -0.5) { sgVerdict = 'Tu joues \u00e0 ton niveau'; sgVerdictColor = 'var(--gold-d)'; }
+  else { sgVerdict = 'Tu joues sous ton niveau \u2014 il y a de la marge !'; sgVerdictColor = 'var(--ng2)'; }
   var sgTotalDiv = document.createElement('div');
-  sgTotalDiv.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px solid var(--bd3);display:flex;justify-content:space-between;align-items:center';
-  sgTotalDiv.innerHTML = '<span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Total Strokes Gained</span>'
-    + '<span style="font-family:\'Cormorant Garamond\',serif;font-size:20px;color:' + (sgTotal >= 0 ? 'var(--ok2)' : 'var(--ng2)') + '">'
-    + (sgTotal >= 0 ? '+' : '') + sgTotal.toFixed(2) + ' coups/tour</span>';
+  sgTotalDiv.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px solid var(--bd-card);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap';
+  sgTotalDiv.innerHTML = ''
+    + '<div>'
+    +   '<div style="font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Bilan</div>'
+    +   '<div style="font-size:13px;font-weight:600;color:' + sgVerdictColor + '">' + sgVerdict + '</div>'
+    + '</div>'
+    + '<div style="font-size:22px;font-weight:700;color:' + (sgTotal >= 0 ? 'var(--ok2)' : 'var(--ng2)') + ';letter-spacing:-0.5px">'
+    +   (sgTotal >= 0 ? '+' : '') + sgTotal.toFixed(2) + ' coups/tour'
+    + '</div>';
   sgBody.appendChild(sgTotalDiv);
 
   sgPanel.appendChild(sgBody);
@@ -2799,6 +2873,115 @@ function buildDashboard(container) {
   }, 200);
 }
 
+/* ─── KPI MODAL (mini-graph progression) ─── */
+function openKpiModal(key, label, title) {
+  var rounds = lsGet('rounds') || [];
+  if (rounds.length < 2) {
+    showToast('Pas assez de parties enregistrées pour afficher l\'évolution');
+    return;
+  }
+
+  // Créer/réutiliser la modale
+  var modal = document.getElementById('kpi-modal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'kpi-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(26,18,9,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.addEventListener('click', function(ev) {
+    if (ev.target === modal) modal.remove();
+  });
+
+  // Préparer les données (20 dernières, chronologique)
+  var data20 = rounds.slice(0, 20).reverse();
+  var values;
+  if (key === 'score') values = data20.map(function(r) { return r.score; });
+  else if (key === 'gir') values = data20.map(function(r) { return Math.round(r.gir / 18 * 100); });
+  else if (key === 'fir') values = data20.map(function(r) { return Math.round(r.fir / (r.firTotal || 14) * 100); });
+  else if (key === 'putts') values = data20.map(function(r) { return r.putts; });
+  else if (key === 'diff') values = data20.map(function(r) { return r.diff; });
+
+  // Calculer trend
+  var first = values[0];
+  var last = values[values.length - 1];
+  var delta = (last - first).toFixed(1);
+  var deltaText = (delta > 0 ? '+' : '') + delta;
+  var deltaColor = (key === 'score' || key === 'putts' || key === 'diff') ?
+    (delta < 0 ? 'var(--ok2)' : 'var(--ng2)') :
+    (delta > 0 ? 'var(--ok2)' : 'var(--ng2)');
+
+  var inner = document.createElement('div');
+  inner.style.cssText = 'background:var(--white);border:1px solid var(--bd-card);border-radius:16px;padding:24px 28px;max-width:600px;width:100%;box-shadow:var(--shadow-md)';
+  inner.innerHTML = ''
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">'
+    +   '<div>'
+    +     '<div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">' + label + '</div>'
+    +     '<div style="font-size:22px;font-weight:700;color:var(--tx);letter-spacing:-0.5px">' + title + '</div>'
+    +   '</div>'
+    +   '<button id="kpi-modal-close" style="background:none;border:none;font-size:22px;color:var(--tx3);cursor:pointer;padding:0 8px;font-weight:300">×</button>'
+    + '</div>'
+    + '<div style="display:flex;gap:14px;margin-bottom:16px;padding:12px 14px;background:var(--bg);border-radius:10px">'
+    +   '<div><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Première</div><div style="font-size:18px;font-weight:700;color:var(--tx2)">' + first + '</div></div>'
+    +   '<div><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Dernière</div><div style="font-size:18px;font-weight:700;color:var(--tx)">' + last + '</div></div>'
+    +   '<div><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Évolution</div><div style="font-size:18px;font-weight:700;color:' + deltaColor + '">' + deltaText + '</div></div>'
+    +   '<div style="margin-left:auto"><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Parties</div><div style="font-size:18px;font-weight:700;color:var(--gold-d)">' + values.length + '</div></div>'
+    + '</div>'
+    + '<div style="height:280px"><canvas id="kpi-modal-chart"></canvas></div>';
+
+  modal.appendChild(inner);
+  document.body.appendChild(modal);
+
+  document.getElementById('kpi-modal-close').addEventListener('click', function() {
+    modal.remove();
+  });
+
+  // Créer le graphique
+  setTimeout(function() {
+    if (typeof Chart === 'undefined') return;
+    var canvas = document.getElementById('kpi-modal-chart');
+    if (!canvas) return;
+    var existing = Chart.getChart ? Chart.getChart(canvas) : null;
+    if (existing) { try { existing.destroy(); } catch(e) {} }
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: values.map(function(_, i) { return 'P' + (i + 1); }),
+        datasets: [{
+          data: values,
+          borderColor: '#C9A84C',
+          backgroundColor: 'rgba(201,168,76,0.10)',
+          pointBackgroundColor: '#C9A84C',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          tension: 0.35,
+          fill: true,
+          borderWidth: 2.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1A1209',
+            borderColor: '#C9A84C',
+            borderWidth: 1,
+            padding: 10,
+            titleColor: '#E8DFC8',
+            bodyColor: '#fff'
+          }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(168,133,30,0.08)' }, ticks: { color: '#7A6448', font: { size: 10 } } },
+          y: { grid: { color: 'rgba(168,133,30,0.08)' }, ticks: { color: '#7A6448', font: { size: 10 } } }
+        }
+      }
+    });
+  }, 50);
+}
+
+
 
 /* ─── PAGE COMING SOON ─── */
 
@@ -2897,6 +3080,7 @@ let roundHistory = lsGet('rounds') || [];
 
 function renderCourseList(list) {
   const el = document.getElementById('course-list');
+  if (!el) return;
   el.innerHTML = '';
   if (!list.length) { el.innerHTML = '<div style="padding:12px;font-size:10px;color:var(--tx3);text-align:center">Aucun résultat</div>'; return; }
   list.forEach(c => {
@@ -3403,6 +3587,8 @@ function saveRound() {
   // Rediriger vers le dashboard et rebuild
   setTimeout(function() {
     try {
+      // Mettre à jour le hcp affiché en nav
+      if (typeof updateNavUI === 'function') updateNavUI();
       var dashPage = document.getElementById('page-dashboard');
       if (dashPage && typeof buildDashboard === 'function') {
         while (dashPage.firstChild) dashPage.removeChild(dashPage.firstChild);
@@ -3468,10 +3654,10 @@ function initScorecardPage() {
     '</div>',
 
     '<div class="filter-row" id="filter-row">',
-      '<button class="filter-btn on" onclick="setFilter(\'all\',this)">Tous</button>',
-      '<button class="filter-btn" onclick="setFilter(\'Île-de-France\',this)">IDF</button>',
-      '<button class="filter-btn" onclick="setFilter(\'Nouvelle-Aquitaine\',this)">Sud-O</button>',
-      '<button class="filter-btn" onclick="setFilter(\'Expert\',this)">Expert</button>',
+      '<button class="filter-btn on" data-filter="all">Tous</button>',
+      '<button class="filter-btn" data-filter="Île-de-France">IDF</button>',
+      '<button class="filter-btn" data-filter="Nouvelle-Aquitaine">Sud-O</button>',
+      '<button class="filter-btn" data-filter="Expert">Expert</button>',
     '</div>',
 
     '<div class="course-list" id="course-list"></div>',
@@ -3651,6 +3837,14 @@ function initScorecardPage() {
   layout.appendChild(sb);
   layout.appendChild(main);
   pg.appendChild(layout);
+
+  // Attacher les listeners pour les boutons filtre (évite onclick HTML cassé)
+  var filterBtns = pg.querySelectorAll('.filter-btn[data-filter]');
+  filterBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      setFilter(btn.getAttribute('data-filter'), btn);
+    });
+  });
 
   // Init scorecard module
   try {
