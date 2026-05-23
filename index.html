@@ -1100,8 +1100,10 @@ html, body {
 .course-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 480px;
+  gap: 5px;
+  max-height: 360px;
+  min-height: 240px;
+  flex-shrink: 0;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -4460,6 +4462,29 @@ function initScorecardPage() {
   filterBtns.forEach(function(btn) {
     btn.addEventListener('click', function() {
       setFilter(btn.getAttribute('data-filter'), btn);
+    });
+  });
+
+  // Listeners du toggle mode (rapide / détaillée)
+  // Les boutons sont dans roundArea (caché initialement) mais existent dans le DOM
+  var modeBtns = pg.querySelectorAll('.sc-mode-btn[data-mode]');
+  modeBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var mode = btn.getAttribute('data-mode');
+      sc_detailMode = (mode === 'detail');
+      // Activer le bouton cliqué
+      modeBtns.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      // Afficher/masquer toutes les lignes détaillées
+      var detailRows = document.querySelectorAll('.sc-detail-row');
+      detailRows.forEach(function(row) {
+        row.classList.toggle('visible', sc_detailMode);
+        // Forcer aussi le style display (au cas où la classe ne suffit pas)
+        var innerDiv = row.querySelector('div.sc-detail-row');
+        if (innerDiv) {
+          innerDiv.style.display = sc_detailMode ? 'flex' : 'none';
+        }
+      });
     });
   });
 
