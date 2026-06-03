@@ -1,0 +1,502 @@
+/* ════════════════════════════════════════════
+ * THE SMART GOLFER — app.js
+ * Login, navigation, shell, boot
+ * Dépend de : data.js
+ * ════════════════════════════════════════════ */
+
+
+/* ─── ÉTAT GLOBAL ─── */
+
+/* ─── ÉTAT ─── */
+
+var currentUser     = null;
+var selectedProfile = null;
+
+
+/* ─── LOCALSTORAGE ─── */
+
+function lsGet(key) {
+  try {
+    var val = localStorage.getItem('tsg_' + key);
+    return val ? JSON.parse(val) : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+function lsSet(key, value) {
+  try {
+    localStorage.setItem('tsg_' + key, JSON.stringify(value));
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+
+/* ─── TOAST ─── */
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() {
+    t.classList.remove('show');
+  }, 2800);
+}
+
+
+/* ─── BUILD PROFILES (createElement - jamais innerHTML) ─── */
+
+function buildProfiles() {
+  var container = document.getElementById('profiles-list');
+  if (!container) return;
+
+  // Vider le container
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+
+  var profiles = lsGet('profiles') || DEFAULT_PROFILES;
+
+  profiles.forEach(function(p) {
+    // Créer le bouton principal
+    var btn = document.createElement('button');
+    btn.className = 'profile-btn';
+    btn.id = 'pb-' + p.id;
+    btn.setAttribute('type', 'button');
+    btn.setAttribute('data-pid', p.id);
+
+    // Avatar
+    var av = document.createElement('div');
+    av.className = 'profile-avatar';
+    av.style.background = p.bg;
+    av.style.color = p.color;
+    av.textContent = p.initials;
+
+    // Infos
+    var info = document.createElement('div');
+    info.className = 'profile-info';
+
+    var name = document.createElement('div');
+    name.className = 'profile-name';
+    name.textContent = p.name;
+
+    var role = document.createElement('div');
+    role.className = 'profile-role';
+    role.style.color = p.color;
+    var roleText = ROLE_LABELS[p.role] || p.role;
+    if (p.hcp !== null && p.hcp !== undefined) {
+      roleText += ' \u00b7 Hcp ' + p.hcp;
+    }
+    role.textContent = roleText;
+
+    info.appendChild(name);
+    info.appendChild(role);
+    btn.appendChild(av);
+    btn.appendChild(info);
+
+    // Attacher le click PROPREMENT (closure pour capturer p.id)
+    btn.addEventListener('click', (function(pid) {
+      return function() { selectProfile(pid); };
+    })(p.id));
+
+    container.appendChild(btn);
+  });
+
+  // Auto-sélectionner le dernier profil ou le premier
+  var lastId = lsGet('lastUser');
+  var profiles2 = lsGet('profiles') || DEFAULT_PROFILES;
+  var autoId = null;
+
+  if (lastId) {
+    for (var i = 0; i < profiles2.length; i++) {
+      if (profiles2[i].id === lastId) { autoId = lastId; break; }
+    }
+  }
+
+  if (!autoId && profiles2.length > 0) {
+    autoId = profiles2[0].id;
+  }
+
+  if (autoId) selectProfile(autoId);
+}
+
+function selectProfile(id) {
+  var profiles = lsGet('profiles') || DEFAULT_PROFILES;
+  selectedProfile = null;
+
+  for (var i = 0; i < profiles.length; i++) {
+    if (profiles[i].id === id) {
+      selectedProfile = profiles[i];
+      break;
+    }
+  }
+
+  // Mettre à jour l'UI
+  var btns = document.querySelectorAll('.profile-btn');
+  for (var j = 0; j < btns.length; j++) {
+    btns[j].classList.remove('selected');
+  }
+
+  var target = document.getElementById('pb-' + id);
+  if (target) target.classList.add('selected');
+}
+
+
+/* ─── LOGIN ─── */
+
+function doLogin() {
+  var nameEl = document.getElementById('inp-name');
+  var hcpEl  = document.getElementById('inp-hcp');
+  var roleEl = document.getElementById('inp-role');
+
+  var nameVal = nameEl ? nameEl.value.trim() : '';
+
+  if (nameVal) {
+    // Créer un nouveau profil depuis le formulaire
+    var hcpVal  = hcpEl  ? (parseFloat(hcpEl.value) || null) : null;
+    var roleVal = roleEl ? (roleEl.value || 'player')        : 'player';
+
+    // Générer les initiales
+    var words    = nameVal.split(' ').filter(function(w) { return w.length > 0; });
+    var initials = words.map(function(w) { return w[0].toUpperCase(); }).join('').slice(0, 2);
+    if (!initials) initials = '?';
+
+    // Couleur aléatoire parmi la palette
+    var palette = [
+      { color: '#C9A84C', bg: 'rgba(201,168,76,0.2)'   },
+      { color: '#3D8A65', bg: 'rgba(61,138,101,0.2)'   },
+      { color: '#85B7EB', bg: 'rgba(133,183,235,0.2)'  },
+      { color: '#EF9F27', bg: 'rgba(239,159,39,0.2)'   },
+      { color: '#AFA9EC', bg: 'rgba(175,169,236,0.2)'  },
+      { color: '#F0997B', bg: 'rgba(240,153,123,0.2)'  }
+    ];
+    var pick = palette[Math.floor(Math.random() * palette.length)];
+
+    var newProfile = {
+      id:       'user_' + Date.now(),
+      name:     nameVal,
+      hcp:      hcpVal,
+      role:     roleVal,
+      color:    pick.color,
+      bg:       pick.bg,
+      initials: initials
+    };
+
+    // Ajouter aux profils sauvegardés
+    var profiles = lsGet('profiles') || DEFAULT_PROFILES.slice();
+    profiles.push(newProfile);
+    lsSet('profiles', profiles);
+    selectedProfile = newProfile;
+  }
+
+  // Fallback : utiliser le profil sélectionné, ou le premier par défaut
+  if (!selectedProfile) {
+    var allProfiles = lsGet('profiles') || DEFAULT_PROFILES;
+    selectedProfile = allProfiles[0] || DEFAULT_PROFILES[0];
+  }
+
+  // Sauvegarder le dernier utilisateur
+  lsSet('lastUser', selectedProfile.id);
+  currentUser = selectedProfile;
+
+  // Lancer l'application
+  launchApp();
+}
+
+
+/* ─── LAUNCH APP ─── */
+
+function launchApp() {
+  // 1. Cacher le login
+  var loginEl = document.getElementById('login-screen');
+  if (loginEl) loginEl.style.display = 'none';
+
+  // 2. Afficher l'app
+  var appEl = document.getElementById('app');
+  if (appEl) appEl.classList.add('visible');
+
+  // 3. Mettre à jour la barre de navigation
+  updateNavUI();
+
+  // 4. Construire la navigation
+  buildNavTabs();
+
+  // 5. Construire les pages (chacune protégée)
+  buildPages();
+
+  // 6. Initialiser la scorecard
+  try { initScorecardPage(); } catch(e) { console.warn('SC:', e.message); }
+
+  // 6b. Initialiser l'analyse (placeholder, rempli au showPage)
+  try { initAnalysePage(); } catch(e) { console.warn('Analyse:', e.message); }
+
+  // 7. Activer la première page (showPage appelle buildDashboard avec destroy avant)
+  showPage('dashboard');
+
+  // 8. Confirmer
+  showToast('Bienvenue ' + currentUser.name + ' \u2014 Bonne session !');
+}
+
+/* ─── NAVIGATION UI ─── */
+
+
+function calcHandicapFromRounds() {
+  var rounds = lsGet('rounds') || [];
+  if (rounds.length < 3) return null;
+  // Prendre les 20 dernières parties
+  var recent = rounds.slice(0, 20);
+  // Extraire les différentiels valides
+  var diffs = recent.map(function(r) { return r.diff; }).filter(function(d) {
+    return d !== null && d !== undefined && !isNaN(d);
+  });
+  if (diffs.length < 3) return null;
+  // Trier croissant et prendre les 8 meilleurs (ou moins si peu de parties)
+  diffs.sort(function(a, b) { return a - b; });
+  var n = Math.min(8, Math.max(3, Math.floor(diffs.length * 0.4)));
+  var best = diffs.slice(0, n);
+  var avg = best.reduce(function(a, b) { return a + b; }, 0) / best.length;
+  return Math.round(avg * 10) / 10;
+}
+
+function updateNavUI() {
+  if (!currentUser) return;
+
+  // Avatar
+  var av = document.getElementById('nav-av');
+  if (av) {
+    av.textContent       = currentUser.initials || '?';
+    av.style.background  = currentUser.bg;
+    av.style.color       = currentUser.color;
+  }
+
+  // Nom
+  var nm = document.getElementById('nav-name');
+  if (nm) nm.textContent = currentUser.name;
+
+  // Handicap : calculer dynamiquement depuis les parties enregistrées
+  var hcp = document.getElementById('nav-hcp');
+  if (hcp) {
+    var calculatedHcp = calcHandicapFromRounds();
+    var displayHcp;
+    if (calculatedHcp !== null) {
+      displayHcp = calculatedHcp;
+      currentUser.hcp = calculatedHcp; // Mettre à jour le profil
+      // Sauvegarder le profil mis à jour
+      var profiles = lsGet('profiles') || DEFAULT_PROFILES;
+      for (var i = 0; i < profiles.length; i++) {
+        if (profiles[i].id === currentUser.id) {
+          profiles[i].hcp = calculatedHcp;
+          break;
+        }
+      }
+      lsSet('profiles', profiles);
+    } else if (currentUser.hcp !== null && currentUser.hcp !== undefined) {
+      displayHcp = currentUser.hcp;
+    } else {
+      displayHcp = '\u2014';
+    }
+    hcp.textContent = displayHcp;
+  }
+
+  // Badge rôle
+  var rb = document.getElementById('nav-role');
+  if (rb) {
+    rb.textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
+    rb.className   = 'nav-role-badge ' + (ROLE_CSS[currentUser.role] || 'role-player');
+  }
+
+  // Clic sur l'utilisateur = déconnexion
+  var navUser = document.getElementById('nav-user');
+  if (navUser) {
+    // Supprimer l'ancien listener s'il existe
+    var newUser = navUser.cloneNode(true);
+    navUser.parentNode.replaceChild(newUser, navUser);
+    document.getElementById('nav-user').addEventListener('click', function() {
+      if (confirm('Se d\u00e9connecter ?')) doLogout();
+    });
+  }
+}
+
+/* ─── BUILD NAV TABS ─── */
+
+function buildNavTabs() {
+  var container = document.getElementById('nav-tabs');
+  if (!container) return;
+
+  // Vider
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  NAV_TABS.forEach(function(tab) {
+    var btn = document.createElement('button');
+    btn.className = 'nav-tab';
+    btn.setAttribute('data-page', tab.page);
+
+    var icon = document.createElement('span');
+    icon.className = 'nav-tab-icon';
+    icon.innerHTML = tab.icon;
+
+    var label = document.createElement('span');
+    label.textContent = tab.label;
+
+    btn.appendChild(icon);
+    btn.appendChild(label);
+
+    btn.addEventListener('click', (function(page) {
+      return function() { showPage(page); };
+    })(tab.page));
+
+    container.appendChild(btn);
+  });
+}
+
+/* ─── BUILD PAGES ─── */
+
+function buildPages() {
+  var content = document.getElementById('app-content');
+  if (!content) return;
+
+  // Vider
+  while (content.firstChild) content.removeChild(content.firstChild);
+
+  NAV_TABS.forEach(function(tab) {
+    var page = document.createElement('div');
+    page.className = 'app-page';
+    page.id = 'page-' + tab.page;
+
+    // Initialiser chaque page dans un try/catch
+    try {
+      if (tab.page === 'dashboard') {
+        buildDashboard(page);
+      } else if (tab.page === 'scorecard') {
+        // Scorecard initialisée séparément via initScorecardPage()
+      } else if (tab.page === 'analyse') {
+        // Analyse initialisée séparément via initAnalysePage()
+      } else {
+        buildComingSoon(page, tab.label);
+      }
+    } catch(e) {
+      console.warn('[TSG] Erreur init page ' + tab.page + ':', e.message);
+      buildComingSoon(page, tab.label);
+    }
+
+    content.appendChild(page);
+  });
+}
+
+/* ─── SHOW PAGE ─── */
+
+function showPage(pageId) {
+  // Désactiver tous les onglets et pages
+  var tabs  = document.querySelectorAll('.nav-tab');
+  var pages = document.querySelectorAll('.app-page');
+
+  for (var i = 0; i < tabs.length; i++)  tabs[i].classList.remove('active');
+  for (var j = 0; j < pages.length; j++) pages[j].classList.remove('active');
+
+  // Activer l'onglet
+  var tabs2 = document.querySelectorAll('.nav-tab');
+  for (var k = 0; k < tabs2.length; k++) {
+    if (tabs2[k].getAttribute('data-page') === pageId) {
+      tabs2[k].classList.add('active');
+      break;
+    }
+  }
+
+  // Activer la page
+  var target = document.getElementById('page-' + pageId);
+  if (target) target.classList.add('active');
+
+  // Si on revient sur le dashboard : reconstruire pour avoir les vraies données
+  if (pageId === 'dashboard' && target && typeof buildDashboard === 'function') {
+    try {
+      while (target.firstChild) target.removeChild(target.firstChild);
+      buildDashboard(target);
+    } catch(e) { console.warn('Dashboard rebuild:', e.message); }
+  }
+  // Si on va sur l'onglet Analyse : initialiser/rafraîchir
+  if (pageId === 'analyse' && typeof initAnalysePage === 'function') {
+    try { initAnalysePage(); } catch(e) { console.warn('Analyse init:', e.message); }
+  }
+}
+
+
+/* ─── PAGE COMING SOON ─── */
+
+function buildComingSoon(container, label) {
+  var div = document.createElement('div');
+  div.className = 'coming-soon';
+
+  var icon = document.createElement('div');
+  icon.className = 'coming-soon-icon';
+  icon.textContent = '⚙';
+
+  var h3 = document.createElement('h3');
+  h3.textContent = label;
+
+  var p = document.createElement('p');
+  p.textContent = 'Cette section sera construite lors des prochaines sessions.';
+
+  div.appendChild(icon);
+  div.appendChild(h3);
+  div.appendChild(p);
+  container.appendChild(div);
+}
+
+
+/* ─── LOGOUT ─── */
+
+function doLogout() {
+  currentUser     = null;
+  selectedProfile = null;
+
+  var appEl   = document.getElementById('app');
+  var loginEl = document.getElementById('login-screen');
+
+  if (appEl)   appEl.classList.remove('visible');
+  if (loginEl) loginEl.style.display = 'flex';
+
+  // Nettoyer le formulaire
+  var nameEl = document.getElementById('inp-name');
+  var hcpEl  = document.getElementById('inp-hcp');
+  if (nameEl) nameEl.value = '';
+  if (hcpEl)  hcpEl.value  = '';
+
+  // Reconstruire les profils
+  buildProfiles();
+
+  showToast('D\u00e9connect\u00e9 avec succ\u00e8s');
+}
+
+
+/* ─── CLAVIER ─── */
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var appEl = document.getElementById('app');
+    if (appEl && appEl.classList.contains('visible')) {
+      if (confirm('Se d\u00e9connecter ?')) doLogout();
+    }
+  }
+});
+
+
+/* ─── BOUTON LOGIN ─── */
+
+var btnEnter = document.getElementById('btn-enter');
+if (btnEnter) {
+  btnEnter.addEventListener('click', function() {
+    doLogin();
+  });
+}
+
+/* Permettre Entrée dans le formulaire */
+var inputs = document.querySelectorAll('#inp-name, #inp-hcp, #inp-role');
+for (var i = 0; i < inputs.length; i++) {
+  inputs[i].addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+}

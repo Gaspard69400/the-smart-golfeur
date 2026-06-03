@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Analyser · Structurer · Performer — Application de performance golf">
+  <title>The Smart Golfer</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23C9A84C'/%3E%3Ctext x='50' y='68' font-family='Plus Jakarta Sans, sans-serif' font-size='56' font-weight='700' fill='%231A1209' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
+
+  <!-- Plus Jakarta Sans (Google Fonts) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-brand">The Smart <span>Golfer</span></div>
+  <div class="login-tagline">Analyser &nbsp;&middot;&nbsp; Structurer &nbsp;&middot;&nbsp; Performer</div>
+
+  <div class="login-card">
+    <div class="login-card-title">Bienvenue</div>
+    <div class="login-card-sub">Choisissez votre profil ou cr&eacute;ez-en un nouveau</div>
+    <div id="profiles-list"></div>
+    <div class="login-divider">ou cr&eacute;ez votre profil</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="inp-name">Pr&eacute;nom &amp; Nom</label>
+        <input class="form-input" id="inp-name" type="text" placeholder="Ex: Pierre Martin" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="inp-hcp">Handicap</label>
+        <input class="form-input" id="inp-hcp" type="number" placeholder="14.2" step="0.1" min="0" max="54">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="inp-role">R&ocirc;le</label>
+      <select class="form-select" id="inp-role">
+        <option value="player">Joueur</option>
+        <option value="head">Head Coach</option>
+        <option value="coach">Coach Assistant</option>
+        <option value="captain">Capitaine</option>
+      </select>
+    </div>
+    <button class="btn-login" id="btn-enter">Entrer dans l'application &rarr;</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     APPLICATION
+══════════════════════════════════ -->
+<div id="app">
+
+  <nav class="topnav">
+    <div class="nav-brand">
+      <div class="nav-emblem">&#9672;</div>
+      <div class="nav-title">Smart <span>Golfer</span></div>
+    </div>
+    <div class="nav-tabs" id="nav-tabs"></div>
+    <div class="nav-right">
+      <div class="nav-hcp-block">
+        <div class="nav-hcp-val" id="nav-hcp">&#8212;</div>
+        <div class="nav-hcp-lbl">Hcp</div>
+      </div>
+      <div class="nav-user" id="nav-user" title="Cliquer pour se d&eacute;connecter">
+        <div class="nav-user-av" id="nav-av"></div>
+        <div>
+          <div class="nav-user-name" id="nav-name">&#8212;</div>
+          <div class="nav-role-badge" id="nav-role">&#8212;</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="app-content" id="app-content"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+
+  <!-- Scripts dans l'ordre de dépendance -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/scorecard.js"></script>
+  <script src="js/radar.js"></script>
+  <script src="js/analyse.js"></script>
+  <script src="js/boot.js"></script>
+</body>
+</html>
