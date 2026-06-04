@@ -82,3 +82,19 @@ var NAV_TABS = [
   { page: 'leaderboard', icon: '&#8801;', label: 'Classements'   },
   { page: 'courses',     icon: '&#9971;', label: 'Parcours'      }
 ];
+
+/* ─── LIBELLÉS ET CLASSES CSS DES RÔLES ─── */
+
+var ROLE_LABELS = {
+  player:  'Joueur',
+  head:    'Head Coach',
+  coach:   'Coach',
+  captain: 'Capitaine'
+};
+
+var ROLE_CSS = {
+  player:  'role-player',
+  head:    'role-head',
+  coach:   'role-coach',
+  captain: 'role-captain'
+};
