@@ -33,22 +33,43 @@ function renderCourseList(list) {
     const div = document.createElement('div');
     div.className = 'course-item' + (selectedCourse && selectedCourse.id === c.id ? ' selected' : '');
     div.setAttribute('data-course-id', c.id);
-    div.onclick = () => selectCourse(c);
-    const lvlClass = c.niveau.toLowerCase().replace('é','e').replace('è','e').replace('â','a');
-    div.innerHTML = `<div class="ci-name">${c.name}</div>
+    const lvlClass = (c.niveau || 'Standard').toLowerCase().replace('é','e').replace('è','e').replace('â','a');
+    const isUser = !!c.userCreated;
+    div.innerHTML = `<div class="ci-name">${isUser ? '<span class="ci-user-badge" title="Parcours créé par vous">\u2726</span> ' : ''}${c.name}</div>
       <div class="ci-meta">
-        <span>${c.ville}</span>
+        <span>${c.ville || ''}</span>
         <span>Par ${c.par_total}</span>
-        <span>Slope ${c.slope}</span>
-        <span class="ci-tag ${lvlClass}">${c.niveau}</span>
+        <span>Slope ${c.slope || '—'}</span>
+        <span class="ci-tag ${lvlClass}">${c.niveau || 'Standard'}</span>
+        ${isUser ? '<button class="ci-delete-btn" data-del-course="' + c.id + '" title="Supprimer ce parcours">\u00d7</button>' : ''}
       </div>`;
+    // Click sur la carte = sélection
+    div.addEventListener('click', function(ev) {
+      // Ne pas sélectionner si on a cliqué sur le bouton supprimer
+      if (ev.target.classList.contains('ci-delete-btn')) return;
+      selectCourse(c);
+    });
+    // Listener du bouton supprimer
+    var delBtn = div.querySelector('[data-del-course]');
+    if (delBtn) {
+      delBtn.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        if (!confirm('Supprimer définitivement le parcours « ' + c.name + ' » ?')) return;
+        if (typeof deleteUserCourse === 'function') {
+          deleteUserCourse(c.id);
+          // Rafraîchir la liste
+          renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
+          showToast('Parcours supprimé');
+        }
+      });
+    }
     el.appendChild(div);
   });
 }
 
 function filterCourses() {
   const q = document.getElementById('search-input').value.toLowerCase();
-  let list = COURSES.filter(c =>
+  let list = (typeof getAllCourses === 'function' ? getAllCourses() : COURSES).filter(c =>
     c.name.toLowerCase().includes(q) ||
     c.ville.toLowerCase().includes(q) ||
     c.region.toLowerCase().includes(q) ||
@@ -743,7 +764,8 @@ function initScorecardPage() {
       '<button class="filter-btn" data-filter="Expert">Expert</button>',
     '</div>',
 
-    '<div class="course-list" id="course-list"></div>',
+    "<button class=\"add-course-btn\" id=\"add-course-btn\">+ Ajouter mon parcours</button>",
+      '<div class="course-list" id="course-list"></div>',
 
     '<div class="sc-sb-section-title">Informations parcours</div>',
 
@@ -965,6 +987,14 @@ function initScorecardPage() {
     });
   });
 
+  // Listener du bouton "Ajouter mon parcours"
+  var addBtn = document.getElementById('add-course-btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', function() {
+      openCourseCreator();
+    });
+  }
+
   // Init scorecard module
   try {
     var dateEl = document.getElementById('f-date');
@@ -972,7 +1002,7 @@ function initScorecardPage() {
     var hcpEl = document.getElementById('f-hcp');
     if (hcpEl) hcpEl.value = (currentUser && currentUser.hcp !== null) ? currentUser.hcp : 14.2;
 
-    renderCourseList(COURSES);
+    renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
 
     // Load saved rounds
     var saved = lsGet('rounds');
@@ -987,4 +1017,253 @@ function initScorecardPage() {
   } catch(e) {
     console.warn('[TSG] Scorecard init error:', e.message);
   }
+}
+
+
+/* ════════════════════════════════════════════
+   CRÉATION DE PARCOURS UTILISATEUR — SESSION 8
+════════════════════════════════════════════ */
+
+var REGIONS_FR = [
+  'Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Bretagne',
+  'Centre-Val de Loire', 'Corse', 'Grand Est', 'Hauts-de-France',
+  'Île-de-France', 'Normandie', 'Nouvelle-Aquitaine', 'Occitanie',
+  'Pays de la Loire', 'Provence-Alpes-Côte d\'Azur',
+  'Guadeloupe', 'Martinique', 'Guyane', 'La Réunion', 'Mayotte'
+];
+
+function openCourseCreator(existingCourse) {
+  // existingCourse = parcours à éditer (optionnel)
+  var isEdit = !!existingCourse;
+
+  // État du formulaire
+  var formState = isEdit ? JSON.parse(JSON.stringify(existingCourse)) : {
+    id: 'user-' + Date.now(),
+    name: '',
+    ville: '',
+    departement: '',
+    region: '',
+    cp: '',
+    type: '18 trous',
+    par_total: 72,
+    longueur_totale: 0,
+    sss: 72.0,
+    slope: 130,
+    rating: 72.0,
+    niveau: 'Standard',
+    trous: []
+  };
+
+  // Initialiser les 18 trous si vide
+  if (!formState.trous || formState.trous.length === 0) {
+    for (var i = 1; i <= 18; i++) {
+      formState.trous.push({ num: i, par: 4, longueur: 0, si: i });
+    }
+  }
+
+  // Construire la modale
+  var existing = document.getElementById('course-creator-modal');
+  if (existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'course-creator-modal';
+  modal.className = 'cc-modal';
+  modal.innerHTML = ''
+    + '<div class="cc-card">'
+    +   '<div class="cc-header">'
+    +     '<div>'
+    +       '<div class="cc-title-tag">' + (isEdit ? 'Modifier le parcours' : 'Nouveau parcours') + '</div>'
+    +       '<div class="cc-title">' + (isEdit ? formState.name : 'Cr\u00e9er mon parcours') + '</div>'
+    +     '</div>'
+    +     '<button class="cc-close" id="cc-close-btn">\u00d7</button>'
+    +   '</div>'
+    +   '<div class="cc-body">'
+    +     '<div class="cc-section">'
+    +       '<div class="cc-section-title">Informations g\u00e9n\u00e9rales</div>'
+    +       '<div class="cc-grid-2">'
+    +         '<div class="cc-field">'
+    +           '<label class="cc-label">Nom du parcours <span class="cc-required">*</span></label>'
+    +           '<input type="text" class="cc-input" data-field="name" placeholder="ex. Golf de Chambon" value="' + (formState.name || '') + '">'
+    +         '</div>'
+    +         '<div class="cc-field">'
+    +           '<label class="cc-label">Ville <span class="cc-required">*</span></label>'
+    +           '<input type="text" class="cc-input" data-field="ville" placeholder="ex. Saint-\u00c9tienne" value="' + (formState.ville || '') + '">'
+    +         '</div>'
+    +         '<div class="cc-field">'
+    +           '<label class="cc-label">D\u00e9partement</label>'
+    +           '<input type="text" class="cc-input" data-field="departement" placeholder="ex. Loire" value="' + (formState.departement || '') + '">'
+    +         '</div>'
+    +         '<div class="cc-field">'
+    +           '<label class="cc-label">R\u00e9gion</label>'
+    +           '<select class="cc-input" data-field="region">'
+    +             '<option value="">— S\u00e9lectionner —</option>'
+    +             REGIONS_FR.map(function(r) { return '<option value="' + r + '"' + (formState.region === r ? ' selected' : '') + '>' + r + '</option>'; }).join('')
+    +           '</select>'
+    +         '</div>'
+    +       '</div>'
+    +     '</div>'
+    +     '<div class="cc-section">'
+    +       '<div class="cc-section-title">Caract\u00e9ristiques techniques</div>'
+    +       '<div class="cc-grid-4">'
+    +         '<div class="cc-field">'
+    +           '<label class="cc-label">SSS</label>'
+    +           '<input type="number" step="0.1" class="cc-input" data-field="sss" value="' + (formState.sss || 72) + '">'
+    +         '</div>'
+    +         '<div class="cc-field">'
+    +           '<label class="cc-label">Slope</label>'
+    +           '<input type="number" class="cc-input" data-field="slope" value="' + (formState.slope || 130) + '">'
+    +         '</div>'
+    +         '<div class="cc-field">'
+    +           '<label class="cc-label">Par total (auto)</label>'
+    +           '<input type="number" class="cc-input cc-readonly" id="cc-par-total" readonly value="' + (formState.par_total || 0) + '">'
+    +         '</div>'
+    +         '<div class="cc-field">'
+    +           '<label class="cc-label">Longueur (auto)</label>'
+    +           '<input type="text" class="cc-input cc-readonly" id="cc-len-total" readonly value="' + (formState.longueur_totale || 0) + 'm">'
+    +         '</div>'
+    +       '</div>'
+    +     '</div>'
+    +     '<div class="cc-section">'
+    +       '<div class="cc-section-title">Saisie des 18 trous</div>'
+    +       '<div class="cc-table-wrap">'
+    +         '<table class="cc-table">'
+    +           '<thead>'
+    +             '<tr><th>Trou</th><th>Par</th><th>Longueur (m)</th><th>SI</th></tr>'
+    +           '</thead>'
+    +           '<tbody id="cc-trous-body"></tbody>'
+    +         '</table>'
+    +       '</div>'
+    +       '<div class="cc-hint">Astuce : utilise <strong>Tab</strong> pour passer rapidement d\'une case \u00e0 l\'autre.</div>'
+    +     '</div>'
+    +     '<div id="cc-warnings" class="cc-warnings"></div>'
+    +   '</div>'
+    +   '<div class="cc-footer">'
+    +     '<button class="cc-btn cc-btn-cancel" id="cc-cancel-btn">Annuler</button>'
+    +     '<button class="cc-btn cc-btn-save" id="cc-save-btn">' + (isEdit ? 'Enregistrer les modifications' : 'Cr\u00e9er ce parcours') + '</button>'
+    +   '</div>'
+    + '</div>';
+
+  document.body.appendChild(modal);
+
+  // Construire les 18 lignes
+  var trousBody = document.getElementById('cc-trous-body');
+  formState.trous.forEach(function(t, idx) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = ''
+      + '<td><strong>' + t.num + '</strong></td>'
+      + '<td><select class="cc-input cc-tiny" data-trou="' + idx + '" data-prop="par">'
+      +   '<option value="3"' + (t.par === 3 ? ' selected' : '') + '>3</option>'
+      +   '<option value="4"' + (t.par === 4 ? ' selected' : '') + '>4</option>'
+      +   '<option value="5"' + (t.par === 5 ? ' selected' : '') + '>5</option>'
+      + '</select></td>'
+      + '<td><input type="number" class="cc-input cc-tiny" data-trou="' + idx + '" data-prop="longueur" min="0" max="700" value="' + (t.longueur || '') + '"></td>'
+      + '<td><input type="number" class="cc-input cc-tiny" data-trou="' + idx + '" data-prop="si" min="1" max="18" value="' + (t.si || '') + '"></td>';
+    trousBody.appendChild(tr);
+  });
+
+  // Listeners
+  function updateTotals() {
+    var parSum = 0, lenSum = 0;
+    formState.trous.forEach(function(t) {
+      parSum += parseInt(t.par) || 0;
+      lenSum += parseInt(t.longueur) || 0;
+    });
+    formState.par_total = parSum;
+    formState.longueur_totale = lenSum;
+    document.getElementById('cc-par-total').value = parSum;
+    document.getElementById('cc-len-total').value = lenSum + 'm';
+  }
+
+  // Champs généraux
+  modal.querySelectorAll('[data-field]').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      var field = inp.getAttribute('data-field');
+      formState[field] = inp.value;
+    });
+    inp.addEventListener('change', function() {
+      var field = inp.getAttribute('data-field');
+      formState[field] = inp.value;
+    });
+  });
+
+  // Champs trous
+  modal.querySelectorAll('[data-trou]').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      var idx = parseInt(inp.getAttribute('data-trou'));
+      var prop = inp.getAttribute('data-prop');
+      var val = inp.value;
+      if (prop === 'par' || prop === 'longueur' || prop === 'si') {
+        val = parseInt(val) || 0;
+      }
+      formState.trous[idx][prop] = val;
+      updateTotals();
+    });
+  });
+
+  updateTotals();
+
+  // Fermeture
+  function closeCreator() {
+    var m = document.getElementById('course-creator-modal');
+    if (m) m.remove();
+  }
+  document.getElementById('cc-close-btn').addEventListener('click', closeCreator);
+  document.getElementById('cc-cancel-btn').addEventListener('click', closeCreator);
+  modal.addEventListener('click', function(ev) { if (ev.target === modal) closeCreator(); });
+
+  // Sauvegarde
+  document.getElementById('cc-save-btn').addEventListener('click', function() {
+    // Validation
+    var warnings = [];
+    if (!formState.name || formState.name.trim().length < 2) {
+      warnings.push('Le nom du parcours est obligatoire.');
+    }
+    if (!formState.ville || formState.ville.trim().length < 2) {
+      warnings.push('La ville est obligatoire.');
+    }
+    // Vérifier que les trous ont une longueur > 0
+    var missingLen = formState.trous.filter(function(t) { return !t.longueur || t.longueur < 50; }).length;
+    if (missingLen > 0) {
+      warnings.push('Attention : ' + missingLen + ' trou(s) ont une longueur manquante ou trop courte (<50m).');
+    }
+    // Vérifier unicité SI
+    var sis = formState.trous.map(function(t) { return t.si; });
+    var uniqSis = [];
+    sis.forEach(function(s) { if (uniqSis.indexOf(s) < 0) uniqSis.push(s); });
+    if (uniqSis.length !== 18) {
+      warnings.push('Attention : les SI (Stroke Index) ne sont pas tous uniques (1-18).');
+    }
+
+    var warnEl = document.getElementById('cc-warnings');
+    if (warnings.length > 0) {
+      // Bloquer uniquement si nom/ville manquent (obligatoires)
+      var blocking = warnings.filter(function(w) { return w.indexOf('obligatoire') >= 0; }).length;
+      warnEl.innerHTML = warnings.map(function(w) {
+        var icon = w.indexOf('obligatoire') >= 0 ? '\u26a0' : '\u24d8';
+        var cls = w.indexOf('obligatoire') >= 0 ? 'cc-warn-error' : 'cc-warn-info';
+        return '<div class="' + cls + '">' + icon + ' ' + w + '</div>';
+      }).join('');
+      if (blocking > 0) return;
+      // Sinon, demander confirmation
+      if (!confirm('Des avertissements ont \u00e9t\u00e9 d\u00e9tect\u00e9s, voulez-vous quand m\u00eame enregistrer ?')) return;
+    }
+
+    // Déterminer le niveau automatiquement selon le slope
+    if (formState.slope >= 140) formState.niveau = 'Expert';
+    else if (formState.slope >= 130) formState.niveau = 'Avanc\u00e9';
+    else if (formState.slope >= 120) formState.niveau = 'Interm\u00e9diaire';
+    else formState.niveau = 'D\u00e9butant';
+
+    // Rating = SSS par défaut
+    if (!formState.rating) formState.rating = formState.sss;
+
+    // Sauvegarder
+    if (typeof saveUserCourse === 'function') {
+      saveUserCourse(formState);
+      showToast(isEdit ? 'Parcours modifi\u00e9 \u2713' : 'Parcours cr\u00e9\u00e9 \u2713');
+      closeCreator();
+      // Rafraîchir la liste
+      renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
+    }
+  });
 }
