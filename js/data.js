@@ -98,3 +98,49 @@ var ROLE_CSS = {
   coach:   'role-coach',
   captain: 'role-captain'
 };
+
+
+/* ─── PARCOURS UTILISATEUR ─── */
+/* Les parcours créés par l'utilisateur sont stockés dans localStorage
+   sous la clé 'tsg_user_courses'. La fonction getAllCourses() retourne
+   la fusion : COURSES (système) + parcours utilisateur. */
+
+function getAllCourses() {
+  var userCourses = [];
+  try {
+    var raw = localStorage.getItem('tsg_user_courses');
+    if (raw) userCourses = JSON.parse(raw) || [];
+  } catch(e) {
+    console.warn('Lecture parcours utilisateur :', e.message);
+  }
+  // Marquer les parcours utilisateur avec un flag
+  userCourses.forEach(function(c) { c.userCreated = true; });
+  return COURSES.concat(userCourses);
+}
+
+function saveUserCourse(course) {
+  var userCourses = [];
+  try {
+    var raw = localStorage.getItem('tsg_user_courses');
+    if (raw) userCourses = JSON.parse(raw) || [];
+  } catch(e) {}
+
+  // Si édition (id existant), remplacer
+  var foundIdx = -1;
+  for (var i = 0; i < userCourses.length; i++) {
+    if (userCourses[i].id === course.id) { foundIdx = i; break; }
+  }
+  if (foundIdx >= 0) {
+    userCourses[foundIdx] = course;
+  } else {
+    userCourses.push(course);
+  }
+  localStorage.setItem('tsg_user_courses', JSON.stringify(userCourses));
+}
+
+function deleteUserCourse(courseId) {
+  var userCourses = [];
+  try {
+    var raw = localStorage.getItem('tsg_user_courses');
+    if (raw) userCourses = JSON.parse(raw) || [];
+  } catch(e) {}
