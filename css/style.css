@@ -1,1269 +1,3028 @@
 /* ════════════════════════════════════════════
- * THE SMART GOLFER — scorecard.js
- * Page Scorecard : sélection parcours, saisie rapide, historique
- * Le mode Pro est dans radar.js (chargé après).
- * Dépend de : data.js, app.js
+ * THE SMART GOLFER — style.css
+ * Tous les styles de l'application
+ * Design : Option 7 Premium Épuré
  * ════════════════════════════════════════════ */
 
 
+/* Plus Jakarta Sans chargé via <link> dans index.html */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ─────────────────────────────────────────
+   OPTION 7 — PREMIUM ÉPURÉ
+   Police    : Plus Jakarta Sans
+   Fond      : Crème chaud #FEFCF8 / #FAF8F2
+   Accent    : Or #C9A84C / #A8851E
+   Nuit      : Brun sombre #1A1209
+   Vert      : Golf #2D7D3A
+   Texte     : #1A1209 / #5A4A2A / #A89878
+───────────────────────────────────────── */
 
+:root {
+  /* Couleur signature */
+  --gold:      #C9A84C;
+  --gold-l:    #E8C96A;
+  --gold-d:    #A8851E;
+  --gold-dim:  rgba(201,168,76,0.10);
+  --gold-dim2: rgba(201,168,76,0.06);
 
-let sc_detailMode = false;
-let sc_detailData = {};  // {hole: {club, fairwayPos, clubApp, distRemain, distFromTarget2}}
-let selectedCourse = null;
-let activeFilter = 'all';
-let scores = new Array(18).fill(null);
-let putts = new Array(18).fill(null);
-let firState = {};
-let girState = {};
-let roundStarted = false;
-let roundHistory = lsGet('rounds') || [];
+  /* Fonds crème */
+  --bg:        #FEFCF8;
+  --bg2:       #FAF8F2;
+  --bg3:       #F5F1E8;
+  --bg4:       #EDE8DC;
 
-// ── INIT ──
+  /* Brun nuit (headers, accents sombres) */
+  --night:     #1A1209;
+  --night2:    #2E2010;
+  --night3:    #3D2E1A;
 
+  /* Blanc pur (cartes) */
+  --white:     #FFFFFF;
 
+  /* Textes */
+  --tx:        #1A1209;
+  --tx2:       #2E1E08;
+  --tx3:       #6A5030;
+  --tx4:       #8A6840;
 
-function renderCourseList(list) {
-  const el = document.getElementById('course-list');
-  if (!el) return;
-  el.innerHTML = '';
-  if (!list.length) { el.innerHTML = '<div style="padding:12px;font-size:10px;color:var(--tx3);text-align:center">Aucun résultat</div>'; return; }
-  list.forEach(c => {
-    const div = document.createElement('div');
-    div.className = 'course-item' + (selectedCourse && selectedCourse.id === c.id ? ' selected' : '');
-    div.setAttribute('data-course-id', c.id);
-    const lvlClass = (c.niveau || 'Standard').toLowerCase().replace('é','e').replace('è','e').replace('â','a');
-    const isUser = !!c.userCreated;
-    div.innerHTML = `<div class="ci-name">${isUser ? '<span class="ci-user-badge" title="Parcours créé par vous">\u2726</span> ' : ''}${c.name}</div>
-      <div class="ci-meta">
-        <span>${c.ville || ''}</span>
-        <span>Par ${c.par_total}</span>
-        <span>Slope ${c.slope || '—'}</span>
-        <span class="ci-tag ${lvlClass}">${c.niveau || 'Standard'}</span>
-        ${isUser ? '<button class="ci-delete-btn" data-del-course="' + c.id + '" title="Supprimer ce parcours">\u00d7</button>' : ''}
-      </div>`;
-    // Click sur la carte = sélection
-    div.addEventListener('click', function(ev) {
-      // Ne pas sélectionner si on a cliqué sur le bouton supprimer
-      if (ev.target.classList.contains('ci-delete-btn')) return;
-      selectCourse(c);
-    });
-    // Listener du bouton supprimer
-    var delBtn = div.querySelector('[data-del-course]');
-    if (delBtn) {
-      delBtn.addEventListener('click', function(ev) {
-        ev.stopPropagation();
-        if (!confirm('Supprimer définitivement le parcours « ' + c.name + ' » ?')) return;
-        if (typeof deleteUserCourse === 'function') {
-          deleteUserCourse(c.id);
-          // Rafraîchir la liste
-          renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
-          showToast('Parcours supprimé');
-        }
-      });
-    }
-    el.appendChild(div);
-  });
+  /* Vert golf */
+  --ok:        #1E6B2A;
+  --ok2:       #2D7D3A;
+  --ok3:       #4FA85A;
+  --ok-bg:     #EEF7EE;
+  --ok-bg2:    rgba(45,125,58,0.08);
+
+  /* Rouge */
+  --ng:        #9B2020;
+  --ng2:       #C0392B;
+  --ng3:       #E04040;
+  --ng-bg:     #FEF2F0;
+
+  /* Orange */
+  --wn:        #C45E0A;
+  --wn2:       #E07020;
+  --wn-bg:     #FEF5EC;
+
+  /* Bordures */
+  --bd:        rgba(168,133,30,0.18);
+  --bd2:       rgba(168,133,30,0.10);
+  --bd3:       rgba(26,18,9,0.06);
+  --bd-card:   #EDE8DC;
+
+  /* Ombres légères */
+  --shadow-sm: 0 1px 3px rgba(26,18,9,0.06);
+  --shadow-md: 0 2px 8px rgba(26,18,9,0.08);
 }
 
-function filterCourses() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  let list = (typeof getAllCourses === 'function' ? getAllCourses() : COURSES).filter(c =>
-    c.name.toLowerCase().includes(q) ||
-    c.ville.toLowerCase().includes(q) ||
-    c.region.toLowerCase().includes(q) ||
-    c.departement.toLowerCase().includes(q)
-  );
-  if (activeFilter !== 'all') {
-    list = list.filter(c => c.region === activeFilter || c.niveau === activeFilter);
-  }
-  renderCourseList(list);
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-function setFilter(f, btn) {
-  activeFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  filterCourses();
+/* ─── LOGIN SCREEN ─── */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+  background: var(--bg);
 }
 
-function selectCourse(c) {
-  selectedCourse = c;
-  document.querySelectorAll('.course-item').forEach(el => el.classList.remove('selected'));
-  // Retrouver l'élément du parcours sélectionné
-  var allItems = document.querySelectorAll('.course-item');
-  allItems.forEach(function(el) {
-    if (el.getAttribute('data-course-id') === c.id) el.classList.add('selected');
-  });
-
-  // Update course card
-  document.getElementById('course-card').classList.add('visible');
-  document.getElementById('cc-name').textContent = c.name;
-  document.getElementById('cc-loc').textContent = `${c.ville} · ${c.departement} · ${c.region}`;
-  document.getElementById('cc-par').textContent = c.par_total;
-  document.getElementById('cc-sss').textContent = c.sss;
-  document.getElementById('cc-slope').textContent = c.slope;
-  document.getElementById('cc-len').textContent = c.longueur_totale + 'm';
-  document.getElementById('cc-rating').textContent = c.rating.toFixed(1);
-  document.getElementById('cc-diff-val').textContent = c.niveau;
-
-  const lenPct = Math.round((c.longueur_totale - 5000) / (7000 - 5000) * 100);
-  const diffPct = {Débutant:20, Intermédiaire:50, Difficile:75, Expert:95}[c.niveau] || 50;
-  const ratingPct = Math.round((c.rating - 65) / (80 - 65) * 100);
-  document.getElementById('cc-len-bar').style.width = Math.max(5, lenPct) + '%';
-  document.getElementById('cc-diff-bar').style.width = diffPct + '%';
-  document.getElementById('cc-rating-bar').style.width = Math.max(5, ratingPct) + '%';
-
-  var btnStart = document.getElementById('btn-start');
-  if (btnStart) {
-    btnStart.disabled = false;
-    btnStart.textContent = 'Démarrer la partie →';
-  }
+.login-brand {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -1.5px;
+  text-align: center;
+  margin-bottom: 4px;
 }
 
-// ── BUILD TABLES ──
-function buildTable(tableId, holes) {
-  const table = document.getElementById(tableId);
-  table.innerHTML = '';
+.login-brand span { color: var(--gold); }
 
-  // Header
-  const thead = document.createElement('thead');
-  const htr = document.createElement('tr');
-  ['Trou','Par','SI','Distance','Score','Stableford'].forEach(h => {
-    const th = document.createElement('th');
-    th.textContent = h;
-    htr.appendChild(th);
-  });
-  thead.appendChild(htr);
-  table.appendChild(thead);
-
-  // Body
-  const tbody = document.createElement('tbody');
-  holes.forEach(h => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${h.num}</td>
-      <td class="par-cell">${h.par}</td>
-      <td class="si-cell">${h.si}</td>
-      <td class="dist-cell">${h.longueur}m</td>
-      <td class="score-cell">
-        <input class="score-inp" type="number" min="1" max="12" id="sc-${h.num}"
-          placeholder="${h.par}" oninput="onScoreInput(${h.num},${h.par},this)">
-      </td>
-      <td class="stableford-cell" id="stab-${h.num}" style="color:var(--tx3)">—</td>`;
-    tbody.appendChild(tr);
-
-    // Ligne détaillée (visible si sc_detailMode actif)
-    const trDetail = document.createElement('tr');
-    trDetail.className = 'sc-detail-row' + (sc_detailMode ? ' visible' : '');
-    trDetail.id = 'detail-' + h.num;
-    const tdDetail = document.createElement('td');
-    tdDetail.colSpan = 6;
-    tdDetail.style.padding = '0';
-    tdDetail.innerHTML = `<div class="sc-detail-row${sc_detailMode ? ' visible' : ''}" style="display:${sc_detailMode ? 'flex' : 'none'}">
-      <div class="sc-detail-field">
-        <div class="sc-detail-label">Club d\u00e9part</div>
-        <select class="sc-detail-select" data-detail="club" data-hole="${h.num}">
-          <option value="">—</option>
-          <option value="Driver">Driver</option>
-          <option value="Bois 3">Bois 3</option>
-          <option value="Bois 5">Bois 5</option>
-          <option value="Hybride">Hybride</option>
-          <option value="Fer 3">Fer 3</option>
-          <option value="Fer 4">Fer 4</option>
-          <option value="Fer 5">Fer 5</option>
-          <option value="Fer 6">Fer 6</option>
-        </select>
-      </div>
-      <div class="sc-detail-field">
-        <div class="sc-detail-label">Position</div>
-        <select class="sc-detail-select" data-detail="fairwayPos" data-hole="${h.num}">
-          <option value="">—</option>
-          <option value="fairway">Fairway</option>
-          <option value="rough-l">Rough G.</option>
-          <option value="rough-r">Rough D.</option>
-          <option value="bunker-l">Bunker G.</option>
-          <option value="bunker-r">Bunker D.</option>
-          <option value="ob">Hors-limite</option>
-        </select>
-      </div>
-      <div class="sc-detail-field">
-        <div class="sc-detail-label">Dist. restante (m)</div>
-        <input type="number" class="sc-detail-input" placeholder="ex. 150" min="0" max="500" data-detail="distRemain" data-hole="${h.num}">
-      </div>
-      <div class="sc-detail-field">
-        <div class="sc-detail-label">Club approche</div>
-        <select class="sc-detail-select" data-detail="clubApp" data-hole="${h.num}">
-          <option value="">—</option>
-          <option value="Bois 3">Bois 3</option>
-          <option value="Hybride">Hybride</option>
-          <option value="Fer 5">Fer 5</option>
-          <option value="Fer 6">Fer 6</option>
-          <option value="Fer 7">Fer 7</option>
-          <option value="Fer 8">Fer 8</option>
-          <option value="Fer 9">Fer 9</option>
-          <option value="PW">PW</option>
-          <option value="GW">GW</option>
-          <option value="SW">SW</option>
-          <option value="LW">LW</option>
-        </select>
-      </div>
-      <div class="sc-detail-field">
-        <div class="sc-detail-label">\u00c9cart cible 2e (m)</div>
-        <input type="number" class="sc-detail-input" placeholder="ex. 8" min="0" max="100" data-detail="distFromTarget2" data-hole="${h.num}" title="Distance entre la balle apr\u00e8s ton 2e coup et ta cible (drapeau ou centre du green)">
-      </div>
-    </div>`;
-    trDetail.appendChild(tdDetail);
-    tbody.appendChild(trDetail);
-
-    // Listeners pour les champs détaillés
-    setTimeout(function() {
-      var detailInputs = tdDetail.querySelectorAll('[data-detail]');
-      detailInputs.forEach(function(inp) {
-        inp.addEventListener('change', function() {
-          var holeNum = parseInt(inp.getAttribute('data-hole'));
-          var field = inp.getAttribute('data-detail');
-          if (!sc_detailData[holeNum]) sc_detailData[holeNum] = {};
-          sc_detailData[holeNum][field] = inp.value;
-        });
-      });
-    }, 50);
-  });
-
-  // Total row
-  const totalTr = document.createElement('tr');
-  totalTr.className = 'total-row';
-  const half = tableId === 'table-aller' ? 'aller' : 'retour';
-  totalTr.innerHTML = `
-    <td>Total</td>
-    <td id="par-${half}-tot" style="color:var(--gold)">—</td>
-    <td></td>
-    <td id="dist-${half}-tot" style="font-size:9px;color:var(--tx3)">—m</td>
-    <td id="score-${half}-tot" style="color:var(--tx)">—</td>
-    <td id="stab-${half}-tot" style="color:var(--gold)">—</td>`;
-  tbody.appendChild(totalTr);
-  table.appendChild(tbody);
+.login-tagline {
+  font-size: 11px;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  text-align: center;
+  margin-bottom: 44px;
+  font-weight: 500;
 }
 
-function buildFirGirToggles(course) {
-  const firCont = document.getElementById('fir-toggles');
-  const girCont = document.getElementById('gir-toggles');
-  firCont.innerHTML = '';
-  girCont.innerHTML = '';
-
-  firCont.style.cssText = 'display:grid;grid-template-columns:repeat(9,1fr);gap:5px';
-  girCont.style.cssText = 'display:grid;grid-template-columns:repeat(9,1fr);gap:5px';
-
-  course.trous.forEach(function(h) {
-    // FIR
-    var firCell = document.createElement('div');
-    firCell.className = 'toggle-cell';
-    firCell.id = 'fir-' + h.num;
-    if (h.par === 3) { firCell.style.opacity = '0.25'; firCell.style.pointerEvents = 'none'; }
-    var firN = document.createElement('span');
-    firN.style.cssText = 'font-size:9px;color:var(--tx3);font-weight:500';
-    firN.textContent = h.num;
-    var firV = document.createElement('span');
-    firV.style.cssText = 'font-size:12px;font-weight:700';
-    firV.textContent = h.par !== 3 ? '—' : 'P3';
-    firCell.appendChild(firN); firCell.appendChild(firV);
-    firCell.addEventListener('click', (function(num){ return function(){ toggleFir(num); }; })(h.num));
-    firCont.appendChild(firCell);
-
-    // GIR
-    var girCell = document.createElement('div');
-    girCell.className = 'toggle-cell';
-    girCell.id = 'gir-' + h.num;
-    var girN = document.createElement('span');
-    girN.style.cssText = 'font-size:9px;color:var(--tx3);font-weight:500';
-    girN.textContent = h.num;
-    var girV = document.createElement('span');
-    girV.style.cssText = 'font-size:12px;font-weight:700';
-    girV.textContent = '—';
-    girCell.appendChild(girN); girCell.appendChild(girV);
-    girCell.addEventListener('click', (function(num){ return function(){ toggleGir(num); }; })(h.num));
-    girCont.appendChild(girCell);
-  });
+.login-card {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 16px;
+  padding: 32px 36px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-md);
 }
 
-function buildPuttsInputs(course) {
-  const row1 = document.getElementById('putts-row-1');
-  const row2 = document.getElementById('putts-row-2');
-  row1.innerHTML = '';
-  row2.innerHTML = '';
-
-  row1.style.cssText = 'display:grid;grid-template-columns:repeat(9,1fr);gap:5px';
-  row2.style.cssText = 'display:grid;grid-template-columns:repeat(9,1fr);gap:5px';
-
-  course.trous.forEach(function(h) {
-    var cell = document.createElement('div');
-    cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px';
-    var numLbl = document.createElement('div');
-    numLbl.style.cssText = 'font-size:9px;color:var(--tx3);font-weight:500';
-    numLbl.textContent = h.num;
-    var inp = document.createElement('input');
-    inp.type = 'number'; inp.min = '0'; inp.max = '5';
-    inp.id = 'putt-' + h.num;
-    inp.placeholder = '—';
-    inp.className = 'putts-inp';
-    inp.style.cssText = 'width:100%;max-width:44px;height:38px;background:var(--bg);border:1px solid var(--bd-card);border-radius:8px;text-align:center;color:var(--tx);font-family:"Plus Jakarta Sans",sans-serif;font-size:16px;font-weight:700;padding:0;outline:none;-moz-appearance:textfield;-webkit-appearance:none';
-    inp.addEventListener('input', (function(num){ return function(){ onPuttInput(num, this); }; })(h.num));
-    cell.appendChild(numLbl); cell.appendChild(inp);
-    if (h.num <= 9) row1.appendChild(cell); else row2.appendChild(cell);
-  });
+.login-card-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--tx);
+  margin-bottom: 3px;
+  letter-spacing: -0.3px;
 }
 
-// ── SCORE LOGIC ──
-function onScoreInput(num, par, inp) {
-  const v = inp.value ? parseInt(inp.value) : null;
-  scores[num - 1] = v;
-  inp.className = 'score-inp ' + getScoreClass(v, par);
-
-  // Stableford
-  const stabCell = document.getElementById(`stab-${num}`);
-  if (v !== null) {
-    const hcp = parseFloat(document.getElementById('f-hcp').value) || 14.2;
-    const si = selectedCourse.trous[num-1].si;
-    const strokes = Math.floor(hcp / 18) + (si <= (hcp % 18) ? 1 : 0);
-    const net = v - par + strokes;
-    const pts = Math.max(0, 2 - net);
-    stabCell.textContent = pts;
-    stabCell.style.color = pts >= 3 ? 'var(--gold-l)' : pts === 2 ? 'var(--ok2)' : pts === 1 ? 'var(--tx2)' : 'var(--ng2)';
-  } else {
-    stabCell.textContent = '—';
-    stabCell.style.color = 'var(--tx3)';
-  }
-
-  updateTotals();
+.login-card-sub {
+  font-size: 12px;
+  color: var(--tx3);
+  margin-bottom: 22px;
 }
 
-function onPuttInput(num, inp) {
-  putts[num - 1] = inp.value ? parseInt(inp.value) : null;
-  updateStats();
+/* ─── PROFILE BUTTONS ─── */
+#profiles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
 }
 
-function getScoreClass(v, par) {
-  if (v === null) return '';
-  const d = v - par;
-  if (d <= -2) return 'eagle';
-  if (d === -1) return 'birdie';
-  if (d === 0) return 'par-s';
-  if (d === 1) return 'bogey';
-  if (d === 2) return 'double';
-  return 'triple';
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  text-align: left;
+  width: 100%;
 }
 
-function toggleFir(num) {
-  const states = [null, 'hit', 'miss'];
-  const cur = firState[num] || null;
-  const next = states[(states.indexOf(cur) + 1) % 3];
-  firState[num] = next;
-  const cell = document.getElementById(`fir-${num}`);
-  cell.className = 'toggle-cell' + (next ? ' ' + next : '');
-  const h = selectedCourse.trous[num-1];
-  cell.innerHTML = `<span class="hole-n">${num}</span>${next === 'hit' ? '✓' : next === 'miss' ? '✗' : '—'}`;
-  updateStats();
+.profile-btn:hover {
+  border-color: var(--gold);
+  background: var(--gold-dim2);
+  box-shadow: var(--shadow-sm);
 }
 
-function toggleGir(num) {
-  const states = [null, 'hit', 'miss'];
-  const cur = girState[num] || null;
-  const next = states[(states.indexOf(cur) + 1) % 3];
-  girState[num] = next;
-  const cell = document.getElementById(`gir-${num}`);
-  cell.className = 'toggle-cell' + (next ? ' ' + next : '');
-  cell.innerHTML = `<span class="hole-n">${num}</span>${next === 'hit' ? '✓' : next === 'miss' ? '✗' : '—'}`;
-  updateStats();
+.profile-btn.selected {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+}
+
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: -0.5px;
+}
+
+.profile-info { flex: 1; }
+
+.profile-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+  margin-bottom: 2px;
+  letter-spacing: -0.2px;
+}
+
+.profile-role {
+  font-size: 11px;
+  color: var(--tx3);
+  font-weight: 400;
+}
+
+/* ─── DIVIDER ─── */
+.login-divider {
+  text-align: center;
+  font-size: 11px;
+  color: var(--tx4);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin: 20px 0;
+  position: relative;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 34%;
+  height: 1px;
+  background: var(--bd-card);
+}
+.login-divider::before { left: 0; }
+.login-divider::after  { right: 0; }
+
+/* ─── FORM ─── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tx3);
+}
+
+.form-input,
+.form-select {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+}
+
+.form-input::placeholder { color: var(--tx4); }
+.form-select { cursor: pointer; appearance: none; }
+
+/* ─── LOGIN BUTTON ─── */
+.btn-login {
+  width: 100%;
+  background: var(--gold);
+  color: var(--night);
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.15s, transform 0.1s;
+  margin-top: 14px;
+}
+
+.btn-login:hover  { background: var(--gold-l); }
+.btn-login:active { transform: scale(0.99); }
+
+/* ─── APP SHELL ─── */
+#app {
+  display: none;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+#app.visible { display: flex; }
+
+/* ─── TOP NAV ─── */
+.topnav {
+  height: 56px;
+  background: var(--white);
+  border-bottom: 1px solid var(--bd-card);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-brand {
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-right: 1px solid var(--bd3);
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.nav-emblem {
+  width: 30px;
+  height: 30px;
+  background: var(--gold);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--night);
+  flex-shrink: 0;
+}
+
+.nav-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.5px;
+}
+
+.nav-title span { color: var(--gold-d); }
+
+.nav-tabs {
+  display: flex;
+  height: 100%;
+  flex: 1;
+  overflow-x: auto;
+  padding: 0 6px;
+}
+
+.nav-tabs::-webkit-scrollbar { display: none; }
+
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--tx3);
+  border: none;
+  background: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.nav-tab:hover { color: var(--tx); }
+
+.nav-tab.active {
+  color: var(--gold-d);
+  border-bottom-color: var(--gold);
+  font-weight: 600;
+}
+
+.nav-tab-icon {
+  font-size: 14px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.nav-tab.active .nav-tab-icon { opacity: 1; }
+
+.nav-right {
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-left: 1px solid var(--bd3);
+  height: 100%;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.nav-hcp-block { text-align: right; }
+
+.nav-hcp-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold-d);
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.nav-hcp-lbl {
+  font-size: 9px;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.nav-user:hover {
+  background: var(--bg);
+  border-color: var(--bd-card);
+}
+
+.nav-user-av {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.nav-user-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx);
+}
+
+.nav-role-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+}
+
+.role-head    { background: #FDF5E4; color: #8A6200; border: 1px solid #F0D880; }
+.role-coach   { background: var(--gold-dim); color: var(--gold-d); border: 1px solid rgba(201,168,76,0.3); }
+.role-captain { background: #EEF4FF; color: #2855A0; border: 1px solid #C0D4FF; }
+.role-player  { background: var(--ok-bg); color: var(--ok2); border: 1px solid rgba(45,125,58,0.25); }
+
+/* ─── CONTENT AREA ─── */
+.app-content { flex: 1; overflow-y: auto; background: var(--bg); }
+.app-content::-webkit-scrollbar { width: 4px; }
+.app-content::-webkit-scrollbar-thumb { background: var(--bd-card); border-radius: 2px; }
+
+.app-page {
+  display: none;
+  padding: 28px 32px;
+  min-height: calc(100vh - 56px);
+}
+
+.app-page.active { display: block; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--night);
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--bg);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 999;
+  max-width: 320px;
+  box-shadow: var(--shadow-md);
+}
+
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ─── COMING SOON ─── */
+.welcome-hero {
+  text-align: center;
+  padding: 60px 20px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.welcome-hero h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+
+.welcome-hero p {
+  font-size: 13px;
+  color: var(--tx3);
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+
+.welcome-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 36px;
+}
+
+.wstat {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  padding: 18px 12px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.wstat-val {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--gold-d);
+  line-height: 1;
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+
+.wstat-lbl {
+  font-size: 11px;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+.coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 14px;
+  text-align: center;
+}
+
+.coming-soon-icon { font-size: 32px; opacity: 0.2; }
+
+.coming-soon h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--tx2);
+  letter-spacing: -0.3px;
+}
+
+.coming-soon p {
+  font-size: 12px;
+  color: var(--tx3);
+  line-height: 1.6;
+  max-width: 260px;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg3); }
+::-webkit-scrollbar-thumb { background: var(--bd-card); border-radius: 2px; }
+
+
+/* ════════════════════════════════════
+   DASHBOARD — SESSION 2 · Option 7
+════════════════════════════════════ */
+
+.dash-wrap { display: flex; flex-direction: column; gap: 20px; }
+
+/* Header */
+.dash-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+.dash-greeting {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--tx);
+  line-height: 1;
+  margin-bottom: 5px;
+  letter-spacing: -1px;
+}
+
+.dash-meta {
+  font-size: 11px;
+  color: var(--tx3);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Buttons */
+.dash-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all 0.15s;
+  border: 1px solid;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dash-btn-gold {
+  background: var(--gold);
+  color: var(--night);
+  border-color: var(--gold);
+}
+
+.dash-btn-gold:hover { background: var(--gold-l); border-color: var(--gold-l); }
+
+.dash-btn-outline {
+  background: var(--white);
+  color: var(--tx2);
+  border-color: var(--bd-card);
+}
+
+.dash-btn-outline:hover { border-color: var(--gold); color: var(--gold-d); }
+
+/* Grilles */
+.dash-g5  { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
+.dash-g4  { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.dash-g3  { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.dash-g2  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.dash-g21 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+.dash-g31 { display: grid; grid-template-columns: 3fr 1fr; gap: 14px; }
+
+/* KPI Cards */
+.kpi-card {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  padding: 16px 16px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.18s, border-color 0.18s;
+}
+
+.kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: rgba(168,133,30,0.25);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--gold);
+  opacity: 0.45;
+  border-radius: 14px 14px 0 0;
+}
+
+.kpi-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--tx);
+  line-height: 1;
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+
+.kpi-trend {
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.trend-up   { color: var(--ok2); }
+.trend-down { color: var(--ng2); }
+.trend-flat { color: var(--tx3); }
+
+/* Panels */
+.panel {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--bd3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--bg2);
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.3px;
+}
+
+.panel-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.panel-body { padding: 16px 18px; }
+
+/* Strokes Gained */
+.sg-card {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.sg-card:hover { border-color: var(--gold); }
+
+.sg-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 7px;
+}
+
+.sg-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  margin-bottom: 5px;
+}
+
+.sg-pos { color: var(--ok2); }
+.sg-neg { color: var(--ng2); }
+.sg-neu { color: var(--tx3); }
+
+.sg-bar-track {
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.sg-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+
+/* Progress rows */
+.prog-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--bd3);
+}
+.prog-row:last-child { border-bottom: none; }
+.prog-label { font-size: 11px; font-weight: 500; color: var(--tx2); width: 130px; flex-shrink: 0; }
+.prog-track { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.prog-fill  { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.prog-value { font-size: 11px; font-weight: 600; color: var(--tx); width: 42px; text-align: right; flex-shrink: 0; }
+.prog-ref   { font-size: 10px; color: var(--tx3); width: 55px; text-align: right; flex-shrink: 0; font-weight: 500; }
+
+/* Chart */
+.chart-wrap { position: relative; width: 100%; }
+
+/* Roadmap */
+.roadmap-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+
+.road-phase {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 12px;
+  padding: 14px 12px;
+  border-top: 3px solid var(--bg3);
+}
+
+.road-phase.done     { border-top-color: var(--ok2); background: var(--ok-bg2); border-color: rgba(45,125,58,0.15); }
+.road-phase.active   { border-top-color: var(--gold); background: var(--gold-dim2); border-color: rgba(201,168,76,0.25); }
+.road-phase.upcoming { opacity: 0.55; }
+
+.road-phase-num {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.road-phase.done   .road-phase-num { color: var(--ok2); }
+.road-phase.active .road-phase-num { color: var(--gold-d); }
+.road-phase.upcoming .road-phase-num { color: var(--tx3); }
+
+.road-phase-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.3px;
+  margin-bottom: 8px;
+}
+
+.road-phase.upcoming .road-phase-name { color: var(--tx2); }
+
+.road-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+
+.rtag {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rtag-ok   { background: var(--ok-bg); color: var(--ok2); }
+.rtag-gold { background: var(--gold-dim); color: var(--gold-d); }
+.rtag-dim  { background: var(--bg3); color: var(--tx3); }
+
+.road-progress { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.road-progress-fill { height: 100%; border-radius: 2px; }
+
+/* Messages */
+.msg-preview-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bd3);
+  cursor: pointer;
+  transition: background 0.12s;
+  border-radius: 8px;
+}
+
+.msg-preview-item:hover {
+  background: var(--bg);
+  margin: 0 -14px;
+  padding: 10px 14px;
+}
+
+.msg-preview-item:last-child { border-bottom: none; }
+
+.msg-av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.msg-channel-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  background: var(--bg3);
+  border: 1px solid var(--bd3);
+}
+
+.msg-content { flex: 1; min-width: 0; }
+
+.msg-from {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx);
+  margin-bottom: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.msg-time { font-size: 10px; color: var(--tx4); font-weight: 400; }
+
+.msg-text {
+  font-size: 11px;
+  color: var(--tx3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.msg-unread {
+  width: 8px;
+  height: 8px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+/* Objectifs */
+.goal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bd3);
+}
+
+.goal-row:last-child { border-bottom: none; }
+.goal-name  { font-size: 12px; color: var(--tx2); font-weight: 500; }
+.goal-vals  { display: flex; gap: 10px; align-items: center; }
+.goal-now   { font-size: 16px; font-weight: 700; color: var(--tx2); letter-spacing: -0.5px; }
+.goal-arrow { font-size: 10px; color: var(--tx4); }
+.goal-tgt   { font-size: 16px; font-weight: 700; color: var(--gold-d); letter-spacing: -0.5px; }
+.goal-delta { font-size: 11px; font-weight: 600; min-width: 50px; text-align: right; }
+
+/* Divider */
+.divl { height: 1px; background: var(--bd3); margin: 12px 0; }
+
+/* Demo banner */
+.demo-banner {
+  background: var(--gold-dim);
+  border: 1px solid rgba(201,168,76,0.25);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 12px;
+  color: var(--tx2);
+  font-weight: 500;
+}
+
+.demo-banner-icon { font-size: 16px; flex-shrink: 0; }
+.demo-banner strong { color: var(--gold-d); font-weight: 700; }
+
+
+/* ════════════════════════════════════
+   SCORECARD — SESSION 3 · Option 7
+════════════════════════════════════ */
+
+/* Layout: sidebar gauche + main droite, full height */
+.sc-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - 56px);
+  width: 100%;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sc-sb {
+  background: var(--white);
+  border-right: 1px solid var(--bd-card);
+  padding: 18px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sc-sb::-webkit-scrollbar { width: 3px; }
+.sc-sb::-webkit-scrollbar-thumb { background: var(--bd-card); border-radius: 2px; }
+
+.sc-main {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+  height: 100%;
+  min-height: 0;
+}
+
+.sc-main::-webkit-scrollbar { width: 3px; }
+.sc-main::-webkit-scrollbar-thumb { background: var(--bd-card); border-radius: 2px; }
+
+/* Sidebar sections */
+.sc-sb-section-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--tx3);
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--bd3);
+}
+
+/* Search */
+.search-wrap { position: relative; }
+
+.search-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 8px 10px 8px 30px;
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+}
+
+.search-input::placeholder { color: var(--tx4); }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--tx3); font-size: 12px; pointer-events: none; }
+
+/* Filters */
+.filter-row { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.filter-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--bd-card);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--tx3);
+  background: var(--bg);
+  transition: all 0.15s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.filter-btn:hover { border-color: var(--gold); color: var(--gold-d); }
+.filter-btn.on { border-color: var(--gold); color: var(--gold-d); background: var(--gold-dim); font-weight: 700; }
+
+/* Course list */
+.course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 360px;
+  min-height: 240px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.course-list::-webkit-scrollbar { width: 3px; }
+.course-list::-webkit-scrollbar-thumb { background: var(--bd-card); border-radius: 2px; }
+
+.course-item {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.course-item:hover { border-color: rgba(168,133,30,0.3); background: var(--gold-dim2); }
+.course-item.selected { border-color: var(--gold); background: var(--gold-dim); }
+
+.ci-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx);
+  margin-bottom: 4px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  line-height: 1.35;
+  letter-spacing: -0.2px;
+}
+.ci-meta {
+  font-size: 10px;
+  color: var(--tx3);
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-weight: 500;
+  margin-top: 2px;
+}
+.ci-tag { background: var(--bg3); padding: 1px 5px; border-radius: 4px; }
+
+/* Course card (info panel) */
+.course-card { display: none; }
+.course-card.visible { display: block; }
+
+.cc-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.3px;
+  margin-bottom: 2px;
+}
+
+.cc-loc {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.cc-stats {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.cc-stat {
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 7px 4px;
+}
+
+.cc-stat-val { font-size: 18px; font-weight: 700; color: var(--tx); letter-spacing: -0.5px; line-height: 1; }
+.cc-stat-lbl { font-size: 8px; font-weight: 600; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+
+.cc-bar { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.cc-bar-lbl { font-size: 9px; font-weight: 600; color: var(--tx3); width: 50px; flex-shrink: 0; }
+.cc-bar-track { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.cc-bar-fill { height: 100%; border-radius: 2px; background: var(--gold); transition: width 0.4s; }
+.cc-bar-val { font-size: 10px; font-weight: 600; color: var(--tx); width: 36px; text-align: right; flex-shrink: 0; }
+
+/* Form fields in sidebar */
+.sc-fg { display: flex; flex-direction: column; gap: 5px; }
+.sc-fl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tx3); }
+
+.sc-fi, .sc-fs {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 8px 11px;
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.sc-fi:focus, .sc-fs:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+}
+
+.sc-fi::placeholder { color: var(--tx4); }
+.sc-fs { cursor: pointer; appearance: none; }
+.sc-fr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* Start button */
+.btn-start-round {
+  width: 100%;
+  background: var(--gold);
+  color: var(--night);
+  border: none;
+  border-radius: 10px;
+  padding: 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.btn-start-round:hover { background: var(--gold-l); }
+.btn-start-round:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Empty state */
+.sc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 12px;
+  color: var(--tx3);
+  text-align: center;
+}
+
+.sc-empty-icon { font-size: 44px; opacity: 0.2; }
+
+.sc-empty h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--tx2);
+  letter-spacing: -0.3px;
+}
+
+.sc-empty p { font-size: 12px; color: var(--tx3); line-height: 1.6; max-width: 240px; }
+
+/* Scorecard header */
+.sc-round-header {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sc-round-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.5px;
+  margin-bottom: 3px;
+}
+
+.sc-round-meta {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.sc-round-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sc-hstat {
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 8px 14px;
+}
+
+.sc-hstat-val { font-size: 20px; font-weight: 700; color: var(--tx); letter-spacing: -0.5px; line-height: 1; }
+.sc-hstat-lbl { font-size: 8px; font-weight: 600; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+
+/* Scorecard tables */
+.sc-panel {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.sc-panel-header {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--bd3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg2);
+}
+
+.sc-panel-title { font-size: 13px; font-weight: 700; color: var(--tx); }
+.sc-panel-sub   { font-size: 9px; font-weight: 600; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.1em; }
+
+.sc-table { width: 100%; border-collapse: collapse; }
+
+.sc-table th {
+  background: var(--bg2);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--tx3);
+  padding: 7px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--bd-card);
+  white-space: nowrap;
+}
+
+.sc-table th:first-child { text-align: left; padding-left: 14px; width: 36px; }
+
+.sc-table td {
+  padding: 4px 3px;
+  text-align: center;
+  border-bottom: 1px solid var(--bd3);
+  vertical-align: middle;
+  font-size: 11px;
+}
+
+.sc-table td:first-child {
+  text-align: left;
+  padding-left: 14px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx3);
+}
+
+.sc-table tr:last-child td { border-bottom: none; }
+.sc-table tr.total-row td { background: var(--bg2); font-weight: 700; font-size: 11px; }
+
+/* Score input */
+.score-inp {
+  width: 34px;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 8px;
+  text-align: center;
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 3px 0;
+  outline: none;
+  transition: all 0.15s;
+  -moz-appearance: textfield;
+}
+
+.score-inp::-webkit-inner-spin-button,
+.score-inp::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.score-inp:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(201,168,76,0.15);
+}
+
+/* Score color coding */
+.score-inp.eagle  { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold-d); }
+.score-inp.birdie { background: var(--ok-bg); border-color: var(--ok2); color: var(--ok); }
+.score-inp.par-s  { background: var(--bg); border-color: var(--bd-card); color: var(--tx2); }
+.score-inp.bogey  { background: var(--wn-bg); border-color: var(--wn); color: var(--wn); }
+.score-inp.double { background: rgba(192,57,43,0.08); border-color: var(--ng2); color: var(--ng2); }
+.score-inp.triple { background: rgba(155,32,32,0.12); border-color: var(--ng); color: var(--ng); }
+
+/* Stableford */
+.stableford-cell { font-size: 11px; font-weight: 700; }
+
+/* FIR/GIR toggles */
+.toggle-cell {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 8px;
+  text-align: center;
+  padding: 10px 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx3);
+  flex: 1 1 auto;
+  min-width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.toggle-cell:hover { border-color: rgba(168,133,30,0.3); }
+.toggle-cell.hit { background: var(--ok-bg); border-color: var(--ok2); color: var(--ok); }
+.toggle-cell.miss { background: var(--ng-bg); border-color: var(--ng2); color: var(--ng2); }
+
+/* Putts input */
+.putts-inp {
+  width: 30px;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 7px;
+  text-align: center;
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 0;
+  outline: none;
+  transition: border-color 0.15s;
+  -moz-appearance: textfield;
+}
+
+.putts-inp::-webkit-inner-spin-button,
+.putts-inp::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.putts-inp:focus { border-color: var(--gold); }
+
+/* Action buttons */
+.btn-save-sc {
+  background: var(--gold);
+  color: var(--night);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 24px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.15s;
+}
+
+.btn-save-sc:hover { background: var(--gold-l); }
+
+.btn-reset-sc {
+  background: var(--white);
+  color: var(--tx2);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all 0.15s;
+}
+
+.btn-reset-sc:hover { border-color: var(--ng2); color: var(--ng2); }
+
+/* Score summary pills */
+.score-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.spill {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.spill-eagle  { background: rgba(201,168,76,0.12); color: var(--gold-d); border: 1px solid rgba(201,168,76,0.25); }
+.spill-birdie { background: var(--ok-bg); color: var(--ok); border: 1px solid rgba(45,125,58,0.2); }
+.spill-par    { background: var(--bg3); color: var(--tx2); border: 1px solid var(--bd-card); }
+.spill-bogey  { background: var(--wn-bg); color: var(--wn); border: 1px solid rgba(196,94,10,0.2); }
+.spill-double { background: var(--ng-bg); color: var(--ng2); border: 1px solid rgba(192,57,43,0.2); }
+
+/* History */
+.hist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.hist-item:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: rgba(168,133,30,0.25);
+}
+
+.hist-score {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -1px;
+  width: 52px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.hist-info { flex: 1; min-width: 0; }
+.hist-course { font-size: 12px; font-weight: 600; color: var(--tx); margin-bottom: 2px; }
+.hist-meta { font-size: 10px; color: var(--tx3); font-weight: 500; }
+
+.hist-diff {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ok2);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.info-pill {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 7px;
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.info-pill strong { color: var(--gold-d); }
+
+
+/* Scorecard page prend tout l'espace */
+#page-scorecard.active {
+  display: flex !important;
+  flex-direction: column;
+  padding: 0 !important;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+}
+
+/* Analyse de partie */
+.insight-block {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.insight-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+}
+
+.insight-body {
+  font-size: 11px;
+  color: var(--tx2);
+  line-height: 1.6;
+}
+
+.insight-body strong { color: var(--tx); font-weight: 700; }
+
+.hole-n { font-size: 9px; font-weight: 700; color: var(--gold-d); letter-spacing: 0.02em; }
+
+.info-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  color: var(--gold-d);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  border: 1px solid var(--gold-d);
+  margin-left: 6px;
+}
+
+.kpi-clickable:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,18,9,0.10) !important; border-color: var(--gold-d) !important; }
+
+
+/* ════════════════════════════════════
+   ANALYSE — SESSION 4 · Option 7
+════════════════════════════════════ */
+
+.an-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Header avec sélecteur période */
+.an-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-bottom: 8px;
+}
+
+.an-title-block { display: flex; flex-direction: column; gap: 4px; }
+
+.an-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.8px;
+  line-height: 1;
+}
+
+.an-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Sélecteur période */
+.an-period-selector {
+  display: flex;
+  gap: 4px;
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 12px;
+  padding: 3px;
+  box-shadow: var(--shadow-sm);
+}
+
+.an-period-btn {
+  padding: 7px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx3);
+  transition: all 0.15s;
+}
+
+.an-period-btn:hover { color: var(--tx2); }
+
+.an-period-btn.active {
+  background: var(--gold);
+  color: var(--night);
+  box-shadow: 0 1px 4px rgba(201,168,76,0.3);
+}
+
+/* Sous-onglets */
+.an-subtabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--bd-card);
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.an-subtab {
+  padding: 12px 22px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx3);
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: -1px;
+}
+
+.an-subtab:hover { color: var(--tx2); }
+
+.an-subtab.active {
+  color: var(--gold-d);
+  border-bottom-color: var(--gold);
+  font-weight: 700;
+}
+
+.an-subtab-icon { font-size: 14px; opacity: 0.7; }
+.an-subtab.active .an-subtab-icon { opacity: 1; }
+
+/* Pages sous-onglets */
+.an-subpage { display: none; flex-direction: column; gap: 16px; padding-top: 20px; }
+.an-subpage.active { display: flex; }
+
+/* Carte info "pas assez de données" */
+.an-empty-card {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  padding: 40px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.an-empty-icon { font-size: 38px; opacity: 0.3; margin-bottom: 14px; }
+
+.an-empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+
+.an-empty-text {
+  font-size: 12px;
+  color: var(--tx3);
+  line-height: 1.6;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.an-empty-cta {
+  margin-top: 18px;
+  display: inline-flex;
+  background: var(--gold);
+  color: var(--night);
+  border: none;
+  border-radius: 10px;
+  padding: 9px 20px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.an-empty-cta:hover { background: var(--gold-l); }
+
+/* Bloc de recommandation actionnable (format 2) */
+.an-reco {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.an-reco-priority {
+  background: var(--gold);
+  color: var(--night);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.an-reco.urgent .an-reco-priority { background: var(--ng2); color: white; }
+.an-reco.positive .an-reco-priority { background: var(--ok2); color: white; }
+
+.an-reco-content { flex: 1; }
+
+.an-reco-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx);
+  margin-bottom: 6px;
+  letter-spacing: -0.2px;
+}
+
+.an-reco-data {
+  font-size: 11px;
+  color: var(--tx3);
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+
+.an-reco-data strong { color: var(--tx2); font-weight: 700; }
+
+.an-reco-action {
+  font-size: 12px;
+  color: var(--tx2);
+  line-height: 1.55;
+  padding: 9px 12px;
+  background: var(--gold-dim2);
+  border-left: 2px solid var(--gold);
+  border-radius: 6px;
+}
+
+.an-reco-action strong { color: var(--gold-d); font-weight: 700; }
+
+/* Heatmap stableford */
+.an-heatmap {
+  display: grid;
+  grid-template-columns: 50px repeat(18, 1fr);
+  gap: 2px;
+  margin-top: 10px;
+}
+
+.an-heat-header {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 0;
+}
+
+.an-heat-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx3);
+  display: flex;
+  align-items: center;
+  padding-right: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.an-heat-cell {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--bg3);
+  color: var(--tx3);
+  cursor: help;
+  transition: transform 0.1s;
+}
+
+.an-heat-cell:hover { transform: scale(1.1); }
+
+.an-heat-cell.h-eagle  { background: rgba(201,168,76,0.30); color: var(--gold-d); }
+.an-heat-cell.h-birdie { background: rgba(45,125,58,0.25); color: var(--ok); }
+.an-heat-cell.h-par    { background: rgba(168,133,30,0.10); color: var(--tx2); }
+.an-heat-cell.h-bogey  { background: rgba(196,94,10,0.18); color: var(--wn); }
+.an-heat-cell.h-double { background: rgba(192,57,43,0.22); color: var(--ng2); }
+.an-heat-cell.h-empty  { background: var(--bg3); color: var(--tx4); opacity: 0.5; }
+
+/* Dispersion drive */
+.an-dispersion {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.an-disp-zone {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 16px 10px;
+  text-align: center;
+}
+
+.an-disp-zone.center { background: var(--gold-dim); border-color: var(--gold); }
+
+.an-disp-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--tx);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.an-disp-zone.center .an-disp-value { color: var(--gold-d); }
+
+.an-disp-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Lignes de stats par catégorie */
+.an-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--bd3);
+}
+
+.an-stat-row:last-child { border-bottom: none; }
+
+.an-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx2);
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.an-stat-bar-wrap { flex: 1; display: flex; align-items: center; gap: 8px; }
+
+.an-stat-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.an-stat-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s;
+}
+
+.an-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx);
+  min-width: 55px;
+  text-align: right;
+}
+
+.an-stat-trend {
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 45px;
+  text-align: right;
+}
+
+/* Toggle saisie rapide/détaillée dans Scorecard */
+.sc-mode-toggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 6px;
+}
+
+.sc-mode-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx3);
+  transition: all 0.15s;
+}
+
+.sc-mode-btn.active {
+  background: var(--gold);
+  color: var(--night);
+  box-shadow: 0 1px 3px rgba(201,168,76,0.3);
+}
+
+.sc-mode-btn:hover:not(.active) { color: var(--tx2); }
+
+/* Champs détaillés par trou */
+.sc-detail-row {
+  display: none;
+  padding: 8px 14px;
+  background: var(--gold-dim2);
+  border-top: 1px dashed var(--bd);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sc-detail-row.visible { display: flex; }
+
+.sc-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 90px;
+}
+
+.sc-detail-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sc-detail-input, .sc-detail-select {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 6px;
+  padding: 4px 7px;
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  outline: none;
+  width: 100%;
+}
+
+.sc-detail-input:focus, .sc-detail-select:focus { border-color: var(--gold); }
+.sc-detail-select { cursor: pointer; appearance: none; }
+
+/* Carte d'analyse standard */
+.an-card {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.an-card-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--bd3);
+  background: var(--bg2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.an-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.an-card-sub {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.an-card-body { padding: 18px 20px; }
+
+/* Grille 2 colonnes */
+.an-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.an-g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+
+/* Progressive unlock card */
+.an-unlock-card {
+  background: linear-gradient(135deg, var(--gold-dim) 0%, var(--gold-dim2) 100%);
+  border: 1px dashed var(--gold);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.an-unlock-icon {
+  width: 38px;
+  height: 38px;
+  background: var(--white);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.an-unlock-text { flex: 1; font-size: 12px; color: var(--tx2); line-height: 1.5; }
+.an-unlock-text strong { color: var(--gold-d); font-weight: 700; }
+
+@media (max-width: 900px) {
+  .an-g2, .an-g3 { grid-template-columns: 1fr; }
+  .an-subtab { padding: 10px 14px; font-size: 12px; }
 }
 
 
-/* null-safe element setter */
-function setEl(id, text, style) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  if (text !== undefined) el.textContent = text;
-  if (style) Object.assign(el.style, style);
+/* ════════════════════════════════════
+   RADAR DE DISPERSION — SESSION 5
+════════════════════════════════════ */
+
+/* Modal radar (overlay) */
+.radar-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 18, 9, 0.75);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: radarFadeIn 0.2s ease;
 }
 
-function updateTotals() {
-  if (!selectedCourse) return;
-  const trous = selectedCourse.trous;
-
-  const parAller = trous.slice(0,9).reduce((a,h) => a+h.par, 0);
-  const parRetour = trous.slice(9).reduce((a,h) => a+h.par, 0);
-  setEl('par-aller-tot', parAller);
-  setEl('par-retour-tot', parRetour);
-  setEl('par-aller-display', parAller);
-  setEl('par-retour-display', parRetour);
-
-  const distAller = trous.slice(0,9).reduce((a,h) => a+h.longueur, 0);
-  const distRetour = trous.slice(9).reduce((a,h) => a+h.longueur, 0);
-  setEl('dist-aller-tot', distAller + 'm');
-  setEl('dist-retour-tot', distRetour + 'm');
-
-  const scoreAller = scores.slice(0,9).reduce((a,s) => s!==null ? a+s : a, 0);
-  const scoreRetour = scores.slice(9).reduce((a,s) => s!==null ? a+s : a, 0);
-  const filledAller = scores.slice(0,9).filter(s=>s!==null).length;
-  const filledRetour = scores.slice(9).filter(s=>s!==null).length;
-  const scoreTotal = scoreAller + scoreRetour;
-  const parTotal = selectedCourse.par_total;
-
-  if (filledAller > 0) { setEl('score-aller-tot', scoreAller); setEl('score-aller-display', scoreAller); }
-  if (filledRetour > 0) { setEl('score-retour-tot', scoreRetour); setEl('score-retour-display', scoreRetour); }
-
-  // Stableford totals
-  const stabAller = Array.from({length:9},(_,i)=>{
-    const el = document.getElementById(`stab-${i+1}`);
-    return el && el.textContent !== '—' ? parseInt(el.textContent)||0 : 0;
-  }).reduce((a,b)=>a+b,0);
-  const stabRetour = Array.from({length:9},(_,i)=>{
-    const el = document.getElementById(`stab-${i+10}`);
-    return el && el.textContent !== '—' ? parseInt(el.textContent)||0 : 0;
-  }).reduce((a,b)=>a+b,0);
-  if (filledAller > 0) setEl('stab-aller-tot', stabAller);
-  if (filledRetour > 0) setEl('stab-retour-tot', stabRetour);
-
-  const stabTotal = stabAller + stabRetour;
-  const filledTotal = filledAller + filledRetour;
-
-  if (filledTotal > 0) {
-    const vsPar = scoreTotal - parTotal;
-    setEl('sh-score', scoreTotal);
-    setEl('sh-vs-par', (vsPar >= 0 ? '+' : '') + vsPar);
-    setEl('sh-vs-par', undefined, {color:vsPar < 0 ? 'var(--ok2)' : vsPar === 0 ? 'var(--gold)' : 'var(--wn2)'});
-    setEl('sh-stab', stabTotal);
-
-    // Différentiel
-    const diff = ((scoreTotal - selectedCourse.rating) * 113 / selectedCourse.slope).toFixed(1);
-    setEl('sh-diff', diff);
-
-    // Summary
-    setEl('sum-score', scoreTotal);
-    setEl('sum-score-sub', (vsPar >= 0 ? '+' : '') + vsPar + ' vs par');
-    (function(){ var _e=document.getElementById('sum-score'); if(_e) _e.className='sum-val ' + (vsPar < 0 ? 'ok' : vsPar <= 5 ? 'wn' : 'ng'); })();
-    setEl('sum-stab', stabTotal);
-    setEl('sum-diff', diff);
-  }
-
-  // Distribution
-  if (filledTotal >= 6) updateAnalysis();
-  updateDiffRow();
+@keyframes radarFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-function updateDiffRow() {
-  const counts = {eagle:0, birdie:0, par:0, bogey:0, double:0, triple:0};
-  scores.forEach((s,i) => {
-    if (s === null) return;
-    const par = selectedCourse.trous[i].par;
-    const d = s - par;
-    if (d <= -2) counts.eagle++;
-    else if (d === -1) counts.birdie++;
-    else if (d === 0) counts.par++;
-    else if (d === 1) counts.bogey++;
-    else if (d === 2) counts.double++;
-    else counts.triple++;
-  });
-  const row = document.getElementById('diff-row');
-  row.innerHTML = `
-    ${counts.eagle ? `<span class="diff-pill pill-eagle">Eagle ×${counts.eagle}</span>` : ''}
-    ${counts.birdie ? `<span class="diff-pill pill-birdie">Birdie ×${counts.birdie}</span>` : ''}
-    ${counts.par ? `<span class="diff-pill pill-par">Par ×${counts.par}</span>` : ''}
-    ${counts.bogey ? `<span class="diff-pill pill-bogey">Bogey ×${counts.bogey}</span>` : ''}
-    ${counts.double ? `<span class="diff-pill pill-double">Double+ ×${counts.double}</span>` : ''}
-    ${counts.triple ? `<span class="diff-pill pill-double">Triple+ ×${counts.triple}</span>` : ''}`;
+.radar-card {
+  background: var(--white);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(26, 18, 9, 0.4);
+  max-width: 520px;
+  width: 100%;
+  max-height: 95vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-function updateStats() {
-  if (!selectedCourse) return;
-  // Met à jour les insights d'analyse en temps réel
-  try { updateAnalysis(); } catch(e) {}
-  try { updateTotals(); } catch(e) {}
+.radar-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--bd-card);
+  background: var(--bg2);
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
-function updateAnalysis() {
-  const firHit = Object.values(firState).filter(v=>v==='hit').length;
-  const firTotal = selectedCourse.trous.filter(h=>h.par!==3).length;
-  const girHit = Object.values(girState).filter(v=>v==='hit').length;
-  const puttsTotal = putts.reduce((a,p)=>p!==null?a+p:a, 0);
-  const scoreTotal = scores.reduce((a,s)=>s!==null?a+s:a, 0);
-  const par = selectedCourse.par_total;
-  const diff = ((scoreTotal - selectedCourse.rating) * 113 / selectedCourse.slope);
+.radar-header-left { flex: 1; min-width: 0; }
 
-  const bogeys = scores.filter((s,i)=>s!==null&&s-selectedCourse.trous[i].par===1).length;
-  const doubles = scores.filter((s,i)=>s!==null&&s-selectedCourse.trous[i].par>=2).length;
-
-  const cont = document.getElementById('analysis-content');
-  if (!cont) return;
-  cont.innerHTML = `
-    <div class="insight-block">
-      <div class="insight-title">Score global</div>
-      <div class="insight-body">Score de <strong>${scoreTotal}</strong> (${scoreTotal>par?'+':''}${scoreTotal-par}) · Différentiel <strong>${diff.toFixed(1)}</strong>.
-      ${diff < parseFloat(document.getElementById('f-hcp').value) ? 'Partie <strong>sous votre handicap</strong> — score comptable favorable.' : 'Partie au-dessus de votre indice habituel.'}</div>
-    </div>
-    <div class="insight-block">
-      <div class="insight-title">Distribution des scores</div>
-      <div class="insight-body"><strong>${bogeys} bogeys</strong> et <strong>${doubles} doubles+</strong> sur ce tour. ${doubles >= 3 ? 'Les grandes erreurs coûtent <strong>~'+Math.round(doubles*1.3)+' coups</strong> au total.' : doubles <= 1 ? 'Excellente gestion des erreurs critiques.' : 'Contrôle correct des grandes erreurs.'}</div>
-    </div>
-    <div class="insight-block">
-      <div class="insight-title">GIR & Approches</div>
-      <div class="insight-body">GIR à <strong>${girHit}/18 (${Math.round(girHit/18*100)}%)</strong>. ${girHit >= 9 ? 'Niveau d\'approche au-dessus de votre handicap.' : girHit >= 6 ? 'Marge de progression sur les fers.' : '<strong>Axe prioritaire</strong> — chaque GIR supplémentaire vaut ~0.7 coup.'}</div>
-    </div>
-    <div class="insight-block">
-      <div class="insight-title">Précision tee & Fairways</div>
-      <div class="insight-body">FIR à <strong>${firHit}/${firTotal} (${Math.round(firHit/firTotal*100)}%)</strong>. ${firHit/firTotal >= .6 ? 'Bonne précision en jeu — driver sous contrôle.' : firHit/firTotal >= .4 ? 'Précision acceptable — optimisable par choix de club.' : '<strong>Priorité driver</strong> — FIR faible amplifie toutes les erreurs suivantes.'}</div>
-    </div>
-    ${puttsTotal > 0 ? `<div class="insight-block">
-      <div class="insight-title">Putting</div>
-      <div class="insight-body">Total <strong>${puttsTotal} putts</strong> sur ce tour. ${puttsTotal <= 30 ? 'Putting excellent — atout majeur de ce tour.' : puttsTotal <= 34 ? 'Niveau standard — stable.' : '<strong>Putting coûteux</strong> : '+(puttsTotal-32)+' putts de trop vs référence hcp 14.'}</div>
-    </div>` : ''}
-    <div class="insight-block">
-      <div class="insight-title">Contexte parcours</div>
-      <div class="insight-body">Slope <strong>${selectedCourse.slope}</strong> — ${selectedCourse.slope >= 135 ? 'parcours difficile · score à relativiser positivement.' : selectedCourse.slope >= 125 ? 'difficulté standard.' : 'parcours accessible · exigence élevée sur la performance.'} Rating <strong>${selectedCourse.rating}</strong>.</div>
-    </div>`;
+.radar-trou {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-d);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 3px;
 }
 
-// ── ROUND LIFECYCLE ──
-function startRound() {
-  if (!selectedCourse) return;
-  roundStarted = true;
-  scores = new Array(18).fill(null);
-  putts = new Array(18).fill(null);
-  firState = {};
-  girState = {};
-  sc_detailData = {};
-
-  document.getElementById('sc-empty').style.display = 'none';
-  const area = document.getElementById('round-area');
-  area.style.display = 'flex';
-
-  // Header
-  document.getElementById('sc-course-name').textContent = selectedCourse.name;
-  var dateEl   = document.getElementById('f-date');
-  var teeEl    = document.getElementById('f-tee');
-  var condEl   = document.getElementById('f-cond');
-  document.getElementById('sc-course-meta').textContent = selectedCourse.ville + ' · ' + selectedCourse.departement + ' · ' + (dateEl ? dateEl.value : '') + ' · ' + (teeEl ? teeEl.value : '') + ' · ' + (condEl ? condEl.options[condEl.selectedIndex].text : '');
-
-  const info = document.getElementById('sc-header-info');
-  info.innerHTML = `
-    <div class="info-pill">Par <strong>${selectedCourse.par_total}</strong></div>
-    <div class="info-pill">SSS <strong>${selectedCourse.sss}</strong></div>
-    <div class="info-pill">Slope <strong>${selectedCourse.slope}</strong></div>
-    <div class="info-pill">Rating <strong>${selectedCourse.rating}</strong></div>
-    <div class="info-pill">Longueur <strong>${selectedCourse.longueur_totale}m</strong></div>
-    <div class="info-pill">Niveau <strong>${selectedCourse.niveau}</strong></div>
-    <div class="info-pill">Format <strong>${document.getElementById('f-format').options[document.getElementById('f-format').selectedIndex].text}</strong></div>
-    <div class="info-pill">Hcp joué <strong>${document.getElementById('f-hcp').value}</strong></div>`;
-
-  buildTable('table-aller', selectedCourse.trous.slice(0,9));
-  buildTable('table-retour', selectedCourse.trous.slice(9));
-  buildFirGirToggles(selectedCourse);
-  buildPuttsInputs(selectedCourse);
-
-  showToast('Partie démarrée — ' + selectedCourse.name);
-  setTimeout(() => area.scrollIntoView({behavior:'smooth'}), 100);
+.radar-coup {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.4px;
 }
 
-function resetRound() {
-  if (!confirm('Réinitialiser tous les scores ?')) return;
-  scores = new Array(18).fill(null);
-  putts = new Array(18).fill(null);
-  firState = {};
-  girState = {};
-  sc_detailData = {};
-  clearDraftShots();
-  if (sc_proMode) buildProShotZone();
-  document.querySelectorAll('.score-inp').forEach(i => { i.value = ''; i.className = 'score-inp'; });
-  document.querySelectorAll('.stableford-cell').forEach(c => { c.textContent = '—'; c.style.color = 'var(--tx3)'; });
-  document.querySelectorAll('[id^="putt-"]').forEach(i => i.value = '');
-  document.querySelectorAll('.toggle-cell').forEach(c => { c.className='toggle-cell'; });
-  buildFirGirToggles(selectedCourse);
-  buildPuttsInputs(selectedCourse);
-  ['sh-score','sh-vs-par','sh-stab','sh-diff'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent='—'; });
-  var dr=document.getElementById('diff-row'); if(dr) dr.innerHTML='';
-  var ac=document.getElementById('analysis-content'); if(ac) ac.innerHTML='';
-  var ss=document.getElementById('save-status'); if(ss) ss.textContent='Partie réinitialisée';
-  showToast('Scorecard réinitialisée');
+.radar-close {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--tx2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
 }
 
-function saveRound() {
-  // Si mode Pro : calculer les scores à partir des shots
-  if (sc_proMode) {
-    Object.keys(sc_shotsByHole).forEach(function(holeKey) {
-      var hNum = parseInt(holeKey);
-      var shots = sc_shotsByHole[hNum] || [];
-      var putts = sc_holePutts[hNum];
-      if (shots.length > 0 && sc_holeOnGreen[hNum] !== undefined && putts !== null && putts !== undefined) {
-        scores[hNum - 1] = shots.length + putts;
-      }
-    });
-    // FIR/GIR depuis sc_holeFairway et sc_shotsByHole
-    if (selectedCourse) {
-      selectedCourse.trous.forEach(function(h) {
-        if (h.par !== 3 && sc_holeFairway[h.num] === 'yes') firState[h.num] = 'hit';
-        else if (h.par !== 3 && sc_holeFairway[h.num] === 'no') firState[h.num] = 'miss';
-        // GIR : sur le green en par-2 coups ou moins
-        var shotsForHole = sc_shotsByHole[h.num] || [];
-        var onGreenAt = sc_holeOnGreen[h.num];
-        if (onGreenAt !== undefined && (onGreenAt + 1) <= (h.par - 2)) {
-          girState[h.num] = 'hit';
-        } else if (onGreenAt !== undefined) {
-          girState[h.num] = 'miss';
-        }
-      });
-    }
-    // Putts total
-    var totalPutts = 0;
-    Object.keys(sc_holePutts).forEach(function(k) { totalPutts += sc_holePutts[k] || 0; });
-    putts = new Array(18).fill(null);
-    selectedCourse.trous.forEach(function(h, i) {
-      if (sc_holePutts[h.num] !== undefined) putts[i] = sc_holePutts[h.num];
-    });
-  }
+.radar-close:hover { background: var(--bg3); }
 
-  const filledScores = scores.filter(s=>s!==null).length;
-  if (filledScores < 9) { showToast('Saisissez au moins 9 trous avant d\'enregistrer.'); return; }
-
-  const scoreTotal = scores.reduce((a,s)=>s!==null?a+s:a, 0);
-  const par = selectedCourse.par_total;
-  const diff = ((scoreTotal - selectedCourse.rating) * 113 / selectedCourse.slope).toFixed(1);
-  const firHit = Object.values(firState).filter(v=>v==='hit').length;
-  const girHit = Object.values(girState).filter(v=>v==='hit').length;
-  const puttsTotal = putts.reduce((a,p)=>p!==null?a+p:a, 0);
-
-  const entry = {
-    id: Date.now(),
-    date: document.getElementById('f-date').value,
-    course: selectedCourse.name,
-    courseId: selectedCourse.id,
-    score: scoreTotal,
-    par: par,
-    diff: parseFloat(diff),
-    fir: firHit,
-    firTotal: selectedCourse.trous.filter(h=>h.par!==3).length,
-    gir: girHit,
-    putts: puttsTotal || null,
-    cond: document.getElementById('f-cond').value,
-    format: document.getElementById('f-format').value,
-    hcp: parseFloat(document.getElementById('f-hcp').value),
-    notes: document.getElementById('f-notes').value,
-    scores: [...scores],
-    sg_tee:  parseFloat((((firHit / (selectedCourse.trous.filter(function(h){return h.par!==3;}).length||14)) - 0.5) * 1.2).toFixed(2)),
-    sg_app:  parseFloat((((girHit / 18) - 0.38) * 2.1).toFixed(2)),
-    sg_arg:  parseFloat(((girHit / 18) >= 0.5 ? 0.1 : -0.1).toFixed(2)),
-    sg_putt: parseFloat((puttsTotal > 0 ? ((32 - puttsTotal) * 0.15) : 0).toFixed(2)),
-    // Données détaillées (si saisie détaillée activée)
-    detailMode: sc_detailMode,
-    proMode: sc_proMode,
-    shots: JSON.parse(JSON.stringify(sc_shotsByHole)),
-    shotsOnGreen: JSON.parse(JSON.stringify(sc_holeOnGreen)),
-    shotsPutts: JSON.parse(JSON.stringify(sc_holePutts)),
-    shotsFairway: JSON.parse(JSON.stringify(sc_holeFairway)),
-    clubs: [],
-    fairwayPos: [],
-    distRemain: [],
-    clubsApp: [],
-    distFromTarget2: []
-  };
-
-  // Remplir les tableaux détaillés
-  for (var h = 1; h <= 18; h++) {
-    var d = sc_detailData[h] || {};
-    entry.clubs.push(d.club || null);
-    entry.fairwayPos.push(d.fairwayPos || null);
-    entry.distRemain.push(d.distRemain ? parseInt(d.distRemain) : null);
-    entry.clubsApp.push(d.clubApp || null);
-    entry.distFromTarget2.push(d.distFromTarget2 ? parseInt(d.distFromTarget2) : null);
-  }
-
-  roundHistory.unshift(entry);
-  if (roundHistory.length > 50) roundHistory.pop();
-  // Save to shared key so dashboard can read it
-  lsSet('rounds', roundHistory);
-
-  var statusEl = document.getElementById('save-status');
-  if (statusEl) statusEl.textContent = 'Partie enregistrée — ' + entry.date;
-  var histSec = document.getElementById('roundHistory-section');
-  if (histSec) histSec.style.display = 'flex';
-  renderHistory();
-  clearDraftShots();
-  showToast('Partie enregistrée ✓  ' + entry.date + ' · ' + entry.course + ' · ' + scoreTotal + ' (+'+(scoreTotal-par)+')');
-  // Rediriger vers le dashboard et rebuild
-  setTimeout(function() {
-    try {
-      // Mettre à jour le hcp affiché en nav
-      if (typeof updateNavUI === 'function') updateNavUI();
-      var dashPage = document.getElementById('page-dashboard');
-      if (dashPage && typeof buildDashboard === 'function') {
-        while (dashPage.firstChild) dashPage.removeChild(dashPage.firstChild);
-        buildDashboard(dashPage);
-      }
-      showPage('dashboard');
-    } catch(ex) { console.warn('save redirect:', ex.message); }
-  }, 800);
+.radar-body {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-function renderHistory() {
-  if (!roundHistory.length) return;
-  var section = document.getElementById('roundHistory-section');
-  if (section) section.style.display = 'flex';
-  var titleEl = document.getElementById('hist-title');
-  if (titleEl) titleEl.style.display = 'block';
-  // L'ID peut être 'roundHistory-list' ou 'history-list' selon les versions
-  var cont = document.getElementById('roundHistory-list') || document.getElementById('history-list');
-  if (!cont) return;
-  cont.innerHTML = roundHistory.slice(0,5).map(e => {
-    const vsPar = e.score - e.par;
-    const col = vsPar < 0 ? 'var(--ok2)' : vsPar <= 7 ? 'var(--wn2)' : 'var(--ng2)';
-    return `<div class="roundHistory-row">
-      <div class="hr-date">${e.date}</div>
-      <div class="hr-course" style="font-size:10px">${e.course}</div>
-      <div class="hr-score" style="color:${col}">${e.score}</div>
-      <div class="hr-diff" style="color:${vsPar>=0?'var(--wn2)':'var(--ok2)'}">${vsPar>=0?'+':''}${vsPar}</div>
-    </div>`;
-  }).join('');
+/* Champ club + distance */
+.radar-fields {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 10px;
 }
 
-/* showToast handled by app shell */
+.radar-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tx3);
+  margin-bottom: 5px;
+}
 
-/* ════ SCORECARD INIT ════ */
+.radar-field-input,
+.radar-field-select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx);
+  outline: none;
+  transition: border-color 0.15s;
+}
 
-/* ════════════════════════════════════════════
-   SCORECARD — INIT WRAPPER (Session 3)
-════════════════════════════════════════════ */
-function initScorecardPage() {
-  // Inject the scorecard layout into the page
-  var pg = document.getElementById('page-scorecard');
-  if (!pg) return;
+.radar-field-input:focus,
+.radar-field-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+}
 
-  // Clear and build layout
-  pg.innerHTML = '';
-  pg.style.padding = '0';
+.radar-field-select { cursor: pointer; }
 
-  var layout = document.createElement('div');
-  layout.className = 'sc-layout';
+.radar-suggestion {
+  font-size: 11px;
+  color: var(--gold-d);
+  margin-top: 4px;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
-  // ── SIDEBAR ──
-  var sb = document.createElement('div');
-  sb.className = 'sc-sb';
-  sb.id = 'sc-sidebar';
+/* Zone radar SVG */
+.radar-svg-wrap {
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 360px;
+  margin: 0 auto;
+  position: relative;
+  background: linear-gradient(135deg, #F8F5EE, #FEFCF8);
+  border: 1px solid var(--bd-card);
+  border-radius: 12px;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
 
-  sb.innerHTML = [
-    '<div class="sc-sb-section-title">Choisir un parcours</div>',
+.radar-svg { width: 100%; height: 100%; display: block; }
 
-    '<div class="search-wrap">',
-      '<span class="search-icon">&#9906;</span>',
-      '<input class="search-input" id="search-input" type="text"',
-      ' placeholder="Nom, ville, région..." oninput="filterCourses()">',
-    '</div>',
+.radar-ring {
+  fill: none;
+  stroke: rgba(168, 133, 30, 0.18);
+  stroke-width: 1;
+}
 
-    '<div class="filter-row" id="filter-row">',
-      '<button class="filter-btn on" data-filter="all">Tous</button>',
-      '<button class="filter-btn" data-filter="Île-de-France">IDF</button>',
-      '<button class="filter-btn" data-filter="Nouvelle-Aquitaine">Sud-O</button>',
-      '<button class="filter-btn" data-filter="Expert">Expert</button>',
-    '</div>',
+.radar-ring-label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--tx4);
+  letter-spacing: 0.05em;
+}
 
-    "<button class=\"add-course-btn\" id=\"add-course-btn\">+ Ajouter mon parcours</button>",
-      '<div class="course-list" id="course-list"></div>',
+.radar-axis {
+  stroke: rgba(168, 133, 30, 0.10);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 3;
+}
 
-    '<div class="sc-sb-section-title">Informations parcours</div>',
+.radar-flag {
+  font-size: 28px;
+}
 
-    '<div class="course-card" id="course-card">',
-      '<div class="cc-name" id="cc-name"></div>',
-      '<div class="cc-loc" id="cc-loc"></div>',
-      '<div class="cc-stats">',
-        '<div class="cc-stat"><div class="cc-stat-val" id="cc-par">—</div><div class="cc-stat-lbl">Par</div></div>',
-        '<div class="cc-stat"><div class="cc-stat-val" id="cc-sss">—</div><div class="cc-stat-lbl">SSS</div></div>',
-        '<div class="cc-stat"><div class="cc-stat-val" id="cc-slope">—</div><div class="cc-stat-lbl">Slope</div></div>',
-      '</div>',
-      '<div class="cc-bar"><div class="cc-bar-lbl">Longueur</div><div class="cc-bar-track"><div class="cc-bar-fill" id="cc-len-bar" style="width:0%"></div></div><div class="cc-bar-val" id="cc-len">—</div></div>',
-      '<div class="cc-bar"><div class="cc-bar-lbl">Difficulté</div><div class="cc-bar-track"><div class="cc-bar-fill" id="cc-diff-bar" style="width:0%"></div></div><div class="cc-bar-val" id="cc-diff-val">—</div></div>',
-      '<div class="cc-bar"><div class="cc-bar-lbl">Rating</div><div class="cc-bar-track"><div class="cc-bar-fill" id="cc-rating-bar" style="width:0%"></div></div><div class="cc-bar-val" id="cc-rating">—</div></div>',
-    '</div>',
+.radar-target-circle {
+  fill: var(--gold-d);
+  stroke: var(--white);
+  stroke-width: 2;
+}
 
-    '<div class="sc-sb-section-title">Paramètres de la partie</div>',
+.radar-ball {
+  fill: var(--ng2);
+  stroke: var(--white);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 4px rgba(192, 57, 43, 0.4));
+  transition: all 0.15s ease;
+}
 
-    '<div class="sc-fg"><div class="sc-fl">Date</div><input class="sc-fi" type="date" id="f-date"></div>',
+.radar-cardinal {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--tx3);
+  letter-spacing: 0.08em;
+}
 
-    '<div class="sc-fr">',
-      '<div class="sc-fg"><div class="sc-fl">Départ</div><select class="sc-fs" id="f-tee"><option>Blanc</option><option>Jaune</option><option>Rouge</option><option>Bleu</option></select></div>',
-      '<div class="sc-fg"><div class="sc-fl">Format</div><select class="sc-fs" id="f-format"><option value="stroke">Stroke play</option><option value="stableford">Stableford</option></select></div>',
-    '</div>',
+/* Indicateurs résultat */
+.radar-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--gold-dim2);
+  border-radius: 10px;
+  border: 1px solid rgba(201, 168, 76, 0.2);
+}
 
-    '<div class="sc-fr">',
-      '<div class="sc-fg"><div class="sc-fl">Conditions</div><select class="sc-fs" id="f-cond"><option value="calme">Calme</option><option value="vent-mod">Vent modéré</option><option value="vent-fort">Vent fort</option><option value="pluie">Pluie</option></select></div>',
-      '<div class="sc-fg"><div class="sc-fl">Handicap joué</div><input class="sc-fi" type="number" id="f-hcp" step="0.1" min="0" max="54"></div>',
-    '</div>',
+.radar-result-item { text-align: center; }
 
-    '<div class="sc-fg"><div class="sc-fl">Notes</div><input class="sc-fi" id="f-notes" placeholder="Observations..."></div>',
+.radar-result-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
 
-    '<button class="btn-start-round" id="btn-start" onclick="startRound()" disabled>',
-      'Sélectionnez un parcours',
-    '</button>',
+.radar-result-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
 
-    '<div class="sc-sb-section-title" id="hist-title" style="display:none">Historique</div>',
-    '<div id="roundHistory-section" style="display:none"><div id="history-list"></div></div>'
-  ].join('');
+.radar-empty {
+  font-size: 12px;
+  color: var(--tx3);
+  text-align: center;
+  padding: 12px;
+  font-style: italic;
+}
 
-  // ── MAIN ──
-  var main = document.createElement('div');
-  main.className = 'sc-main';
-  main.id = 'sc-main';
+/* Toggle "arrivée au green" */
+.radar-green-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
 
-  // Empty state
-  var empty = document.createElement('div');
-  empty.className = 'sc-empty';
-  empty.id = 'sc-empty';
-  empty.innerHTML = [
-    '<div class="sc-empty-icon">⛳</div>',
-    '<h3>Prêt à jouer ?</h3>',
-    '<p>Sélectionnez un parcours dans la liste pour démarrer votre scorecard.</p>'
-  ].join('');
+.radar-green-toggle:hover { border-color: var(--ok2); }
 
-  // Round area (hidden until started) — contient TOUT le contenu de la partie
-  var roundArea = document.createElement('div');
-  roundArea.id = 'round-area';
-  roundArea.style.display = 'none';
-  roundArea.style.flexDirection = 'column';
-  roundArea.style.gap = '16px';
-  roundArea.innerHTML = [
-    // ── Live score header ──
-    '<div class="sc-round-header" id="sc-round-header">',
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">',
-        '<div>',
-          '<div class="sc-round-name" id="sc-course-name">—</div>',
-          '<div class="sc-round-meta" id="sc-course-meta">—</div>',
-        '</div>',
-        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">',
-          '<div class="sc-hstat" id="sh-block-score">',
-            '<div class="sc-hstat-val" id="sh-score">—</div>',
-            '<div class="sc-hstat-lbl">Score</div>',
-          '</div>',
-          '<div class="sc-hstat">',
-            '<div class="sc-hstat-val" id="sh-vs-par">—</div>',
-            '<div class="sc-hstat-lbl">vs Par</div>',
-          '</div>',
-          '<div class="sc-hstat">',
-            '<div class="sc-hstat-val" id="sh-stab">—</div>',
-            '<div class="sc-hstat-lbl">Stableford</div>',
-          '</div>',
-          '<div class="sc-hstat">',
-            '<div class="sc-hstat-val" id="sh-diff">—</div>',
-            '<div class="sc-hstat-lbl">Diff.</div>',
-          '</div>',
-        '</div>',
-      '</div>',
-      // Toggle mode de saisie (rapide / pro)
-      '<div class="sc-mode-toggle" style="max-width:440px;margin:0 0 8px">',
-        '<button class="sc-mode-btn active" data-mode="quick">⚡ Saisie rapide</button>',
-        '<button class="sc-mode-btn" data-mode="pro">◆ Mode Pro · coup par coup</button>',
-      '</div>',
-      '<div id="sc-header-info" class="sc-round-stats" style="margin-top:6px"></div>',
-    '</div>',
+.radar-green-toggle.checked {
+  background: var(--ok-bg);
+  border-color: var(--ok2);
+}
 
-    // ── Table aller (trous 1-9) ──
-    '<div class="sc-panel">',
-      '<div class="sc-panel-header">',
-        '<div class="sc-panel-title">Aller — Trous 1 à 9</div>',
-        '<div style="display:flex;gap:12px;font-size:10px;font-weight:600;color:var(--tx3)">',
-          '<span>Par : <span id="par-aller-display" style="color:var(--gold)">—</span></span>',
-          '<span>Score : <span id="score-aller-display" style="color:var(--tx)">—</span></span>',
-        '</div>',
-      '</div>',
-      '<div style="overflow-x:auto"><table class="sc-table" id="table-aller"></table></div>',
-    '</div>',
+.radar-green-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--bd-card);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--white);
+  transition: all 0.15s;
+}
 
-    // ── Table retour (trous 10-18) ──
-    '<div class="sc-panel">',
-      '<div class="sc-panel-header">',
-        '<div class="sc-panel-title">Retour — Trous 10 à 18</div>',
-        '<div style="display:flex;gap:12px;font-size:10px;font-weight:600;color:var(--tx3)">',
-          '<span>Par : <span id="par-retour-display" style="color:var(--gold)">—</span></span>',
-          '<span>Score : <span id="score-retour-display" style="color:var(--tx)">—</span></span>',
-        '</div>',
-      '</div>',
-      '<div style="overflow-x:auto"><table class="sc-table" id="table-retour"></table></div>',
-    '</div>',
+.radar-green-toggle.checked .radar-green-checkbox {
+  background: var(--ok2);
+  border-color: var(--ok2);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+}
 
-    // ── Résumé scorecard ──
-    '<div class="sc-panel">',
-      '<div class="sc-panel-header"><div class="sc-panel-title">Résumé</div></div>',
-      '<div class="panel-body" style="padding:14px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">',
-        '<div style="text-align:center">',
-          '<div style="font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Score total</div>',
-          '<div class="sum-val" id="sum-score" style="font-size:28px;font-weight:700;color:var(--tx);letter-spacing:-1px">—</div>',
-          '<div id="sum-score-sub" style="font-size:10px;color:var(--tx3);margin-top:2px">—</div>',
-        '</div>',
-        '<div style="text-align:center">',
-          '<div style="font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Stableford</div>',
-          '<div id="sum-stab" style="font-size:28px;font-weight:700;color:var(--gold-d);letter-spacing:-1px">—</div>',
-        '</div>',
-        '<div style="text-align:center">',
-          '<div style="font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Différentiel</div>',
-          '<div id="sum-diff" style="font-size:28px;font-weight:700;color:var(--ok2);letter-spacing:-1px">—</div>',
-        '</div>',
-      '</div>',
-      '<div id="diff-row" style="padding:0 18px 14px;display:none;font-size:11px;color:var(--tx2)"></div>',
-    '</div>',
+.radar-green-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+}
 
-    // ── FIR ──
-    '<div class="sc-panel">',
-      '<div class="sc-panel-header"><div class="sc-panel-title">FIR — Fairways touchés</div></div>',
-      '<div style="padding:12px 16px"><div id="fir-toggles" style="display:flex;gap:5px;flex-wrap:wrap"></div></div>',
-    '</div>',
+.radar-green-sub {
+  font-size: 11px;
+  color: var(--tx3);
+  margin-top: 1px;
+}
 
-    // ── GIR ──
-    '<div class="sc-panel">',
-      '<div class="sc-panel-header"><div class="sc-panel-title">GIR — Greens en régulation</div></div>',
-      '<div style="padding:12px 16px"><div id="gir-toggles" style="display:flex;gap:5px;flex-wrap:wrap"></div></div>',
-    '</div>',
+/* Toggle "sur le fairway" pour le drive */
+.radar-fairway-toggle {
+  display: flex;
+  gap: 0;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  padding: 3px;
+}
 
-    // ── Putts ──
-    '<div class="sc-panel">',
-      '<div class="sc-panel-header"><div class="sc-panel-title">Putts</div></div>',
-      '<div style="padding:12px 16px">',
-        '<div id="putts-row-1" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"></div>',
-        '<div id="putts-row-2" style="display:flex;gap:5px;flex-wrap:wrap"></div>',
-      '</div>',
-    '</div>',
+.radar-fairway-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx3);
+  transition: all 0.15s;
+}
 
-    // ── Analyse ──
-    '<div class="sc-panel">',
-      '<div class="sc-panel-header"><div class="sc-panel-title">Statistiques de la partie</div></div>',
-      '<div style="padding:14px 18px"><div id="analysis-content" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div></div>',
-    '</div>',
+.radar-fairway-btn.active.yes {
+  background: var(--ok2);
+  color: white;
+}
 
-    // ── Zone Mode Pro (coup par coup) ──
-    '<div id="shot-pro-zone" style="display:none;flex-direction:column;gap:12px"></div>',
+.radar-fairway-btn.active.no {
+  background: var(--ng2);
+  color: white;
+}
 
-    // ── Actions ──
-    '<div style="display:flex;gap:10px;align-items:center;padding:4px 0 16px">',
-      '<button class="btn-save-sc" onclick="saveRound()">Enregistrer la partie</button>',
-      '<button class="btn-reset-sc" onclick="resetRound()">Recommencer</button>',
-      '<div id="save-status" style="font-size:11px;color:var(--ok2);font-weight:600;margin-left:8px"></div>',
-    '</div>',
-  ].join('');
+/* Footer actions */
+.radar-footer {
+  padding: 14px 22px;
+  border-top: 1px solid var(--bd-card);
+  background: var(--bg2);
+  border-radius: 0 0 18px 18px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
 
-  main.appendChild(empty);
-  main.appendChild(roundArea);
-  layout.appendChild(sb);
-  layout.appendChild(main);
-  pg.appendChild(layout);
+.radar-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.15s;
+}
 
-  // Attacher les listeners pour les boutons filtre (évite onclick HTML cassé)
-  var filterBtns = pg.querySelectorAll('.filter-btn[data-filter]');
-  filterBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      setFilter(btn.getAttribute('data-filter'), btn);
-    });
-  });
+.radar-btn-cancel {
+  background: transparent;
+  color: var(--tx2);
+  border-color: var(--bd-card);
+}
 
-  // Listeners du toggle mode (rapide / pro)
-  var modeBtns = pg.querySelectorAll('.sc-mode-btn[data-mode]');
-  modeBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var mode = btn.getAttribute('data-mode');
-      sc_proMode = (mode === 'pro');
-      sc_detailMode = false;  // mode détaillée supprimé
+.radar-btn-cancel:hover { border-color: var(--ng2); color: var(--ng2); }
 
-      // Activer le bouton cliqué
-      modeBtns.forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
+.radar-btn-validate {
+  background: var(--gold);
+  color: var(--night);
+  border-color: var(--gold);
+  flex: 1;
+  max-width: 220px;
+}
 
-      // Afficher/masquer la zone Pro (coup par coup)
-      var proZone = document.getElementById('shot-pro-zone');
-      if (proZone) proZone.style.display = sc_proMode ? 'flex' : 'none';
+.radar-btn-validate:hover { background: var(--gold-l); border-color: var(--gold-l); }
 
-      // Cacher/montrer les panneaux traditionnels selon le mode
-      var tables = document.querySelectorAll('#table-aller, #table-retour, #fir-toggles, #gir-toggles, #putts-row-1, #putts-row-2');
-      tables.forEach(function(t) {
-        var parentPanel = t.closest('.sc-panel');
-        if (parentPanel) parentPanel.style.display = sc_proMode ? 'none' : '';
-      });
+.radar-btn-validate:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
-      // Initialiser la zone Pro si activée
-      if (sc_proMode) buildProShotZone();
-    });
-  });
+/* === Trou détaillé dans la scorecard === */
+.shot-trou-card {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
 
-  // Listener du bouton "Ajouter mon parcours"
-  var addBtn = document.getElementById('add-course-btn');
-  if (addBtn) {
-    addBtn.addEventListener('click', function() {
-      openCourseCreator();
-    });
-  }
+.shot-trou-header {
+  padding: 14px 18px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--bd3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
-  // Init scorecard module
-  try {
-    var dateEl = document.getElementById('f-date');
-    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-    var hcpEl = document.getElementById('f-hcp');
-    if (hcpEl) hcpEl.value = (currentUser && currentUser.hcp !== null) ? currentUser.hcp : 14.2;
+.shot-trou-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.3px;
+}
 
-    renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
+.shot-trou-meta {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 
-    // Load saved rounds
-    var saved = lsGet('rounds');
-    if (saved && saved.length) {
-      roundHistory = saved;
-      var ht = document.getElementById('hist-title');
-      var hs = document.getElementById('roundHistory-section');
-      if (ht) ht.style.display = 'block';
-      if (hs) hs.style.display = 'flex';
-      renderHistory();
-    }
-  } catch(e) {
-    console.warn('[TSG] Scorecard init error:', e.message);
-  }
+.shot-trou-meta strong { color: var(--gold-d); }
+
+.shot-trou-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Bouton ajouter un coup */
+.shot-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 2px dashed var(--bd);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx2);
+  width: 100%;
+  transition: all 0.15s;
+}
+
+.shot-add-btn:hover {
+  border-color: var(--gold);
+  background: var(--gold-dim2);
+  color: var(--gold-d);
+}
+
+.shot-add-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  color: var(--gold-d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Coup enregistré */
+.shot-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+}
+
+.shot-entry-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--night);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.shot-entry.putt .shot-entry-num {
+  background: var(--ok2);
+  color: white;
+}
+
+.shot-entry-info { flex: 1; min-width: 0; }
+
+.shot-entry-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tx);
+  margin-bottom: 2px;
+}
+
+.shot-entry-meta {
+  font-size: 10px;
+  color: var(--tx3);
+  font-weight: 500;
+}
+
+.shot-entry-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.shot-action-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--tx3);
+  font-size: 14px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.shot-action-btn:hover { background: var(--bg3); color: var(--tx); }
+.shot-action-btn.delete:hover { color: var(--ng2); }
+
+/* Score résumé du trou */
+.shot-trou-summary {
+  padding: 12px 16px;
+  background: var(--gold-dim2);
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.shot-summary-text {
+  font-size: 12px;
+  color: var(--tx2);
+  font-weight: 600;
+}
+
+.shot-summary-score {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Putts input rapide */
+.shot-putts-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--ok-bg);
+  border: 1px solid rgba(45, 125, 58, 0.2);
+  border-radius: 10px;
+}
+
+.shot-putts-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ok);
+  flex: 1;
+}
+
+.shot-putts-input {
+  width: 70px;
+  padding: 8px 10px;
+  background: var(--white);
+  border: 1px solid var(--ok2);
+  border-radius: 8px;
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ok);
+  outline: none;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .radar-card { max-height: 100vh; border-radius: 0; }
+  .radar-modal { padding: 0; align-items: flex-start; }
+  .radar-svg-wrap { max-width: 100%; }
+  .radar-fields { grid-template-columns: 1fr; }
+  .radar-result { grid-template-columns: 1fr 1fr; }
 }
 
 
-/* ════════════════════════════════════════════
-   CRÉATION DE PARCOURS UTILISATEUR — SESSION 8
-════════════════════════════════════════════ */
+/* ════════════════════════════════════
+   CRÉATION DE PARCOURS — SESSION 8
+════════════════════════════════════ */
 
-var REGIONS_FR = [
-  'Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Bretagne',
-  'Centre-Val de Loire', 'Corse', 'Grand Est', 'Hauts-de-France',
-  'Île-de-France', 'Normandie', 'Nouvelle-Aquitaine', 'Occitanie',
-  'Pays de la Loire', 'Provence-Alpes-Côte d\'Azur',
-  'Guadeloupe', 'Martinique', 'Guyane', 'La Réunion', 'Mayotte'
-];
+/* Bouton "+ Ajouter mon parcours" dans la sidebar */
+.add-course-btn {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--gold-dim2);
+  border: 1px dashed var(--gold);
+  color: var(--gold-d);
+  border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
 
-function openCourseCreator(existingCourse) {
-  // existingCourse = parcours à éditer (optionnel)
-  var isEdit = !!existingCourse;
+.add-course-btn:hover {
+  background: var(--gold-dim);
+  border-style: solid;
+  transform: translateY(-1px);
+}
 
-  // État du formulaire
-  var formState = isEdit ? JSON.parse(JSON.stringify(existingCourse)) : {
-    id: 'user-' + Date.now(),
-    name: '',
-    ville: '',
-    departement: '',
-    region: '',
-    cp: '',
-    type: '18 trous',
-    par_total: 72,
-    longueur_totale: 0,
-    sss: 72.0,
-    slope: 130,
-    rating: 72.0,
-    niveau: 'Standard',
-    trous: []
-  };
+/* Badge ✦ sur les parcours créés par l'utilisateur */
+.ci-user-badge {
+  display: inline-block;
+  color: var(--gold-d);
+  font-weight: 700;
+  margin-right: 2px;
+  font-size: 11px;
+}
 
-  // Initialiser les 18 trous si vide
-  if (!formState.trous || formState.trous.length === 0) {
-    for (var i = 1; i <= 18; i++) {
-      formState.trous.push({ num: i, par: 4, longueur: 0, si: i });
-    }
-  }
+/* Bouton supprimer un parcours utilisateur */
+.ci-delete-btn {
+  background: transparent;
+  border: 1px solid var(--bd-card);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  color: var(--tx4);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.15s;
+}
 
-  // Construire la modale
-  var existing = document.getElementById('course-creator-modal');
-  if (existing) existing.remove();
+.ci-delete-btn:hover {
+  background: var(--ng2);
+  color: white;
+  border-color: var(--ng2);
+}
 
-  var modal = document.createElement('div');
-  modal.id = 'course-creator-modal';
-  modal.className = 'cc-modal';
-  modal.innerHTML = ''
-    + '<div class="cc-card">'
-    +   '<div class="cc-header">'
-    +     '<div>'
-    +       '<div class="cc-title-tag">' + (isEdit ? 'Modifier le parcours' : 'Nouveau parcours') + '</div>'
-    +       '<div class="cc-title">' + (isEdit ? formState.name : 'Cr\u00e9er mon parcours') + '</div>'
-    +     '</div>'
-    +     '<button class="cc-close" id="cc-close-btn">\u00d7</button>'
-    +   '</div>'
-    +   '<div class="cc-body">'
-    +     '<div class="cc-section">'
-    +       '<div class="cc-section-title">Informations g\u00e9n\u00e9rales</div>'
-    +       '<div class="cc-grid-2">'
-    +         '<div class="cc-field">'
-    +           '<label class="cc-label">Nom du parcours <span class="cc-required">*</span></label>'
-    +           '<input type="text" class="cc-input" data-field="name" placeholder="ex. Golf de Chambon" value="' + (formState.name || '') + '">'
-    +         '</div>'
-    +         '<div class="cc-field">'
-    +           '<label class="cc-label">Ville <span class="cc-required">*</span></label>'
-    +           '<input type="text" class="cc-input" data-field="ville" placeholder="ex. Saint-\u00c9tienne" value="' + (formState.ville || '') + '">'
-    +         '</div>'
-    +         '<div class="cc-field">'
-    +           '<label class="cc-label">D\u00e9partement</label>'
-    +           '<input type="text" class="cc-input" data-field="departement" placeholder="ex. Loire" value="' + (formState.departement || '') + '">'
-    +         '</div>'
-    +         '<div class="cc-field">'
-    +           '<label class="cc-label">R\u00e9gion</label>'
-    +           '<select class="cc-input" data-field="region">'
-    +             '<option value="">— S\u00e9lectionner —</option>'
-    +             REGIONS_FR.map(function(r) { return '<option value="' + r + '"' + (formState.region === r ? ' selected' : '') + '>' + r + '</option>'; }).join('')
-    +           '</select>'
-    +         '</div>'
-    +       '</div>'
-    +     '</div>'
-    +     '<div class="cc-section">'
-    +       '<div class="cc-section-title">Caract\u00e9ristiques techniques</div>'
-    +       '<div class="cc-grid-4">'
-    +         '<div class="cc-field">'
-    +           '<label class="cc-label">SSS</label>'
-    +           '<input type="number" step="0.1" class="cc-input" data-field="sss" value="' + (formState.sss || 72) + '">'
-    +         '</div>'
-    +         '<div class="cc-field">'
-    +           '<label class="cc-label">Slope</label>'
-    +           '<input type="number" class="cc-input" data-field="slope" value="' + (formState.slope || 130) + '">'
-    +         '</div>'
-    +         '<div class="cc-field">'
-    +           '<label class="cc-label">Par total (auto)</label>'
-    +           '<input type="number" class="cc-input cc-readonly" id="cc-par-total" readonly value="' + (formState.par_total || 0) + '">'
-    +         '</div>'
-    +         '<div class="cc-field">'
-    +           '<label class="cc-label">Longueur (auto)</label>'
-    +           '<input type="text" class="cc-input cc-readonly" id="cc-len-total" readonly value="' + (formState.longueur_totale || 0) + 'm">'
-    +         '</div>'
-    +       '</div>'
-    +     '</div>'
-    +     '<div class="cc-section">'
-    +       '<div class="cc-section-title">Saisie des 18 trous</div>'
-    +       '<div class="cc-table-wrap">'
-    +         '<table class="cc-table">'
-    +           '<thead>'
-    +             '<tr><th>Trou</th><th>Par</th><th>Longueur (m)</th><th>SI</th></tr>'
-    +           '</thead>'
-    +           '<tbody id="cc-trous-body"></tbody>'
-    +         '</table>'
-    +       '</div>'
-    +       '<div class="cc-hint">Astuce : utilise <strong>Tab</strong> pour passer rapidement d\'une case \u00e0 l\'autre.</div>'
-    +     '</div>'
-    +     '<div id="cc-warnings" class="cc-warnings"></div>'
-    +   '</div>'
-    +   '<div class="cc-footer">'
-    +     '<button class="cc-btn cc-btn-cancel" id="cc-cancel-btn">Annuler</button>'
-    +     '<button class="cc-btn cc-btn-save" id="cc-save-btn">' + (isEdit ? 'Enregistrer les modifications' : 'Cr\u00e9er ce parcours') + '</button>'
-    +   '</div>'
-    + '</div>';
+/* ─── MODALE DE CREATION DE PARCOURS ─── */
 
-  document.body.appendChild(modal);
+.cc-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 18, 9, 0.75);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: ccFadeIn 0.2s ease;
+}
 
-  // Construire les 18 lignes
-  var trousBody = document.getElementById('cc-trous-body');
-  formState.trous.forEach(function(t, idx) {
-    var tr = document.createElement('tr');
-    tr.innerHTML = ''
-      + '<td><strong>' + t.num + '</strong></td>'
-      + '<td><select class="cc-input cc-tiny" data-trou="' + idx + '" data-prop="par">'
-      +   '<option value="3"' + (t.par === 3 ? ' selected' : '') + '>3</option>'
-      +   '<option value="4"' + (t.par === 4 ? ' selected' : '') + '>4</option>'
-      +   '<option value="5"' + (t.par === 5 ? ' selected' : '') + '>5</option>'
-      + '</select></td>'
-      + '<td><input type="number" class="cc-input cc-tiny" data-trou="' + idx + '" data-prop="longueur" min="0" max="700" value="' + (t.longueur || '') + '"></td>'
-      + '<td><input type="number" class="cc-input cc-tiny" data-trou="' + idx + '" data-prop="si" min="1" max="18" value="' + (t.si || '') + '"></td>';
-    trousBody.appendChild(tr);
-  });
+@keyframes ccFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
-  // Listeners
-  function updateTotals() {
-    var parSum = 0, lenSum = 0;
-    formState.trous.forEach(function(t) {
-      parSum += parseInt(t.par) || 0;
-      lenSum += parseInt(t.longueur) || 0;
-    });
-    formState.par_total = parSum;
-    formState.longueur_totale = lenSum;
-    document.getElementById('cc-par-total').value = parSum;
-    document.getElementById('cc-len-total').value = lenSum + 'm';
-  }
+.cc-card {
+  background: var(--white);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(26, 18, 9, 0.4);
+  max-width: 720px;
+  width: 100%;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  // Champs généraux
-  modal.querySelectorAll('[data-field]').forEach(function(inp) {
-    inp.addEventListener('input', function() {
-      var field = inp.getAttribute('data-field');
-      formState[field] = inp.value;
-    });
-    inp.addEventListener('change', function() {
-      var field = inp.getAttribute('data-field');
-      formState[field] = inp.value;
-    });
-  });
+.cc-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--bd-card);
+  background: var(--bg2);
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
 
-  // Champs trous
-  modal.querySelectorAll('[data-trou]').forEach(function(inp) {
-    inp.addEventListener('input', function() {
-      var idx = parseInt(inp.getAttribute('data-trou'));
-      var prop = inp.getAttribute('data-prop');
-      var val = inp.value;
-      if (prop === 'par' || prop === 'longueur' || prop === 'si') {
-        val = parseInt(val) || 0;
-      }
-      formState.trous[idx][prop] = val;
-      updateTotals();
-    });
-  });
+.cc-title-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold-d);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
 
-  updateTotals();
+.cc-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--tx);
+  letter-spacing: -0.5px;
+}
 
-  // Fermeture
-  function closeCreator() {
-    var m = document.getElementById('course-creator-modal');
-    if (m) m.remove();
-  }
-  document.getElementById('cc-close-btn').addEventListener('click', closeCreator);
-  document.getElementById('cc-cancel-btn').addEventListener('click', closeCreator);
-  modal.addEventListener('click', function(ev) { if (ev.target === modal) closeCreator(); });
+.cc-close {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--tx2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
 
-  // Sauvegarde
-  document.getElementById('cc-save-btn').addEventListener('click', function() {
-    // Validation
-    var warnings = [];
-    if (!formState.name || formState.name.trim().length < 2) {
-      warnings.push('Le nom du parcours est obligatoire.');
-    }
-    if (!formState.ville || formState.ville.trim().length < 2) {
-      warnings.push('La ville est obligatoire.');
-    }
-    // Vérifier que les trous ont une longueur > 0
-    var missingLen = formState.trous.filter(function(t) { return !t.longueur || t.longueur < 50; }).length;
-    if (missingLen > 0) {
-      warnings.push('Attention : ' + missingLen + ' trou(s) ont une longueur manquante ou trop courte (<50m).');
-    }
-    // Vérifier unicité SI
-    var sis = formState.trous.map(function(t) { return t.si; });
-    var uniqSis = [];
-    sis.forEach(function(s) { if (uniqSis.indexOf(s) < 0) uniqSis.push(s); });
-    if (uniqSis.length !== 18) {
-      warnings.push('Attention : les SI (Stroke Index) ne sont pas tous uniques (1-18).');
-    }
+.cc-close:hover { background: var(--bg3); }
 
-    var warnEl = document.getElementById('cc-warnings');
-    if (warnings.length > 0) {
-      // Bloquer uniquement si nom/ville manquent (obligatoires)
-      var blocking = warnings.filter(function(w) { return w.indexOf('obligatoire') >= 0; }).length;
-      warnEl.innerHTML = warnings.map(function(w) {
-        var icon = w.indexOf('obligatoire') >= 0 ? '\u26a0' : '\u24d8';
-        var cls = w.indexOf('obligatoire') >= 0 ? 'cc-warn-error' : 'cc-warn-info';
-        return '<div class="' + cls + '">' + icon + ' ' + w + '</div>';
-      }).join('');
-      if (blocking > 0) return;
-      // Sinon, demander confirmation
-      if (!confirm('Des avertissements ont \u00e9t\u00e9 d\u00e9tect\u00e9s, voulez-vous quand m\u00eame enregistrer ?')) return;
-    }
+.cc-body {
+  padding: 22px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
 
-    // Déterminer le niveau automatiquement selon le slope
-    if (formState.slope >= 140) formState.niveau = 'Expert';
-    else if (formState.slope >= 130) formState.niveau = 'Avanc\u00e9';
-    else if (formState.slope >= 120) formState.niveau = 'Interm\u00e9diaire';
-    else formState.niveau = 'D\u00e9butant';
+.cc-section {
+  margin-bottom: 22px;
+}
 
-    // Rating = SSS par défaut
-    if (!formState.rating) formState.rating = formState.sss;
+.cc-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 11px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--bd3);
+}
 
-    // Sauvegarder
-    if (typeof saveUserCourse === 'function') {
-      saveUserCourse(formState);
-      showToast(isEdit ? 'Parcours modifi\u00e9 \u2713' : 'Parcours cr\u00e9\u00e9 \u2713');
-      closeCreator();
-      // Rafraîchir la liste
-      renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
-    }
-  });
+.cc-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cc-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.cc-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.cc-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+
+.cc-required {
+  color: var(--ng2);
+  font-weight: 700;
+}
+
+.cc-input {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.cc-input:focus {
+  border-color: var(--gold);
+  background: var(--white);
+}
+
+.cc-input.cc-tiny {
+  padding: 5px 7px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.cc-input.cc-readonly {
+  background: var(--bg3);
+  color: var(--tx3);
+  cursor: default;
+}
+
+/* Tableau de saisie des trous */
+.cc-table-wrap {
+  border: 1px solid var(--bd-card);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--white);
+}
+
+.cc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cc-table thead {
+  background: var(--bg2);
+}
+
+.cc-table th {
+  padding: 9px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+  border-bottom: 1px solid var(--bd3);
+}
+
+.cc-table td {
+  padding: 5px 7px;
+  border-bottom: 1px solid var(--bd3);
+  text-align: center;
+  font-size: 12px;
+}
+
+.cc-table tbody tr:hover {
+  background: var(--gold-dim2);
+}
+
+.cc-table td:first-child {
+  font-weight: 700;
+  color: var(--tx2);
+  background: var(--bg2);
+  width: 60px;
+}
+
+.cc-hint {
+  font-size: 10px;
+  color: var(--tx3);
+  margin-top: 8px;
+  text-align: center;
+  font-style: italic;
+}
+
+.cc-warnings:not(:empty) {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(196, 94, 10, 0.06);
+  border-left: 3px solid var(--wn);
+  border-radius: 6px;
+}
+
+.cc-warn-error {
+  font-size: 11px;
+  color: var(--ng2);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cc-warn-info {
+  font-size: 11px;
+  color: var(--wn);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.cc-footer {
+  padding: 16px 22px;
+  border-top: 1px solid var(--bd-card);
+  background: var(--bg2);
+  border-radius: 0 0 18px 18px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.cc-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.15s;
+}
+
+.cc-btn-cancel {
+  background: transparent;
+  color: var(--tx2);
+  border-color: var(--bd-card);
+}
+
+.cc-btn-cancel:hover { border-color: var(--ng2); color: var(--ng2); }
+
+.cc-btn-save {
+  background: var(--gold);
+  color: var(--night);
+  border-color: var(--gold);
+}
+
+.cc-btn-save:hover { background: var(--gold-l); border-color: var(--gold-l); }
+
+/* Mobile */
+@media (max-width: 700px) {
+  .cc-card { max-height: 100vh; border-radius: 0; }
+  .cc-modal { padding: 0; align-items: stretch; }
+  .cc-grid-2, .cc-grid-4 { grid-template-columns: 1fr; }
 }
