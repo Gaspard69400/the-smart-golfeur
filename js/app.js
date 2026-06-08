@@ -222,6 +222,9 @@ function launchApp() {
   // 3. Mettre à jour la barre de navigation
   updateNavUI();
 
+  // 3b. Injecter le bouton paramètres ⚙️ (Session 10)
+  injectSettingsButton();
+
   // 4. Construire la navigation
   buildNavTabs();
 
@@ -499,4 +502,263 @@ for (var i = 0; i < inputs.length; i++) {
   inputs[i].addEventListener('keydown', function(e) {
     if (e.key === 'Enter') doLogin();
   });
+}
+
+
+/* ════════════════════════════════════════════
+   SESSION 10 — PARAMÈTRES + EXPORT/IMPORT
+════════════════════════════════════════════ */
+
+function injectSettingsButton() {
+  var navRight = document.querySelector('.nav-right');
+  if (!navRight) return;
+  // Eviter le doublon si déjà injecté
+  if (document.getElementById('nav-settings-btn')) return;
+
+  var btn = document.createElement('button');
+  btn.id = 'nav-settings-btn';
+  btn.className = 'nav-settings-btn';
+  btn.title = 'Paramètres';
+  btn.innerHTML = '\u2699';  // ⚙
+
+  btn.addEventListener('click', function() {
+    openSettingsModal();
+  });
+
+  // Insérer avant le nav-hcp-block (donc en premier dans nav-right)
+  var firstChild = navRight.firstChild;
+  if (firstChild) {
+    navRight.insertBefore(btn, firstChild);
+  } else {
+    navRight.appendChild(btn);
+  }
+}
+
+function openSettingsModal() {
+  // Fermer modale existante
+  var existing = document.getElementById('settings-modal');
+  if (existing) existing.remove();
+
+  // Compter les données actuelles
+  var rounds = lsGet('rounds') || [];
+  var userCourses = [];
+  try {
+    var raw = localStorage.getItem('tsg_user_courses');
+    if (raw) userCourses = JSON.parse(raw) || [];
+  } catch(e) {}
+  var profiles = lsGet('profiles') || [];
+
+  var modal = document.createElement('div');
+  modal.id = 'settings-modal';
+  modal.className = 'settings-modal';
+  modal.innerHTML = ''
+    + '<div class="settings-card">'
+    +   '<div class="settings-header">'
+    +     '<div>'
+    +       '<div class="settings-title-tag">Configuration</div>'
+    +       '<div class="settings-title">Param\u00e8tres</div>'
+    +     '</div>'
+    +     '<button class="settings-close" id="settings-close-btn">\u00d7</button>'
+    +   '</div>'
+    +   '<div class="settings-body">'
+    +     '<div class="settings-section">'
+    +       '<div class="settings-section-title">Mes donn\u00e9es</div>'
+    +       '<div class="settings-section-sub">Sauvegarder ou restaurer toutes tes donn\u00e9es (parties, parcours, profils).</div>'
+    +       '<div class="settings-stats">'
+    +         '<div class="settings-stat"><div class="settings-stat-val">' + rounds.length + '</div><div class="settings-stat-lbl">Parties</div></div>'
+    +         '<div class="settings-stat"><div class="settings-stat-val">' + userCourses.length + '</div><div class="settings-stat-lbl">Parcours cr\u00e9\u00e9s</div></div>'
+    +         '<div class="settings-stat"><div class="settings-stat-val">' + profiles.length + '</div><div class="settings-stat-lbl">Profils</div></div>'
+    +       '</div>'
+    +       '<div class="settings-actions">'
+    +         '<button class="settings-btn settings-btn-primary" id="settings-export-btn">'
+    +           '<span class="settings-btn-icon">\u2913</span> Exporter mes donn\u00e9es'
+    +         '</button>'
+    +         '<button class="settings-btn settings-btn-secondary" id="settings-import-btn">'
+    +           '<span class="settings-btn-icon">\u2912</span> Importer un fichier'
+    +         '</button>'
+    +         '<input type="file" id="settings-import-input" accept=".json,application/json" style="display:none">'
+    +       '</div>'
+    +       '<div class="settings-hint">Le fichier export\u00e9 contient toutes tes donn\u00e9es au format JSON. Garde-le pr\u00e9cieusement \u2014 il te permet de tout restaurer sur un autre appareil.</div>'
+    +     '</div>'
+    +     '<div class="settings-section">'
+    +       '<div class="settings-section-title">\u00c0 propos</div>'
+    +       '<div class="settings-about">'
+    +         '<div><strong>The Smart Golfer</strong></div>'
+    +         '<div>Version d\u00e9veloppement \u00b7 Session 10</div>'
+    +         '<div style="margin-top:8px;font-size:11px;color:var(--tx3)">Analyser \u00b7 Structurer \u00b7 Performer</div>'
+    +       '</div>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>';
+
+  document.body.appendChild(modal);
+
+  // Listeners
+  document.getElementById('settings-close-btn').addEventListener('click', closeSettingsModal);
+  modal.addEventListener('click', function(ev) { if (ev.target === modal) closeSettingsModal(); });
+
+  document.getElementById('settings-export-btn').addEventListener('click', exportUserData);
+  document.getElementById('settings-import-btn').addEventListener('click', function() {
+    document.getElementById('settings-import-input').click();
+  });
+  document.getElementById('settings-import-input').addEventListener('change', function(ev) {
+    var file = ev.target.files[0];
+    if (file) importUserData(file);
+  });
+}
+
+function closeSettingsModal() {
+  var m = document.getElementById('settings-modal');
+  if (m) m.remove();
+}
+
+function exportUserData() {
+  try {
+    var data = {
+      version: 1,
+      exportDate: new Date().toISOString(),
+      app: 'The Smart Golfer',
+      profiles: lsGet('profiles') || [],
+      rounds: lsGet('rounds') || [],
+      userCourses: [],
+      lastUser: lsGet('lastUser') || null
+    };
+
+    try {
+      var rawUC = localStorage.getItem('tsg_user_courses');
+      if (rawUC) data.userCourses = JSON.parse(rawUC) || [];
+    } catch(e) {}
+
+    var json = JSON.stringify(data, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+
+    // Créer le nom du fichier
+    var now = new Date();
+    var dateStr = now.getFullYear() + '-'
+      + String(now.getMonth() + 1).padStart(2, '0') + '-'
+      + String(now.getDate()).padStart(2, '0');
+    var filename = 'smart-golfer-export-' + dateStr + '.json';
+
+    // Déclencher le téléchargement
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('Export r\u00e9ussi \u2713  ' + data.rounds.length + ' parties + ' + data.userCourses.length + ' parcours');
+  } catch(ex) {
+    console.error('Export :', ex);
+    showToast('\u26a0 Erreur lors de l\'export : ' + ex.message);
+  }
+}
+
+function importUserData(file) {
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var data = JSON.parse(ev.target.result);
+
+      // Vérifier que c'est un export valide
+      if (!data || data.app !== 'The Smart Golfer') {
+        if (!confirm('Ce fichier ne semble pas \u00eatre un export The Smart Golfer. Continuer quand m\u00eame ?')) return;
+      }
+
+      // Préparer le décompte
+      var imp = {
+        rounds: Array.isArray(data.rounds) ? data.rounds : [],
+        userCourses: Array.isArray(data.userCourses) ? data.userCourses : [],
+        profiles: Array.isArray(data.profiles) ? data.profiles : []
+      };
+
+      // Détecter les doublons (parties)
+      var existing = lsGet('rounds') || [];
+      var existingIds = {};
+      existing.forEach(function(r) {
+        var key = (r.date || '') + '|' + (r.course || '') + '|' + (r.score || '');
+        existingIds[key] = true;
+      });
+      var duplicates = 0;
+      imp.rounds.forEach(function(r) {
+        var key = (r.date || '') + '|' + (r.course || '') + '|' + (r.score || '');
+        if (existingIds[key]) duplicates++;
+      });
+
+      // Si doublons, demander à l'utilisateur (option C)
+      var strategy = 'merge';  // par défaut : ajouter sans doublon
+      if (duplicates > 0) {
+        var msg = duplicates + ' partie(s) du fichier existent d\u00e9j\u00e0 dans tes donn\u00e9es.\n\n'
+          + 'OK = Tout remplacer (supprime ton historique et utilise uniquement le fichier)\n'
+          + 'Annuler = Ignorer les doublons (garder ton historique + ajouter les parties nouvelles)';
+        if (confirm(msg)) {
+          strategy = 'replace';
+        } else {
+          strategy = 'merge';
+        }
+      }
+
+      // Confirmation finale
+      var preview = 'Import pr\u00eat :\n\n'
+        + '\u2022 ' + imp.rounds.length + ' parties dans le fichier\n'
+        + '\u2022 ' + imp.userCourses.length + ' parcours personnels\n'
+        + '\u2022 ' + imp.profiles.length + ' profils\n\n'
+        + 'Strat\u00e9gie : ' + (strategy === 'replace' ? 'TOUT REMPLACER' : 'AJOUTER les nouvelles parties (ignorer doublons)') + '\n\n'
+        + 'Confirmer l\'import ?';
+
+      if (!confirm(preview)) return;
+
+      // Appliquer l'import
+      if (strategy === 'replace') {
+        lsSet('rounds', imp.rounds);
+        if (imp.userCourses.length > 0) localStorage.setItem('tsg_user_courses', JSON.stringify(imp.userCourses));
+        if (imp.profiles.length > 0) lsSet('profiles', imp.profiles);
+      } else {
+        // Merge : ajouter uniquement les non-doublons
+        var newRounds = existing.slice();
+        imp.rounds.forEach(function(r) {
+          var key = (r.date || '') + '|' + (r.course || '') + '|' + (r.score || '');
+          if (!existingIds[key]) {
+            newRounds.unshift(r);
+            existingIds[key] = true;
+          }
+        });
+        // Garder l'ordre récent en premier (re-trier par date desc si possible)
+        newRounds.sort(function(a, b) {
+          var da = new Date(a.date || 0).getTime();
+          var db = new Date(b.date || 0).getTime();
+          return db - da;
+        });
+        lsSet('rounds', newRounds);
+
+        // Pour les parcours utilisateur : ajouter ceux pas encore présents
+        var existingUC = [];
+        try {
+          var rawUC = localStorage.getItem('tsg_user_courses');
+          if (rawUC) existingUC = JSON.parse(rawUC) || [];
+        } catch(e) {}
+        var existingUCIds = {};
+        existingUC.forEach(function(c) { existingUCIds[c.id] = true; });
+        imp.userCourses.forEach(function(c) {
+          if (!existingUCIds[c.id]) existingUC.push(c);
+        });
+        localStorage.setItem('tsg_user_courses', JSON.stringify(existingUC));
+      }
+
+      showToast('Import r\u00e9ussi \u2713  Rechargement...');
+      closeSettingsModal();
+      // Recharger pour appliquer
+      setTimeout(function() { window.location.reload(); }, 1200);
+
+    } catch(ex) {
+      console.error('Import :', ex);
+      alert('Erreur lors de l\'import : ' + ex.message + '\n\nV\u00e9rifie que le fichier est un export The Smart Golfer valide.');
+    }
+  };
+  reader.onerror = function() {
+    alert('Erreur de lecture du fichier');
+  };
+  reader.readAsText(file);
 }

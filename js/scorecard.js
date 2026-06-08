@@ -41,12 +41,13 @@ function renderCourseList(list) {
         <span>Par ${c.par_total}</span>
         <span>Slope ${c.slope || '—'}</span>
         <span class="ci-tag ${lvlClass}">${c.niveau || 'Standard'}</span>
-        ${isUser ? '<button class="ci-delete-btn" data-del-course="' + c.id + '" title="Supprimer ce parcours">\u00d7</button>' : ''}
+        ${isUser ? '<button class="ci-edit-btn" data-edit-course="' + c.id + '" title="Modifier ce parcours">\u270e</button><button class="ci-delete-btn" data-del-course="' + c.id + '" title="Supprimer ce parcours">\u00d7</button>' : ''}
       </div>`;
     // Click sur la carte = sélection
     div.addEventListener('click', function(ev) {
-      // Ne pas sélectionner si on a cliqué sur le bouton supprimer
+      // Ne pas sélectionner si on a cliqué sur un bouton d'action
       if (ev.target.classList.contains('ci-delete-btn')) return;
+      if (ev.target.classList.contains('ci-edit-btn')) return;
       selectCourse(c);
     });
     // Listener du bouton supprimer
@@ -60,6 +61,16 @@ function renderCourseList(list) {
           // Rafraîchir la liste
           renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
           showToast('Parcours supprimé');
+        }
+      });
+    }
+    // Listener du bouton éditer
+    var editBtn = div.querySelector('[data-edit-course]');
+    if (editBtn) {
+      editBtn.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        if (typeof openCourseCreator === 'function') {
+          openCourseCreator(c);
         }
       });
     }
@@ -793,7 +804,7 @@ function initScorecardPage() {
 
     '<div class="sc-fr">',
       '<div class="sc-fg"><div class="sc-fl">Conditions</div><select class="sc-fs" id="f-cond"><option value="calme">Calme</option><option value="vent-mod">Vent modéré</option><option value="vent-fort">Vent fort</option><option value="pluie">Pluie</option></select></div>',
-      '<div class="sc-fg"><div class="sc-fl">Handicap joué</div><input class="sc-fi" type="number" id="f-hcp" step="0.1" min="0" max="54"></div>',
+      '<div class="sc-fg"><div class="sc-fl">Handicap joué</div><input class="sc-fi" type="number" id="f-hcp" step="0.1" min="-10" max="54"></div>',
     '</div>',
 
     '<div class="sc-fg"><div class="sc-fl">Notes</div><input class="sc-fi" id="f-notes" placeholder="Observations..."></div>',
