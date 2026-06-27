@@ -498,6 +498,81 @@ function renderPrecision() {
   page.appendChild(girCard);
 
   // Encart "Active saisie détaillée"
+  // ── Carte Session 12 : Répartition des miss au drive ──
+  var missCounts = { left: 0, right: 0, long: 0, short: 0 };
+  var totalMiss = 0;
+  var totalDriveAttempts = 0;
+
+  rounds.forEach(function(r) {
+    var missMap = r.shotsFairwayMissSide || {};
+    var fairwayMap = r.shotsFairway || {};
+    // On regarde chaque trou par 4 ou par 5 qui a une donnée FIR enregistrée
+    Object.keys(fairwayMap).forEach(function(holeKey) {
+      var state = fairwayMap[holeKey];
+      if (state === 'yes' || state === 'no') {
+        totalDriveAttempts++;
+      }
+      if (state === 'no') {
+        var side = missMap[holeKey];
+        if (side && missCounts.hasOwnProperty(side)) {
+          missCounts[side]++;
+          totalMiss++;
+        }
+      }
+    });
+  });
+
+  if (totalMiss > 0) {
+    var missCard = document.createElement('div');
+    missCard.className = 'an-card';
+
+    function missRow(label, count, total, color) {
+      var pct = total > 0 ? Math.round(count / total * 100) : 0;
+      return ''
+        + '<div class="an-stat-row">'
+        +   '<div class="an-stat-label">' + label + '</div>'
+        +   '<div class="an-stat-bar-wrap">'
+        +     '<div class="an-stat-bar-track"><div class="an-stat-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>'
+        +   '</div>'
+        +   '<div class="an-stat-value">' + pct + '%</div>'
+        +   '<div class="an-stat-trend" style="color:var(--tx3)">' + count + '/' + total + '</div>'
+        + '</div>';
+    }
+
+    // Verdict
+    var dominantSide = '';
+    var dominantPct = 0;
+    ['left', 'right', 'long', 'short'].forEach(function(s) {
+      var p = totalMiss > 0 ? (missCounts[s] / totalMiss * 100) : 0;
+      if (p > dominantPct) { dominantPct = p; dominantSide = s; }
+    });
+    var sideLabel = { left: 'gauche', right: 'droite', long: 'longue', short: 'courte' }[dominantSide] || '';
+    var verdict = '';
+    if (dominantPct >= 60) {
+      verdict = 'Tendance marqu\u00e9e \u00e0 manquer \u00e0 ' + sideLabel + ' (' + Math.round(dominantPct) + '% des miss). \u00c0 travailler en priorit\u00e9 au practice.';
+    } else if (dominantPct >= 45) {
+      verdict = 'L\u00e9g\u00e8re tendance \u00e0 ' + sideLabel + ' (' + Math.round(dominantPct) + '%). Surveille ton alignement et ta routine.';
+    } else {
+      verdict = 'Tes miss sont r\u00e9partis assez \u00e9quitablement. Pas de tendance directionnelle marqu\u00e9e.';
+    }
+
+    missCard.innerHTML = ''
+      + '<div class="an-card-header">'
+      +   '<div class="an-card-title">R\u00e9partition des miss au drive <span class="info-tip" title="Sur les drives qui n\'ont pas atteint le fairway, de quel c\u00f4t\u00e9 la balle a-t-elle fini ?">?</span></div>'
+      +   '<div class="an-card-sub">' + verdict + '</div>'
+      + '</div>'
+      + '<div class="an-card-body">'
+      +   missRow('\u2b05\ufe0f Gauche', missCounts.left, totalMiss, 'var(--ng)')
+      +   missRow('\u27a1\ufe0f Droite', missCounts.right, totalMiss, 'var(--gold-d)')
+      +   missRow('\ud83d\udd3c Long', missCounts.long, totalMiss, 'var(--wn)')
+      +   missRow('\ud83d\udd3d Court', missCounts.short, totalMiss, 'var(--ok2)')
+      +   '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd3);font-size:11px;color:var(--tx3);text-align:center">'
+      +     'Sur ' + totalDriveAttempts + ' drives analys\u00e9s : ' + (totalDriveAttempts - totalMiss) + ' sur le fairway, ' + totalMiss + ' avec c\u00f4t\u00e9 du miss renseign\u00e9'
+      +   '</div>'
+      + '</div>';
+    page.appendChild(missCard);
+  }
+
   if (!hasDetail) {
     var unlock = document.createElement('div');
     unlock.className = 'an-unlock-card';
