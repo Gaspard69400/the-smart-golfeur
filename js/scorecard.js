@@ -670,6 +670,7 @@ function saveRound() {
     shotsOnGreen: JSON.parse(JSON.stringify(sc_holeOnGreen)),
     shotsPutts: JSON.parse(JSON.stringify(sc_holePutts)),
     shotsFairway: JSON.parse(JSON.stringify(sc_holeFairway)),
+    shotsFairwayMissSide: JSON.parse(JSON.stringify(typeof sc_holeFairwayMissSide !== 'undefined' ? sc_holeFairwayMissSide : {})),
     clubs: [],
     fairwayPos: [],
     distRemain: [],
