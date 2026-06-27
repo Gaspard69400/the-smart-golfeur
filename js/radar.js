@@ -14,6 +14,7 @@ var sc_shotsByHole = {};          // { holeNum: [shots] }
 var sc_holeOnGreen = {};          // { holeNum: indexDuShotOuArriveeAuGreen }
 var sc_holePutts = {};            // { holeNum: nombreDePutts }
 var sc_holeFairway = {};          // { holeNum: 'yes'|'no'|null } pour FIR
+var sc_holeFairwayMissSide = {};  // { holeNum: 'left'|'right'|'long'|'short' } - Session 12
 var sc_clubMemory = {};           // { distance: lastClubUsed } pour suggestion
 
 // État du radar courant (en cours d'édition)
@@ -90,7 +91,8 @@ function openRadar(options) {
     club: suggestion ? suggestion.club : '',
     distBefore: defaultDist,
     onGreen: false,        // case arrivée au green
-    fairwayState: null     // pour le drive uniquement
+    fairwayState: null,    // pour le drive uniquement
+    fairwayMissSide: null  // 'left' | 'right' | 'long' | 'short' (uniquement si fairwayState='no')
   };
 
   // Build modal
@@ -125,6 +127,15 @@ function openRadar(options) {
       +   '<div class="radar-fairway-toggle">'
       +     '<button type="button" class="radar-fairway-btn yes" data-fairway="yes">✓ Sur le fairway</button>'
       +     '<button type="button" class="radar-fairway-btn no" data-fairway="no">✗ Manqué</button>'
+      +   '</div>'
+      +   '<div class="radar-fairway-miss-side" id="radar-fairway-miss-side" style="display:none">'
+      +     '<div class="radar-field-label" style="margin-top:10px;margin-bottom:6px;font-size:10px">Côté du miss</div>'
+      +     '<div class="radar-fairway-miss-grid">'
+      +       '<button type="button" class="radar-miss-btn" data-miss="left">⬅️ Gauche</button>'
+      +       '<button type="button" class="radar-miss-btn" data-miss="right">➡️ Droite</button>'
+      +       '<button type="button" class="radar-miss-btn" data-miss="long">🔼 Long</button>'
+      +       '<button type="button" class="radar-miss-btn" data-miss="short">🔽 Court</button>'
+      +     '</div>'
       +   '</div>'
       + '</div>';
   }
@@ -202,12 +213,35 @@ function openRadar(options) {
   // Fairway toggle
   if (isDrive && parTrou !== 3) {
     var fbtns = modal.querySelectorAll('.radar-fairway-btn');
+    var missSideBox = document.getElementById('radar-fairway-miss-side');
+    var missBtns = modal.querySelectorAll('.radar-miss-btn');
+
     fbtns.forEach(function(b) {
       b.addEventListener('click', function() {
         fbtns.forEach(function(x) { x.classList.remove('active'); });
         b.classList.add('active');
         _radarState.fairwayState = b.getAttribute('data-fairway');
+        // Afficher / cacher le sélecteur de côté
+        if (missSideBox) {
+          if (_radarState.fairwayState === 'no') {
+            missSideBox.style.display = 'block';
+          } else {
+            missSideBox.style.display = 'none';
+            // Si on bascule sur "atteint", on efface le côté
+            _radarState.fairwayMissSide = null;
+            missBtns.forEach(function(x) { x.classList.remove('active'); });
+          }
+        }
         updateValidateBtn();
+      });
+    });
+
+    // Listeners boutons côté du miss
+    missBtns.forEach(function(b) {
+      b.addEventListener('click', function() {
+        missBtns.forEach(function(x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        _radarState.fairwayMissSide = b.getAttribute('data-miss');
       });
     });
   }
@@ -260,6 +294,7 @@ function openRadar(options) {
       ballY: _radarState.ballY,
       onGreen: _radarState.onGreen,
       fairwayState: _radarState.fairwayState,
+      fairwayMissSide: _radarState.fairwayMissSide,
       timestamp: Date.now()
     };
     closeRadar();
@@ -543,6 +578,12 @@ function buildHoleCard(hole) {
           if (shot.fairwayState !== null && shot.fairwayState !== undefined) {
             sc_holeFairway[hole.num] = shot.fairwayState;
           }
+          if (shot.fairwayMissSide !== null && shot.fairwayMissSide !== undefined) {
+            sc_holeFairwayMissSide[hole.num] = shot.fairwayMissSide;
+          } else if (shot.fairwayState === 'yes') {
+            // Si on a finalement atteint le fairway, on efface le côté précédent
+            delete sc_holeFairwayMissSide[hole.num];
+          }
           buildProShotZone();
           saveDraftShots();
         }
@@ -561,7 +602,8 @@ function saveDraftShots() {
       shotsByHole: sc_shotsByHole,
       onGreen: sc_holeOnGreen,
       putts: sc_holePutts,
-      fairway: sc_holeFairway
+      fairway: sc_holeFairway,
+      fairwayMissSide: sc_holeFairwayMissSide
     }));
   } catch(e) {}
 }
@@ -575,6 +617,7 @@ function loadDraftShots() {
       sc_holeOnGreen = d.onGreen || {};
       sc_holePutts = d.putts || {};
       sc_holeFairway = d.fairway || {};
+    sc_holeFairwayMissSide = d.fairwayMissSide || {};
     }
   } catch(e) {}
 }
@@ -585,5 +628,6 @@ function clearDraftShots() {
   sc_holeOnGreen = {};
   sc_holePutts = {};
   sc_holeFairway = {};
+  sc_holeFairwayMissSide = {};
 }
 
