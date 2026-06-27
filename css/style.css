@@ -3304,3 +3304,56 @@ html, body {
   .settings-card { max-height: 100vh; border-radius: 0; }
   .settings-modal { padding: 0; align-items: stretch; }
 }
+
+
+/* ════════════════════════════════════
+   SESSION 12 — CÔTÉ DU MISS AU DRIVE
+════════════════════════════════════ */
+
+.radar-fairway-miss-side {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--bd3);
+  animation: missSideSlideIn 0.18s ease-out;
+}
+
+@keyframes missSideSlideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.radar-fairway-miss-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.radar-miss-btn {
+  background: var(--bg);
+  border: 1px solid var(--bd-card);
+  color: var(--tx2);
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.radar-miss-btn:hover {
+  border-color: var(--gold);
+  background: var(--gold-dim2);
+  color: var(--tx);
+}
+
+.radar-miss-btn.active {
+  background: var(--ng);
+  border-color: var(--ng);
+  color: white;
+  font-weight: 700;
+}
