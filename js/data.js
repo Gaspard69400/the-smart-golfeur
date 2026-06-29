@@ -77,6 +77,7 @@ var NAV_TABS = [
   { page: 'dashboard',   icon: '&#9685;', label: 'Dashboard'     },
   { page: 'scorecard',   icon: '&#10022;',label: 'Scorecard'     },
   { page: 'analyse',     icon: '&#9672;', label: 'Analyse'       },
+  { page: 'training',    icon: '&#10037;',label: 'Entra\u00eenement'  },
   { page: 'articles',    icon: '&#9638;', label: 'Biblioth\u00e8que' },
   { page: 'coach',       icon: '&#9678;', label: 'Coach Hub'     },
   { page: 'leaderboard', icon: '&#8801;', label: 'Classements'   },

@@ -3485,3 +3485,187 @@ html, body {
 @media (max-width: 720px) {
   .crs-stats { grid-template-columns: repeat(3, 1fr); gap: 10px; }
 }
+
+/* ════════════════════════════════════════════
+   OBJECTIFS DE SAISON — éditables (dashboard.js)
+════════════════════════════════════════════ */
+.goal-edit-btn {
+  background: var(--gold-dim);
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold-d);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.goal-edit-btn:hover { background: var(--gold); color: var(--night); border-color: var(--gold); }
+
+/* Override : chaque objectif en colonne (titre+valeurs puis barre) */
+.goal-row {
+  display: flex !important;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--bd3);
+}
+.goal-row:last-child { border-bottom: none; }
+.goal-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.goal-bar-wrap { display: flex; align-items: center; gap: 10px; }
+.goal-bar-track {
+  flex: 1;
+  height: 7px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.goal-bar-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.goal-bar-fill.reached { background: var(--ok2); }
+.goal-delta { font-size: 11px; font-weight: 700; white-space: nowrap; min-width: 56px; text-align: right; }
+
+/* Modal objectifs */
+.obj-modal {
+  position: fixed; inset: 0;
+  background: rgba(26,18,9,0.45);
+  z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.obj-card {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 16px;
+  width: 100%; max-width: 460px;
+  box-shadow: 0 12px 40px rgba(26,18,9,0.2);
+  overflow: hidden;
+}
+.obj-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 18px 22px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--bd3);
+}
+.obj-title-tag {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--gold-d);
+}
+.obj-title { font-size: 20px; font-weight: 700; color: var(--tx); letter-spacing: -0.4px; margin-top: 2px; }
+.obj-close { background: none; border: none; font-size: 24px; line-height: 1; color: var(--tx3); cursor: pointer; }
+.obj-close:hover { color: var(--tx); }
+.obj-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+.obj-intro { font-size: 12px; color: var(--tx2); line-height: 1.6; }
+.obj-field { display: flex; flex-direction: column; gap: 5px; }
+.obj-label { font-size: 12px; font-weight: 600; color: var(--tx); }
+.obj-hint { font-size: 10px; font-weight: 500; color: var(--tx3); text-transform: none; letter-spacing: 0; }
+.obj-input {
+  padding: 10px 12px;
+  border: 1px solid var(--bd-card);
+  border-radius: 9px;
+  background: var(--bg);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px; font-weight: 600;
+  color: var(--tx);
+}
+.obj-input:focus { outline: none; border-color: var(--gold); }
+.obj-actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding: 16px 22px;
+  border-top: 1px solid var(--bd3);
+  background: var(--bg2);
+}
+
+/* ════════════════════════════════════════════
+   ONGLET ENTRAÎNEMENT (training.js)
+════════════════════════════════════════════ */
+.trn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px;
+}
+.trn-card {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+}
+.trn-card:hover { box-shadow: var(--shadow-md); border-color: rgba(168,133,30,0.25); transform: translateY(-2px); }
+.trn-card-head { display: flex; align-items: center; gap: 8px; }
+.trn-type {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 3px 8px; border-radius: 6px;
+}
+.trn-type-exercise { background: var(--gold-dim); color: var(--gold-d); }
+.trn-type-training { background: rgba(45,125,58,0.12); color: var(--ok); }
+.trn-cat { font-size: 11px; font-weight: 600; color: var(--tx3); }
+.trn-title { font-size: 16px; font-weight: 700; color: var(--tx); letter-spacing: -0.3px; line-height: 1.2; }
+.trn-obj { font-size: 12px; color: var(--tx2); line-height: 1.45; }
+.trn-meta { display: flex; flex-wrap: wrap; gap: 5px; font-size: 11px; color: var(--tx3); }
+.trn-done-badge {
+  align-self: flex-start;
+  font-size: 10px; font-weight: 700;
+  color: var(--ok2); background: var(--ok-bg);
+  padding: 2px 8px; border-radius: 6px;
+}
+.trn-actions { display: flex; gap: 8px; margin-top: 4px; }
+.trn-view-btn { flex: 1; justify-content: center; }
+.trn-icon-btn { padding: 8px 11px; font-size: 14px; line-height: 1; }
+.trn-del-btn:hover { border-color: var(--ng2); color: var(--ng2); }
+.trn-empty { grid-column: 1 / -1; }
+
+/* Modales (détail + création) */
+.trn-modal {
+  position: fixed; inset: 0;
+  background: rgba(26,18,9,0.45);
+  z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.trn-modal-card {
+  background: var(--white);
+  border: 1px solid var(--bd-card);
+  border-radius: 16px;
+  width: 100%; max-width: 560px;
+  max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 12px 40px rgba(26,18,9,0.2);
+  overflow: hidden;
+}
+.trn-modal-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 18px 22px; background: var(--bg2); border-bottom: 1px solid var(--bd3);
+}
+.trn-modal-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-d); }
+.trn-modal-title { font-size: 19px; font-weight: 700; color: var(--tx); letter-spacing: -0.4px; margin-top: 4px; }
+.trn-modal-close { background: none; border: none; font-size: 24px; line-height: 1; color: var(--tx3); cursor: pointer; }
+.trn-modal-close:hover { color: var(--tx); }
+.trn-modal-body { padding: 18px 22px; overflow-y: auto; }
+.trn-modal-meta { font-size: 12px; color: var(--tx3); margin-bottom: 12px; }
+.trn-modal-obj { font-size: 13px; color: var(--tx2); line-height: 1.6; margin-bottom: 12px; }
+.trn-modal-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold-d); margin-bottom: 8px; }
+.trn-steps { margin: 0 0 12px; padding-left: 20px; }
+.trn-steps li { font-size: 13px; color: var(--tx); line-height: 1.7; }
+.trn-done-info { font-size: 12px; color: var(--ok); background: var(--ok-bg); padding: 8px 12px; border-radius: 8px; margin-top: 6px; }
+.trn-modal-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--bd3); background: var(--bg2); }
+.trn-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.trn-col-2 { grid-column: 1 / -1; }
+.trn-textarea { resize: vertical; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.5; }
+
+@media (max-width: 640px) {
+  .trn-form-grid { grid-template-columns: 1fr; }
+}

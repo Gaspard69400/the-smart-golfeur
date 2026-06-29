@@ -380,6 +380,8 @@ function buildPages() {
         // Analyse initialisée séparément via initAnalysePage()
       } else if (tab.page === 'courses') {
         buildCoursesPage(page);
+      } else if (tab.page === 'training') {
+        buildTrainingPage(page);
       } else {
         buildComingSoon(page, tab.label);
       }
@@ -429,6 +431,10 @@ function showPage(pageId) {
   // Si on va sur l'onglet Parcours : reconstruire pour refléter les ajouts/suppressions
   if (pageId === 'courses' && target && typeof buildCoursesPage === 'function') {
     try { buildCoursesPage(target); } catch(e) { console.warn('Courses rebuild:', e.message); }
+  }
+  // Si on va sur l'onglet Entraînement : reconstruire (nouveaux exercices, réalisations)
+  if (pageId === 'training' && target && typeof buildTrainingPage === 'function') {
+    try { buildTrainingPage(target); } catch(e) { console.warn('Training rebuild:', e.message); }
   }
 }
 

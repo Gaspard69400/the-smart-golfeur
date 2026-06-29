@@ -42,6 +42,100 @@ function initDashboard() {
   try { buildDashboard(pg); } catch(ex) { console.warn('Dashboard:', ex.message); }
 }
 
+/* ════════════════════════════════════════════
+   OBJECTIFS DE SAISON — modifiables à tout moment (par utilisateur)
+════════════════════════════════════════════ */
+var DEFAULT_OBJECTIVES = { score: 80, hcp: 11, gir: 50, fir: 60, putts: 32 };
+
+function getObjectives() {
+  var all = lsGet('objectives') || {};
+  var uid = (currentUser && currentUser.id) || 'default';
+  var o = all[uid] || {};
+  return {
+    score: (o.score != null ? o.score : DEFAULT_OBJECTIVES.score),
+    hcp:   (o.hcp   != null ? o.hcp   : DEFAULT_OBJECTIVES.hcp),
+    gir:   (o.gir   != null ? o.gir   : DEFAULT_OBJECTIVES.gir),
+    fir:   (o.fir   != null ? o.fir   : DEFAULT_OBJECTIVES.fir),
+    putts: (o.putts != null ? o.putts : DEFAULT_OBJECTIVES.putts)
+  };
+}
+
+function saveObjectives(obj) {
+  var all = lsGet('objectives') || {};
+  var uid = (currentUser && currentUser.id) || 'default';
+  all[uid] = obj;
+  lsSet('objectives', all);
+}
+
+function openObjectivesModal() {
+  var existing = document.getElementById('obj-modal');
+  if (existing) existing.remove();
+
+  var o = getObjectives();
+  var fields = [
+    { key: 'score', label: 'Score moyen visé',   step: '0.1', hint: 'plus bas = mieux' },
+    { key: 'hcp',   label: 'Handicap visé',       step: '0.1', hint: 'plus bas = mieux' },
+    { key: 'gir',   label: 'GIR visé (%)',        step: '1',   hint: 'plus haut = mieux' },
+    { key: 'fir',   label: 'FIR visé (%)',        step: '1',   hint: 'plus haut = mieux' },
+    { key: 'putts', label: 'Putts / tour visés',  step: '0.1', hint: 'plus bas = mieux' }
+  ];
+
+  var modal = document.createElement('div');
+  modal.id = 'obj-modal';
+  modal.className = 'obj-modal';
+
+  var rows = fields.map(function(f) {
+    return '<div class="obj-field">'
+      + '<label class="obj-label">' + f.label + ' <span class="obj-hint">· ' + f.hint + '</span></label>'
+      + '<input type="number" step="' + f.step + '" class="obj-input" data-obj="' + f.key + '" value="' + o[f.key] + '">'
+      + '</div>';
+  }).join('');
+
+  modal.innerHTML = ''
+    + '<div class="obj-card">'
+    +   '<div class="obj-header">'
+    +     '<div>'
+    +       '<div class="obj-title-tag">Saison ' + new Date().getFullYear() + '</div>'
+    +       '<div class="obj-title">Mes objectifs</div>'
+    +     '</div>'
+    +     '<button class="obj-close" id="obj-close-btn">×</button>'
+    +   '</div>'
+    +   '<div class="obj-body">'
+    +     '<div class="obj-intro">Fixe tes cibles. Tu peux les modifier à tout moment — les jauges du dashboard s\'adaptent automatiquement.</div>'
+    +     rows
+    +   '</div>'
+    +   '<div class="obj-actions">'
+    +     '<button class="dash-btn dash-btn-outline" id="obj-reset-btn">Réinitialiser</button>'
+    +     '<button class="dash-btn dash-btn-gold" id="obj-save-btn">Enregistrer</button>'
+    +   '</div>'
+    + '</div>';
+
+  document.body.appendChild(modal);
+
+  function close() { modal.remove(); }
+  document.getElementById('obj-close-btn').addEventListener('click', close);
+  modal.addEventListener('click', function(ev) { if (ev.target === modal) close(); });
+
+  document.getElementById('obj-reset-btn').addEventListener('click', function() {
+    modal.querySelectorAll('.obj-input').forEach(function(inp) {
+      inp.value = DEFAULT_OBJECTIVES[inp.getAttribute('data-obj')];
+    });
+  });
+
+  document.getElementById('obj-save-btn').addEventListener('click', function() {
+    var newObj = {};
+    modal.querySelectorAll('.obj-input').forEach(function(inp) {
+      var k = inp.getAttribute('data-obj');
+      var v = parseFloat(inp.value);
+      newObj[k] = isNaN(v) ? DEFAULT_OBJECTIVES[k] : v;
+    });
+    saveObjectives(newObj);
+    close();
+    if (typeof showToast === 'function') showToast('Objectifs mis à jour ✓');
+    initDashboard();
+  });
+}
+
 function buildDashboard(container) {
   // CRITIQUE : détruire les anciens graphiques Chart.js avant d'en créer de nouveaux
   // Sinon Chart.js refuse de réutiliser le canvas → graphiques absents
@@ -459,7 +553,8 @@ function buildDashboard(container) {
   msgPanel.appendChild(msgBody);
   bottomRow.appendChild(msgPanel);
 
-  /* Objectifs */
+  /* Objectifs (modifiables \u00e0 tout moment) */
+  var obj = getObjectives();
   var goalsPanel = document.createElement('div');
   goalsPanel.className = 'panel';
   var goalsPH = document.createElement('div');
@@ -468,21 +563,43 @@ function buildDashboard(container) {
   goalsPT.className = 'panel-title';
   goalsPT.textContent = 'Objectifs saison';
   goalsPH.appendChild(goalsPT);
+  var goalsEdit = document.createElement('button');
+  goalsEdit.className = 'goal-edit-btn';
+  goalsEdit.title = 'Modifier mes objectifs';
+  goalsEdit.innerHTML = '\u270e Modifier';
+  goalsEdit.addEventListener('click', function() { openObjectivesModal(); });
+  goalsPH.appendChild(goalsEdit);
   goalsPanel.appendChild(goalsPH);
 
   var goalsBody = document.createElement('div');
   goalsBody.className = 'panel-body';
 
   var goalsData = [
-    { name: 'Score moyen', now: avgScore, target: '80',  delta: (parseFloat(avgScore)-80).toFixed(1), good: parseFloat(avgScore) <= 80 },
-    { name: 'Handicap',    now: hcp,      target: '11',  delta: (parseFloat(hcp)-11).toFixed(1),      good: parseFloat(hcp) <= 11 },
-    { name: 'GIR',         now: avgGIR+'%', target: '50%', delta: (parseInt(avgGIR)-50)+'%',          good: parseInt(avgGIR) >= 50 },
-    { name: 'FIR',         now: avgFIR+'%', target: '60%', delta: (parseInt(avgFIR)-60)+'%',          good: parseInt(avgFIR) >= 60 }
+    { name: 'Score moyen',  now: parseFloat(avgScore), target: obj.score, lower: true,  suffix: '' },
+    { name: 'Handicap',     now: parseFloat(hcp),      target: obj.hcp,   lower: true,  suffix: '' },
+    { name: 'GIR',          now: parseInt(avgGIR, 10), target: obj.gir,   lower: false, suffix: '%' },
+    { name: 'FIR',          now: parseInt(avgFIR, 10), target: obj.fir,   lower: false, suffix: '%' },
+    { name: 'Putts / tour', now: parseFloat(avgPutts), target: obj.putts, lower: true,  suffix: '' }
   ];
 
   goalsData.forEach(function(g) {
+    var now = isNaN(g.now) ? 0 : g.now;
+    var target = g.target;
+    var good = g.lower ? (now <= target) : (now >= target);
+    var delta = (now - target);
+    var pct;
+    if (g.lower) {
+      pct = now <= 0 ? 100 : Math.min(100, Math.round(target / now * 100));
+    } else {
+      pct = target <= 0 ? 100 : Math.min(100, Math.round(now / target * 100));
+    }
+    pct = Math.max(3, pct);
+
     var row = document.createElement('div');
     row.className = 'goal-row';
+
+    var topLine = document.createElement('div');
+    topLine.className = 'goal-topline';
 
     var nm = document.createElement('div');
     nm.className = 'goal-name';
@@ -490,27 +607,44 @@ function buildDashboard(container) {
 
     var vals = document.createElement('div');
     vals.className = 'goal-vals';
-
     var nowEl = document.createElement('div');
     nowEl.className = 'goal-now';
-    nowEl.textContent = g.now;
-
+    nowEl.textContent = (g.lower ? now.toFixed(g.name === 'Score moyen' ? 1 : 1) : now) + g.suffix;
     var arrow = document.createElement('div');
     arrow.className = 'goal-arrow';
     arrow.textContent = '\u2192';
-
     var tgt = document.createElement('div');
     tgt.className = 'goal-tgt';
-    tgt.textContent = g.target;
-
+    tgt.textContent = target + g.suffix;
     vals.appendChild(nowEl); vals.appendChild(arrow); vals.appendChild(tgt);
 
-    var delta = document.createElement('div');
-    delta.className = 'goal-delta';
-    delta.style.color = g.good ? 'var(--ok2)' : 'var(--ng2)';
-    delta.textContent = (parseFloat(g.delta) > 0 ? '+' : '') + g.delta;
+    topLine.appendChild(nm);
+    topLine.appendChild(vals);
+    row.appendChild(topLine);
 
-    row.appendChild(nm); row.appendChild(vals); row.appendChild(delta);
+    // Barre de progression
+    var barWrap = document.createElement('div');
+    barWrap.className = 'goal-bar-wrap';
+    var track = document.createElement('div');
+    track.className = 'goal-bar-track';
+    var fill = document.createElement('div');
+    fill.className = 'goal-bar-fill' + (good ? ' reached' : '');
+    fill.style.width = pct + '%';
+    track.appendChild(fill);
+    barWrap.appendChild(track);
+
+    var deltaEl = document.createElement('div');
+    deltaEl.className = 'goal-delta';
+    deltaEl.style.color = good ? 'var(--ok2)' : 'var(--ng2)';
+    if (good) {
+      deltaEl.textContent = '\u2713 atteint';
+    } else {
+      var d = Math.abs(delta);
+      deltaEl.textContent = (g.lower ? '+' + (g.suffix === '%' ? Math.round(d) : d.toFixed(1)) : '-' + (g.suffix === '%' ? Math.round(d) : d.toFixed(1))) + g.suffix;
+    }
+    barWrap.appendChild(deltaEl);
+    row.appendChild(barWrap);
+
     goalsBody.appendChild(row);
   });
 
