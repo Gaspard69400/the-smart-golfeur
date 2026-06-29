@@ -378,6 +378,8 @@ function buildPages() {
         // Scorecard initialisée séparément via initScorecardPage()
       } else if (tab.page === 'analyse') {
         // Analyse initialisée séparément via initAnalysePage()
+      } else if (tab.page === 'courses') {
+        buildCoursesPage(page);
       } else {
         buildComingSoon(page, tab.label);
       }
@@ -423,6 +425,10 @@ function showPage(pageId) {
   // Si on va sur l'onglet Analyse : initialiser/rafraîchir
   if (pageId === 'analyse' && typeof initAnalysePage === 'function') {
     try { initAnalysePage(); } catch(e) { console.warn('Analyse init:', e.message); }
+  }
+  // Si on va sur l'onglet Parcours : reconstruire pour refléter les ajouts/suppressions
+  if (pageId === 'courses' && target && typeof buildCoursesPage === 'function') {
+    try { buildCoursesPage(target); } catch(e) { console.warn('Courses rebuild:', e.message); }
   }
 }
 

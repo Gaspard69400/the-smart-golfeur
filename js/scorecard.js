@@ -1274,8 +1274,10 @@ function openCourseCreator(existingCourse) {
       saveUserCourse(formState);
       showToast(isEdit ? 'Parcours modifi\u00e9 \u2713' : 'Parcours cr\u00e9\u00e9 \u2713');
       closeCreator();
-      // Rafraîchir la liste
+      // Rafraîchir la liste de la scorecard
       renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
+      // Rafraîchir la grille de la page Parcours si elle est montée
+      if (typeof crsRefresh === 'function') crsRefresh();
     }
   });
 }
