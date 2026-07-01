@@ -137,6 +137,7 @@ function saveUserCourse(course) {
     userCourses.push(course);
   }
   localStorage.setItem('tsg_user_courses', JSON.stringify(userCourses));
+  if (window.tsgSync) window.tsgSync.pushUserCourse(course);
 }
 
 function deleteUserCourse(courseId) {
@@ -147,4 +148,5 @@ function deleteUserCourse(courseId) {
   } catch(e) {}
   userCourses = userCourses.filter(function(c) { return c.id !== courseId; });
   localStorage.setItem('tsg_user_courses', JSON.stringify(userCourses));
+  if (window.tsgSync) window.tsgSync.deleteUserCourse(courseId);
 }

@@ -1,28 +1,24 @@
 /* ════════════════════════════════════════════
  * THE SMART GOLFER — boot.js
- * Démarrage de l'application
- * Chargé EN DERNIER, après tous les autres modules
- * Dépend de : data.js, app.js, dashboard.js, scorecard.js, radar.js, analyse.js
+ * Démarrage : reprend une session Supabase si elle existe,
+ * sinon affiche l'écran de connexion (auth cloud + mode démo).
+ * Chargé EN DERNIER.
  * ════════════════════════════════════════════ */
 
-/* ─── BOOT ─── */
-
 (function init() {
-  // Construire les profils dans le login
-  buildProfiles();
-
-  // Auto-login si un utilisateur est mémorisé
-  var lastId = lsGet('lastUser');
-  if (lastId) {
-    var profiles = lsGet('profiles') || DEFAULT_PROFILES;
-    for (var i = 0; i < profiles.length; i++) {
-      if (profiles[i].id === lastId) {
-        currentUser     = profiles[i];
-        selectedProfile = profiles[i];
-        launchApp();
-        return;
-      }
-    }
+  // Préparer l'UI d'authentification
+  if (typeof initAuthUI === 'function') {
+    try { initAuthUI(); } catch (e) { console.warn('[TSG] initAuthUI:', e.message); }
   }
-  // Sinon afficher le login
+
+  // Préparer les profils de démo (dans la section repliée)
+  if (typeof buildProfiles === 'function') {
+    try { buildProfiles(); } catch (e) {}
+  }
+
+  // Reprendre une session Supabase si présente (auto-login cloud).
+  // Si connecté : onAuthenticated() lance l'app. Sinon : on reste sur le login.
+  if (typeof authBootstrap === 'function') {
+    authBootstrap(function(loggedIn) { /* rien de plus */ });
+  }
 })();

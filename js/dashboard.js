@@ -65,6 +65,7 @@ function saveObjectives(obj) {
   var uid = (currentUser && currentUser.id) || 'default';
   all[uid] = obj;
   lsSet('objectives', all);
+  if (window.tsgSync) window.tsgSync.pushObjectives(obj);
 }
 
 function openObjectivesModal() {

@@ -32,30 +32,75 @@
   <div class="login-tagline">Analyser &nbsp;&middot;&nbsp; Structurer &nbsp;&middot;&nbsp; Performer</div>
 
   <div class="login-card">
-    <div class="login-card-title">Bienvenue</div>
-    <div class="login-card-sub">Choisissez votre profil ou cr&eacute;ez-en un nouveau</div>
-    <div id="profiles-list"></div>
-    <div class="login-divider">ou cr&eacute;ez votre profil</div>
-    <div class="form-row">
+    <!-- ─── AUTH CLOUD (email + mot de passe) ─── -->
+    <div id="auth-box">
+      <div class="auth-tabs">
+        <button class="auth-tab on" id="auth-tab-login" type="button">Se connecter</button>
+        <button class="auth-tab" id="auth-tab-signup" type="button">Cr&eacute;er un compte</button>
+      </div>
+
+      <div id="auth-error" class="auth-error" style="display:none"></div>
+
+      <div class="form-group auth-signup-only" style="display:none">
+        <label class="form-label" for="auth-name">Pr&eacute;nom &amp; Nom</label>
+        <input class="form-input" id="auth-name" type="text" placeholder="Ex: Pierre Martin" autocomplete="name">
+      </div>
+      <div class="form-row auth-signup-only" style="display:none">
+        <div class="form-group">
+          <label class="form-label" for="auth-hcp">Handicap</label>
+          <input class="form-input" id="auth-hcp" type="number" placeholder="14.2" step="0.1" min="0" max="54">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="auth-role">R&ocirc;le</label>
+          <select class="form-select" id="auth-role">
+            <option value="player">Joueur</option>
+            <option value="head">Head Coach</option>
+            <option value="coach">Coach Assistant</option>
+            <option value="captain">Capitaine</option>
+          </select>
+        </div>
+      </div>
+
       <div class="form-group">
-        <label class="form-label" for="inp-name">Pr&eacute;nom &amp; Nom</label>
-        <input class="form-input" id="inp-name" type="text" placeholder="Ex: Pierre Martin" autocomplete="off">
+        <label class="form-label" for="auth-email">Email</label>
+        <input class="form-input" id="auth-email" type="email" placeholder="ton@email.com" autocomplete="email">
       </div>
       <div class="form-group">
-        <label class="form-label" for="inp-hcp">Handicap</label>
-        <input class="form-input" id="inp-hcp" type="number" placeholder="14.2" step="0.1" min="0" max="54">
+        <label class="form-label" for="auth-password">Mot de passe</label>
+        <input class="form-input" id="auth-password" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
       </div>
+      <button class="btn-login" id="auth-submit" type="button">Se connecter &rarr;</button>
+
+      <button class="auth-guest-toggle" id="auth-guest-toggle" type="button">Essayer en mode d&eacute;mo (sans compte)</button>
     </div>
-    <div class="form-group">
-      <label class="form-label" for="inp-role">R&ocirc;le</label>
-      <select class="form-select" id="inp-role">
-        <option value="player">Joueur</option>
-        <option value="head">Head Coach</option>
-        <option value="coach">Coach Assistant</option>
-        <option value="captain">Capitaine</option>
-      </select>
+
+    <!-- ─── MODE DÉMO (local, sans compte) ─── -->
+    <div id="guest-section" style="display:none">
+      <div class="login-divider">Mode d&eacute;mo &mdash; local</div>
+      <div class="login-card-sub">Choisissez un profil de d&eacute;mo ou cr&eacute;ez-en un local</div>
+      <div id="profiles-list"></div>
+      <div class="login-divider">ou cr&eacute;ez votre profil</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="inp-name">Pr&eacute;nom &amp; Nom</label>
+          <input class="form-input" id="inp-name" type="text" placeholder="Ex: Pierre Martin" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="inp-hcp">Handicap</label>
+          <input class="form-input" id="inp-hcp" type="number" placeholder="14.2" step="0.1" min="0" max="54">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="inp-role">R&ocirc;le</label>
+        <select class="form-select" id="inp-role">
+          <option value="player">Joueur</option>
+          <option value="head">Head Coach</option>
+          <option value="coach">Coach Assistant</option>
+          <option value="captain">Capitaine</option>
+        </select>
+      </div>
+      <button class="btn-login" id="btn-enter">Entrer en mode d&eacute;mo &rarr;</button>
     </div>
-    <button class="btn-login" id="btn-enter">Entrer dans l'application &rarr;</button>
   </div>
 </div>
 
@@ -90,9 +135,12 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
   <!-- Scripts dans l'ordre de dépendance -->
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
@@ -101,6 +149,7 @@
   <script src="js/analyse.js"></script>
   <script src="js/courses.js"></script>
   <script src="js/training.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/boot.js"></script>
 </body>
 </html>

@@ -465,6 +465,11 @@ function buildComingSoon(container, label) {
 /* ─── LOGOUT ─── */
 
 function doLogout() {
+  // Déconnexion cloud (Supabase) si session active
+  if (typeof authSignOut === 'function') {
+    try { authSignOut(); } catch (e) {}
+  }
+
   currentUser     = null;
   selectedProfile = null;
 
@@ -473,6 +478,14 @@ function doLogout() {
 
   if (appEl)   appEl.classList.remove('visible');
   if (loginEl) loginEl.style.display = 'flex';
+
+  // Revenir à l'écran d'auth (masquer le mode démo)
+  var authBox = document.getElementById('auth-box');
+  var guest   = document.getElementById('guest-section');
+  if (authBox) authBox.style.display = 'block';
+  if (guest)   guest.style.display = 'none';
+  var gTog = document.getElementById('auth-guest-toggle');
+  if (gTog) gTog.textContent = 'Essayer en mode démo (sans compte)';
 
   // Nettoyer le formulaire
   var nameEl = document.getElementById('inp-name');

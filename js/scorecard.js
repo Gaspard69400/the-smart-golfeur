@@ -692,6 +692,8 @@ function saveRound() {
   if (roundHistory.length > 50) roundHistory.pop();
   // Save to shared key so dashboard can read it
   lsSet('rounds', roundHistory);
+  // Synchro cloud (si connecté)
+  if (window.tsgSync) window.tsgSync.pushRound(entry);
 
   var statusEl = document.getElementById('save-status');
   if (statusEl) statusEl.textContent = 'Partie enregistrée — ' + entry.date;

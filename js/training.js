@@ -34,11 +34,13 @@ function saveTraining(item) {
   for (var i = 0; i < list.length; i++) { if (list[i].id === item.id) { idx = i; break; } }
   if (idx >= 0) list[idx] = item; else list.unshift(item);
   lsSet('trainings', list);
+  if (window.tsgSync) window.tsgSync.pushTraining(item);
 }
 
 function deleteTraining(id) {
   var list = getTrainings().filter(function(t) { return t.id !== id; });
   lsSet('trainings', list);
+  if (window.tsgSync) window.tsgSync.deleteTraining(id);
 }
 
 /* Suivi des réalisations par joueur : { userId: { trainingId: {count, last} } } */
@@ -59,6 +61,7 @@ function trnMarkDone(id) {
   cur.last = new Date().toISOString();
   map[uid][id] = cur;
   lsSet('training_done', map);
+  if (window.tsgSync) window.tsgSync.pushTrainingDone(id, cur);
 }
 
 function TRAINING_SEED() {
