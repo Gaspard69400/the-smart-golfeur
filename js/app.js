@@ -382,6 +382,8 @@ function buildPages() {
         buildCoursesPage(page);
       } else if (tab.page === 'training') {
         buildTrainingPage(page);
+      } else if (tab.page === 'coach') {
+        buildCoachPage(page);
       } else {
         buildComingSoon(page, tab.label);
       }
@@ -435,6 +437,10 @@ function showPage(pageId) {
   // Si on va sur l'onglet Entraînement : reconstruire (nouveaux exercices, réalisations)
   if (pageId === 'training' && target && typeof buildTrainingPage === 'function') {
     try { buildTrainingPage(target); } catch(e) { console.warn('Training rebuild:', e.message); }
+  }
+  // Si on va sur l'onglet Coach Hub : reconstruire (données joueurs à jour)
+  if (pageId === 'coach' && target && typeof buildCoachPage === 'function') {
+    try { buildCoachPage(target); } catch(e) { console.warn('Coach rebuild:', e.message); }
   }
 }
 
