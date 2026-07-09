@@ -73,15 +73,18 @@ var CLUBS = [
 
 /* ─── ONGLETS DE NAVIGATION ─── */
 
+/* primary  = affich\u00e9 dans la barre du bas (mobile) ; sinon rang\u00e9 dans "Plus"
+   hidden   = pas encore construit \u2192 masqu\u00e9 de la navigation pour l'instant
+   short    = libell\u00e9 court pour la barre mobile */
 var NAV_TABS = [
-  { page: 'dashboard',   icon: '&#9685;', label: 'Dashboard'     },
-  { page: 'scorecard',   icon: '&#10022;',label: 'Scorecard'     },
-  { page: 'analyse',     icon: '&#9672;', label: 'Analyse'       },
-  { page: 'training',    icon: '&#10037;',label: 'Entra\u00eenement'  },
-  { page: 'articles',    icon: '&#9638;', label: 'Biblioth\u00e8que' },
-  { page: 'coach',       icon: '&#9678;', label: 'Coach Hub'     },
-  { page: 'leaderboard', icon: '&#8801;', label: 'Classements'   },
-  { page: 'courses',     icon: '&#9971;', label: 'Parcours'      }
+  { page: 'dashboard',   icon: '&#9685;', label: 'Dashboard',    short: 'Accueil', primary: true  },
+  { page: 'scorecard',   icon: '&#10022;',label: 'Scorecard',    short: 'Partie',  primary: true  },
+  { page: 'training',    icon: '&#10037;',label: 'Entra\u00eenement', short: 'Exos',    primary: true  },
+  { page: 'coach',       icon: '&#9678;', label: 'Coach Hub',    short: 'Coach',   primary: true  },
+  { page: 'analyse',     icon: '&#9672;', label: 'Analyse',      short: 'Analyse', primary: false },
+  { page: 'courses',     icon: '&#9971;', label: 'Parcours',     short: 'Parcours',primary: false },
+  { page: 'articles',    icon: '&#9638;', label: 'Biblioth\u00e8que', short: 'Articles',primary: false, hidden: true },
+  { page: 'leaderboard', icon: '&#8801;', label: 'Classements',  short: 'Classt',  primary: false, hidden: true }
 ];
 
 /* ─── LIBELLÉS ET CLASSES CSS DES RÔLES ─── */

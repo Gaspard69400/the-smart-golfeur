@@ -326,6 +326,10 @@ function updateNavUI() {
 
 /* ─── BUILD NAV TABS ─── */
 
+function navVisibleTabs() {
+  return NAV_TABS.filter(function(t) { return !t.hidden; });
+}
+
 function buildNavTabs() {
   var container = document.getElementById('nav-tabs');
   if (!container) return;
@@ -333,7 +337,7 @@ function buildNavTabs() {
   // Vider
   while (container.firstChild) container.removeChild(container.firstChild);
 
-  NAV_TABS.forEach(function(tab) {
+  navVisibleTabs().forEach(function(tab) {
     var btn = document.createElement('button');
     btn.className = 'nav-tab';
     btn.setAttribute('data-page', tab.page);
@@ -354,6 +358,92 @@ function buildNavTabs() {
 
     container.appendChild(btn);
   });
+
+  // Construire aussi la barre du bas (mobile)
+  buildBottomNav();
+}
+
+/* ─── BARRE DE NAVIGATION MOBILE (bas) + menu "Plus" ─── */
+
+function buildBottomNav() {
+  var bar = document.getElementById('bottomnav');
+  if (!bar) return;
+  while (bar.firstChild) bar.removeChild(bar.firstChild);
+
+  var visible = navVisibleTabs();
+  var primaries = visible.filter(function(t) { return t.primary; });
+  var secondaries = visible.filter(function(t) { return !t.primary; });
+
+  function makeItem(page, iconHtml, labelText, onClick) {
+    var btn = document.createElement('button');
+    btn.className = 'mnav-item';
+    if (page) btn.setAttribute('data-page', page);
+    var ic = document.createElement('span');
+    ic.className = 'mnav-icon';
+    ic.innerHTML = iconHtml;
+    var lb = document.createElement('span');
+    lb.className = 'mnav-label';
+    lb.textContent = labelText;
+    btn.appendChild(ic);
+    btn.appendChild(lb);
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  primaries.forEach(function(tab) {
+    bar.appendChild(makeItem(tab.page, tab.icon, tab.short || tab.label, function() {
+      showPage(tab.page);
+    }));
+  });
+
+  // Bouton "Plus" (ouvre la feuille)
+  bar.appendChild(makeItem(null, '&#8943;', 'Plus', function() { openNavSheet(); }));
+
+  // Fermeture de la feuille via le fond (onclick = pas d'empilement de listeners)
+  var bd = document.getElementById('nav-sheet-backdrop');
+  if (bd) bd.onclick = closeNavSheet;
+
+  // Construire le contenu de la feuille "Plus"
+  var sheetList = document.getElementById('nav-sheet-list');
+  if (sheetList) {
+    while (sheetList.firstChild) sheetList.removeChild(sheetList.firstChild);
+    secondaries.forEach(function(tab) {
+      sheetList.appendChild(makeSheetRow(tab.icon, tab.label, function() {
+        closeNavSheet(); showPage(tab.page);
+      }));
+    });
+    // Paramètres
+    sheetList.appendChild(makeSheetRow('&#9881;', 'Paramètres', function() {
+      closeNavSheet(); if (typeof openSettingsModal === 'function') openSettingsModal();
+    }));
+    // Déconnexion
+    sheetList.appendChild(makeSheetRow('&#9099;', 'Se déconnecter', function() {
+      closeNavSheet(); if (confirm('Se déconnecter ?')) doLogout();
+    }));
+  }
+}
+
+function makeSheetRow(iconHtml, labelText, onClick) {
+  var row = document.createElement('button');
+  row.className = 'nav-sheet-row';
+  var ic = document.createElement('span');
+  ic.className = 'nav-sheet-icon';
+  ic.innerHTML = iconHtml;
+  var lb = document.createElement('span');
+  lb.textContent = labelText;
+  row.appendChild(ic);
+  row.appendChild(lb);
+  row.addEventListener('click', onClick);
+  return row;
+}
+
+function openNavSheet() {
+  var s = document.getElementById('nav-sheet');
+  if (s) s.classList.add('open');
+}
+function closeNavSheet() {
+  var s = document.getElementById('nav-sheet');
+  if (s) s.classList.remove('open');
 }
 
 /* ─── BUILD PAGES ─── */
@@ -405,6 +495,18 @@ function showPage(pageId) {
 
   for (var i = 0; i < tabs.length; i++)  tabs[i].classList.remove('active');
   for (var j = 0; j < pages.length; j++) pages[j].classList.remove('active');
+
+  // Barre du bas (mobile) : synchroniser l'état actif
+  var mitems = document.querySelectorAll('.mnav-item');
+  var isPrimary = false;
+  for (var m = 0; m < mitems.length; m++) {
+    var mp = mitems[m].getAttribute('data-page');
+    mitems[m].classList.toggle('active', mp === pageId);
+    if (mp === pageId) isPrimary = true;
+  }
+  // Si la page n'est pas dans la barre (page "Plus"), surligner le bouton Plus
+  var plusBtn = document.querySelector('.mnav-item:not([data-page])');
+  if (plusBtn) plusBtn.classList.toggle('active', !isPrimary);
 
   // Activer l'onglet
   var tabs2 = document.querySelectorAll('.nav-tab');
