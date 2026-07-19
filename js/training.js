@@ -128,6 +128,11 @@ function buildTrainingPage(container) {
   }
   wrap.appendChild(header);
 
+  /* Section "Recommandé par ton coach" (joueur, cloud) */
+  var reco = document.createElement('div');
+  reco.id = 'trn-reco';
+  wrap.appendChild(reco);
+
   /* Filtres par catégorie */
   var filterRow = document.createElement('div');
   filterRow.className = 'filter-row';
@@ -157,6 +162,46 @@ function buildTrainingPage(container) {
 
   container.appendChild(wrap);
   trnRenderGrid();
+  trnRenderReco();
+}
+
+/* Exercices recommandés par le coach (assignations) — côté joueur */
+function trnRenderReco() {
+  var host = document.getElementById('trn-reco');
+  if (!host || !window.tsgCloud || !window.sbClient || !currentUser) return;
+  var sb = window.sbClient;
+  sb.from('training_assignments').select('*').eq('player_id', currentUser.id).then(function(res) {
+    var asg = (res.data || []);
+    if (!asg.length) return;
+    var ids = asg.map(function(a) { return a.training_id; });
+    sb.from('trainings').select('*').in('id', ids).then(function(tr) {
+      var byId = {}; (tr.data || []).forEach(function(t) { byId[t.id] = t; });
+      var panel = document.createElement('div');
+      panel.className = 'panel trn-reco-panel';
+      panel.innerHTML = '<div class="panel-header"><div class="panel-title">★ Recommandé par ton coach</div>'
+        + '<div class="panel-sub">' + asg.length + ' exercice' + (asg.length > 1 ? 's' : '') + '</div></div>';
+      var body = document.createElement('div');
+      body.className = 'panel-body trn-reco-list';
+      asg.forEach(function(a) {
+        var t = byId[a.training_id];
+        if (!t) return;
+        var item = document.createElement('div');
+        item.className = 'trn-reco-item';
+        item.innerHTML = '<div class="trn-reco-info"><div class="trn-reco-title">' + trnEsc(t.title) + '</div>'
+          + '<div class="trn-reco-sub">' + trnEsc(t.category || '') + (t.duration ? ' · ' + t.duration + ' min' : '')
+          + (a.message ? ' · « ' + trnEsc(a.message) + ' »' : '') + '</div></div>'
+          + '<button class="dash-btn dash-btn-gold trn-reco-btn">Voir</button>';
+        // Normaliser l'objet pour openTrainingDetail (createdBy)
+        var tObj = { id: t.id, type: t.type, title: t.title, category: t.category, level: t.level,
+          duration: t.duration, objective: t.objective, description: t.description,
+          createdBy: { id: t.created_by, name: t.author_name }, createdAt: t.created_at };
+        item.querySelector('.trn-reco-btn').addEventListener('click', function() { openTrainingDetail(tObj); });
+        body.appendChild(item);
+      });
+      panel.appendChild(body);
+      host.appendChild(panel);
+    });
+  }, function() {});
 }
 
 function trnRenderGrid() {

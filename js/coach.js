@@ -163,7 +163,7 @@ function coachRenderPlayerList(body, profiles, allRounds) {
     card.style.cursor = 'pointer';
     card.title = 'Voir la fiche détaillée';
     card.addEventListener('click', function() {
-      if (typeof openPlayerDetailModal === 'function') openPlayerDetailModal(p.id, p.name);
+      if (typeof openPlayerDetailModal === 'function') openPlayerDetailModal(p.id, p.name, { canCoach: true });
     });
     grid.appendChild(card);
   });
@@ -270,8 +270,9 @@ function coachEsc(s) {
    FICHE JOUEUR DÉTAILLÉE (partagée Coach Hub / Groupes)
    Lit les données du joueur via RLS (coach ou co-membre de groupe).
 ════════════════════════════════════════════ */
-function openPlayerDetailModal(playerId, displayName) {
+function openPlayerDetailModal(playerId, displayName, opts) {
   if (!window.sbClient) return;
+  opts = opts || {};
   var sb = window.sbClient;
   var ex = document.getElementById('pd-modal');
   if (ex) ex.remove();
@@ -304,6 +305,10 @@ function openPlayerDetailModal(playerId, displayName) {
     pdRender(document.getElementById('pd-body'), rounds, obj, done, trainings, prof);
     var nm = document.getElementById('pd-name');
     if (nm && prof.name) nm.textContent = prof.name;
+    // Contrôles coach (notes + assignation d'exercice)
+    if (opts.canCoach && coachIsCoachRole() && typeof pdRenderCoachControls === 'function') {
+      pdRenderCoachControls(document.getElementById('pd-body'), playerId);
+    }
   }).catch(function(e) {
     var b = document.getElementById('pd-body');
     if (b) b.innerHTML = '<div class="ch-empty-inline">Erreur : ' + e.message + '</div>';
@@ -405,4 +410,77 @@ function pdSparkline(scores) {
     + '<path d="' + area + '" fill="var(--gold-dim)"/>'
     + '<polyline points="' + line + '" fill="none" stroke="var(--gold-d)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
     + dots + '</svg>';
+}
+
+/* ─── Contrôles coach dans la fiche joueur : notes + assignation d'exercice (S19-B) ─── */
+function pdRenderCoachControls(body, playerId) {
+  if (!body || !window.sbClient) return;
+  var sb = window.sbClient;
+  var section = document.createElement('div');
+  section.className = 'pd-coach';
+  section.innerHTML = '<div class="ch-loading">…</div>';
+  body.appendChild(section);
+
+  var myExercises = (typeof getTrainings === 'function' ? getTrainings() : []).filter(function(t) {
+    return t.createdBy && t.createdBy.id === currentUser.id;
+  });
+  var titleById = {}; myExercises.forEach(function(t) { titleById[t.id] = t.title; });
+
+  Promise.all([
+    sb.from('coach_notes').select('note').eq('coach_id', currentUser.id).eq('player_id', playerId).maybeSingle(),
+    sb.from('training_assignments').select('*').eq('coach_id', currentUser.id).eq('player_id', playerId)
+  ]).then(function(r) {
+    var note = (r[0].data && r[0].data.note) || '';
+    var assigns = r[1].data || [];
+
+    var optHtml = myExercises.length
+      ? myExercises.map(function(t) { return '<option value="' + t.id + '">' + coachEsc(t.title) + '</option>'; }).join('')
+      : '<option value="">(crée un exercice dans Entraînement)</option>';
+
+    var assignedHtml = assigns.length
+      ? assigns.map(function(a) {
+          return '<div class="pd-asg-item"><span>' + coachEsc(titleById[a.training_id] || 'Exercice') + '</span>'
+            + '<button class="pd-asg-del" data-id="' + a.id + '" title="Retirer">×</button></div>';
+        }).join('')
+      : '<div class="pd-asg-empty">Aucun exercice assigné pour l\'instant.</div>';
+
+    section.innerHTML =
+      '<div class="pd-coach-box">'
+      + '<div class="pd-section-title">Notes du coach <span class="pd-priv">privé</span></div>'
+      + '<textarea class="obj-input pd-note" id="pd-note" rows="3" placeholder="Note privée sur ce joueur (visible par toi uniquement)…">' + coachEsc(note) + '</textarea>'
+      + '<button class="dash-btn dash-btn-outline pd-note-save" id="pd-note-save">Enregistrer la note</button>'
+      + '<div class="pd-section-title">Assigner un exercice</div>'
+      + '<div class="pd-assign-row"><select class="obj-input" id="pd-assign-select">' + optHtml + '</select>'
+      +   '<button class="dash-btn dash-btn-gold" id="pd-assign-btn">Assigner</button></div>'
+      + '<div class="pd-asg-list">' + assignedHtml + '</div>'
+      + '</div>';
+
+    document.getElementById('pd-note-save').addEventListener('click', function() {
+      var val = document.getElementById('pd-note').value;
+      sb.from('coach_notes').upsert({ coach_id: currentUser.id, player_id: playerId, note: val, updated_at: new Date().toISOString() })
+        .then(function(res) { showToast(res.error ? ('Erreur : ' + res.error.message) : 'Note enregistrée ✓'); });
+    });
+
+    document.getElementById('pd-assign-btn').addEventListener('click', function() {
+      var tid = document.getElementById('pd-assign-select').value;
+      if (!tid) { showToast('Crée d\'abord un exercice dans l\'onglet Entraînement'); return; }
+      sb.from('training_assignments').insert({ training_id: tid, player_id: playerId, coach_id: currentUser.id }).then(function(res) {
+        if (res.error) {
+          showToast(/duplicate|unique/i.test(res.error.message || '') ? 'Déjà assigné à ce joueur' : ('Erreur : ' + res.error.message));
+          return;
+        }
+        showToast('Exercice assigné ✓  Le joueur le verra dans Entraînement');
+        section.remove(); pdRenderCoachControls(body, playerId);
+      });
+    });
+
+    section.querySelectorAll('.pd-asg-del').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        sb.from('training_assignments').delete().eq('id', btn.getAttribute('data-id')).then(function() {
+          showToast('Assignation retirée');
+          section.remove(); pdRenderCoachControls(body, playerId);
+        });
+      });
+    });
+  }).catch(function(e) { section.innerHTML = '<div class="ch-empty-inline">Erreur : ' + e.message + '</div>'; });
 }

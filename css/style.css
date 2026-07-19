@@ -3977,3 +3977,30 @@ html, body {
 @media (max-width: 440px) {
   .pd-kpis { grid-template-columns: repeat(3, 1fr); row-gap: 12px; }
 }
+
+/* ════════════════════════════════════════════
+   S19-B — interactions coach→joueur
+════════════════════════════════════════════ */
+/* Contrôles coach dans la fiche joueur */
+.pd-coach-box { margin-top: 16px; padding-top: 14px; border-top: 2px solid var(--gold-dim); }
+.pd-priv { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--tx3); background: var(--bg3); padding: 2px 6px; border-radius: 5px; margin-left: 6px; }
+.pd-note { width: 100%; resize: vertical; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.5; margin-bottom: 8px; }
+.pd-note-save { margin-bottom: 4px; }
+.pd-assign-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.pd-assign-row select { flex: 1; }
+.pd-asg-list { display: flex; flex-direction: column; gap: 6px; }
+.pd-asg-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg2); border-radius: 9px; padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--tx); }
+.pd-asg-del { background: none; border: none; font-size: 18px; line-height: 1; color: var(--tx3); cursor: pointer; }
+.pd-asg-del:hover { color: var(--ng2); }
+.pd-asg-empty { font-size: 12px; color: var(--tx3); font-style: italic; }
+
+/* Section "recommandé par ton coach" (joueur) */
+.trn-reco-panel { margin-bottom: 14px; border-color: rgba(201,168,76,0.4); }
+.trn-reco-panel .panel-header { background: var(--gold-dim); }
+.trn-reco-panel .panel-title { color: var(--gold-d); }
+.trn-reco-list { display: flex; flex-direction: column; gap: 8px; }
+.trn-reco-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--bg2); border-radius: 10px; }
+.trn-reco-info { min-width: 0; }
+.trn-reco-title { font-size: 14px; font-weight: 700; color: var(--tx); }
+.trn-reco-sub { font-size: 11px; color: var(--tx3); margin-top: 2px; }
+.trn-reco-btn { flex-shrink: 0; }
