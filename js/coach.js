@@ -158,7 +158,13 @@ function coachRenderPlayerList(body, profiles, allRounds) {
             + '<div class="ch-ps"><div class="ch-ps-v">' + st.fir + '%</div><div class="ch-ps-l">FIR</div></div>'
             + '<div class="ch-ps"><div class="ch-ps-v">' + st.putts + '</div><div class="ch-ps-l">Putts</div></div>'
             + '</div>'
-          : '<div class="ch-player-nodata">Ce joueur n\'a pas encore saisi de partie.</div>');
+          : '<div class="ch-player-nodata">Ce joueur n\'a pas encore saisi de partie.</div>')
+      + '<div class="ch-player-more">Voir la fiche →</div>';
+    card.style.cursor = 'pointer';
+    card.title = 'Voir la fiche détaillée';
+    card.addEventListener('click', function() {
+      if (typeof openPlayerDetailModal === 'function') openPlayerDetailModal(p.id, p.name);
+    });
     grid.appendChild(card);
   });
 
@@ -258,4 +264,145 @@ function coachRefresh() {
 function coachEsc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ════════════════════════════════════════════
+   FICHE JOUEUR DÉTAILLÉE (partagée Coach Hub / Groupes)
+   Lit les données du joueur via RLS (coach ou co-membre de groupe).
+════════════════════════════════════════════ */
+function openPlayerDetailModal(playerId, displayName) {
+  if (!window.sbClient) return;
+  var sb = window.sbClient;
+  var ex = document.getElementById('pd-modal');
+  if (ex) ex.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'pd-modal';
+  modal.className = 'trn-modal';
+  modal.innerHTML = '<div class="trn-modal-card pd-card">'
+    + '<div class="trn-modal-head"><div><div class="trn-modal-tag">Fiche joueur</div>'
+    +   '<div class="trn-modal-title" id="pd-name">' + coachEsc(displayName || 'Joueur') + '</div></div>'
+    +   '<button class="trn-modal-close" id="pd-close">×</button></div>'
+    + '<div class="trn-modal-body" id="pd-body"><div class="ch-loading">Chargement…</div></div></div>';
+  document.body.appendChild(modal);
+  function close() { modal.remove(); }
+  document.getElementById('pd-close').addEventListener('click', close);
+  modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
+
+  Promise.all([
+    sb.from('rounds').select('*').eq('user_id', playerId).order('played_on', { ascending: false }),
+    sb.from('objectives').select('*').eq('user_id', playerId).maybeSingle(),
+    sb.from('training_done').select('*').eq('user_id', playerId),
+    sb.from('trainings').select('id, title'),
+    sb.from('profiles').select('*').eq('id', playerId).single()
+  ]).then(function(r) {
+    var rounds = r[0].data || [];
+    var obj = r[1].data;
+    var done = r[2].data || [];
+    var trainings = r[3].data || [];
+    var prof = r[4].data || {};
+    pdRender(document.getElementById('pd-body'), rounds, obj, done, trainings, prof);
+    var nm = document.getElementById('pd-name');
+    if (nm && prof.name) nm.textContent = prof.name;
+  }).catch(function(e) {
+    var b = document.getElementById('pd-body');
+    if (b) b.innerHTML = '<div class="ch-empty-inline">Erreur : ' + e.message + '</div>';
+  });
+}
+
+function pdRender(body, rounds, obj, done, trainings, prof) {
+  if (!body) return;
+  var n = rounds.length;
+  function mean(k) { var s=0,c=0; rounds.forEach(function(r){ if(r[k]!=null){s+=r[k];c++;} }); return c? s/c:0; }
+  var firSum=0, firTot=0; rounds.forEach(function(r){ if(r.fir!=null){firSum+=r.fir; firTot+=(r.fir_total||14);} });
+  var kpis = n ? [
+    ['Score', mean('score').toFixed(1)],
+    ['GIR', Math.round(mean('gir')/18*100) + '%'],
+    ['FIR', (firTot? Math.round(firSum/firTot*100):0) + '%'],
+    ['Putts', mean('putts').toFixed(1)],
+    ['Parties', n]
+  ] : [];
+
+  var html = '';
+
+  // En-tête profil
+  var initials = prof.initials || (prof.name ? prof.name.slice(0,2).toUpperCase() : '?');
+  html += '<div class="pd-head">'
+    + '<div class="ch-player-av pd-av" style="background:' + (prof.bg||'var(--gold-dim)') + ';color:' + (prof.color||'var(--gold-d)') + '">' + coachEsc(initials) + '</div>'
+    + '<div class="pd-head-info"><div class="pd-hcp">Hcp ' + (prof.hcp!=null? prof.hcp : '—') + '</div>'
+    + '<div class="pd-role">' + coachEsc((typeof ROLE_LABELS!=='undefined' && ROLE_LABELS[prof.role]) || 'Joueur') + '</div></div></div>';
+
+  if (!n) {
+    html += '<div class="ch-empty-inline" style="margin-top:14px">Ce joueur n\'a pas encore saisi de partie.</div>';
+    body.innerHTML = html;
+    return;
+  }
+
+  // KPIs
+  html += '<div class="pd-kpis">';
+  kpis.forEach(function(k){ html += '<div class="pd-kpi"><div class="pd-kpi-v">' + k[1] + '</div><div class="pd-kpi-l">' + k[0] + '</div></div>'; });
+  html += '</div>';
+
+  // Sparkline évolution du score (chronologique)
+  var scoresChrono = rounds.slice().reverse().map(function(r){ return r.score; }).filter(function(s){ return s!=null; });
+  var spark = pdSparkline(scoresChrono);
+  if (spark) html += '<div class="pd-section-title">Évolution du score</div><div class="pd-spark">' + spark + '</div>';
+
+  // Dernières parties
+  html += '<div class="pd-section-title">Dernières parties</div><div class="pd-rounds">';
+  rounds.slice(0, 6).forEach(function(r){
+    var delta = (r.score!=null && r.par!=null) ? (r.score - r.par) : null;
+    var deltaStr = delta==null ? '' : (delta>0? '+'+delta : (delta===0? 'Par' : delta));
+    var deltaCls = delta==null? '' : (delta>0? 'pd-over' : 'pd-under');
+    html += '<div class="pd-round">'
+      + '<div class="pd-round-main"><div class="pd-round-course">' + coachEsc(r.course||'Parcours') + '</div>'
+      + '<div class="pd-round-date">' + (r.played_on? new Date(r.played_on).toLocaleDateString('fr-FR') : '') + '</div></div>'
+      + '<div class="pd-round-score">' + (r.score!=null? r.score : '—') + ' <span class="pd-round-delta ' + deltaCls + '">' + deltaStr + '</span></div>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  // Objectifs
+  if (obj) {
+    html += '<div class="pd-section-title">Objectifs de saison</div><div class="pd-obj">';
+    [['Score', obj.score], ['Hcp', obj.hcp], ['GIR', obj.gir!=null? obj.gir+'%':null], ['FIR', obj.fir!=null? obj.fir+'%':null], ['Putts', obj.putts]].forEach(function(o){
+      if (o[1]!=null) html += '<span class="pd-obj-chip">' + o[0] + ' visé <strong>' + o[1] + '</strong></span>';
+    });
+    html += '</div>';
+  }
+
+  // Exercices réalisés
+  if (done && done.length) {
+    var titleById = {}; (trainings||[]).forEach(function(t){ titleById[t.id]=t.title; });
+    var totalReps = done.reduce(function(s,d){ return s+(d.count||0); }, 0);
+    html += '<div class="pd-section-title">Entraînement</div>'
+      + '<div class="pd-train-summary">' + done.length + ' exercice' + (done.length>1?'s':'') + ' réalisé' + (done.length>1?'s':'') + ' · ' + totalReps + ' fois au total</div>';
+    html += '<div class="pd-train-list">';
+    done.slice(0, 5).forEach(function(d){
+      html += '<div class="pd-train-item">' + coachEsc(titleById[d.training_id] || 'Exercice') + ' <span class="pd-train-count">×' + (d.count||1) + '</span></div>';
+    });
+    html += '</div>';
+  }
+
+  body.innerHTML = html;
+}
+
+function pdSparkline(scores) {
+  if (!scores || scores.length < 2) return '';
+  var w = 300, h = 56, pad = 8;
+  var min = Math.min.apply(null, scores), max = Math.max.apply(null, scores);
+  var range = (max - min) || 1;
+  var innerW = w - 2*pad, innerH = h - 2*pad;
+  var pts = scores.map(function(s, i) {
+    var x = pad + i * innerW / (scores.length - 1);
+    var y = pad + ((s - min) / range) * innerH; // meilleur score (min) en haut
+    return { x: x, y: y };
+  });
+  var line = pts.map(function(p){ return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+  var area = 'M' + pts[0].x.toFixed(1) + ',' + (h-pad).toFixed(1) + ' L' + line.split(' ').join(' L') + ' L' + pts[pts.length-1].x.toFixed(1) + ',' + (h-pad).toFixed(1) + ' Z';
+  var dots = pts.map(function(p){ return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.5" fill="var(--gold-d)"/>'; }).join('');
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="width:100%;height:56px">'
+    + '<path d="' + area + '" fill="var(--gold-dim)"/>'
+    + '<polyline points="' + line + '" fill="none" stroke="var(--gold-d)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+    + dots + '</svg>';
 }

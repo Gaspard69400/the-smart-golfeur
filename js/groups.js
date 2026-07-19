@@ -8,6 +8,15 @@
  * ════════════════════════════════════════════ */
 
 var _grpView = { mode: 'list', groupId: null, groupName: '' };
+var _grpState = { criterion: 'score', rows: [], uid: null };
+
+var GRP_CRITERIA = [
+  { key: 'score', label: 'Score',    lower: true },
+  { key: 'gir',   label: 'GIR',      lower: false, suffix: '%' },
+  { key: 'fir',   label: 'FIR',      lower: false, suffix: '%' },
+  { key: 'putts', label: 'Putts',    lower: true },
+  { key: 'hcp',   label: 'Handicap', lower: true }
+];
 
 function buildGroupsPage(container) {
   if (!container) return;
@@ -163,16 +172,45 @@ function grpBuildDetail(wrap, groupId) {
     + '</div>';
   wrap.appendChild(infoPanel);
 
+  // Records du groupe
+  var recPanel = document.createElement('div');
+  recPanel.className = 'panel grp-records-panel';
+  recPanel.innerHTML = '<div class="panel-body" id="grp-records"><div class="ch-loading">…</div></div>';
+  wrap.appendChild(recPanel);
+
+  // Classement (avec sélecteur de critère)
   var lbPanel = document.createElement('div');
   lbPanel.className = 'panel';
-  lbPanel.innerHTML = '<div class="panel-header"><div class="panel-title">Classement</div>'
-    + '<div class="panel-sub">meilleur score moyen</div></div>';
+  var chips = GRP_CRITERIA.map(function(c) {
+    return '<button class="filter-btn grp-crit-btn' + (c.key === _grpState.criterion ? ' on' : '') + '" data-crit="' + c.key + '">' + c.label + '</button>';
+  }).join('');
+  lbPanel.innerHTML = '<div class="panel-header"><div class="panel-title">Classement</div></div>'
+    + '<div class="grp-crit-row filter-row">' + chips + '</div>';
   var lbBody = document.createElement('div');
   lbBody.className = 'panel-body';
   lbBody.id = 'grp-lb-body';
   lbBody.innerHTML = '<div class="ch-loading">Chargement du classement…</div>';
   lbPanel.appendChild(lbBody);
   wrap.appendChild(lbPanel);
+
+  // Fil d'activité
+  var feedPanel = document.createElement('div');
+  feedPanel.className = 'panel';
+  feedPanel.innerHTML = '<div class="panel-header"><div class="panel-title">Fil d\'activité</div></div>'
+    + '<div class="panel-body" id="grp-feed"><div class="ch-loading">…</div></div>';
+  wrap.appendChild(feedPanel);
+
+  // Sélecteur de critère
+  setTimeout(function() {
+    lbPanel.querySelectorAll('.grp-crit-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        _grpState.criterion = btn.getAttribute('data-crit');
+        lbPanel.querySelectorAll('.grp-crit-btn').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on');
+        grpRenderLeaderboard(document.getElementById('grp-lb-body'), _grpState.rows, _grpState.criterion, _grpState.uid);
+      });
+    });
+  }, 0);
 
   // Charger groupe + membres + parties
   sb.from('groups').select('*').eq('id', groupId).single().then(function(gres) {
@@ -197,56 +235,118 @@ function grpBuildDetail(wrap, groupId) {
     });
   });
 
+  _grpState.uid = uid;
   sb.from('group_members').select('user_id').eq('group_id', groupId).then(function(mres) {
     var ids = (mres.data || []).map(function(m) { return m.user_id; });
     if (!ids.length) { document.getElementById('grp-lb-body').innerHTML = '<div class="ch-empty-inline">Aucun membre.</div>'; return; }
     Promise.all([
       sb.from('profiles').select('id, name, initials, color, bg, hcp').in('id', ids),
-      sb.from('rounds').select('user_id, score, gir, fir, fir_total').in('user_id', ids)
+      sb.from('rounds').select('user_id, score, par, gir, fir, fir_total, putts, course, played_on').in('user_id', ids)
     ]).then(function(r) {
-      grpRenderLeaderboard(document.getElementById('grp-lb-body'), r[0].data || [], r[1].data || [], uid);
+      var profiles = r[0].data || [];
+      var rounds = r[1].data || [];
+      _grpState.rows = grpComputeRows(profiles, rounds);
+      grpRenderLeaderboard(document.getElementById('grp-lb-body'), _grpState.rows, _grpState.criterion, uid);
+      grpRenderRecords(document.getElementById('grp-records'), rounds, profiles);
+      grpRenderFeed(document.getElementById('grp-feed'), rounds, profiles);
     });
   });
 }
 
-function grpRenderLeaderboard(body, profiles, allRounds, myId) {
-  if (!body) return;
-  var rows = profiles.map(function(p) {
+function grpComputeRows(profiles, allRounds) {
+  return profiles.map(function(p) {
     var rs = allRounds.filter(function(r) { return r.user_id === p.id; });
     var n = rs.length;
-    var avg = n ? (rs.reduce(function(s, r) { return s + (r.score || 0); }, 0) / n) : null;
-    var girSum = 0, girN = 0;
-    rs.forEach(function(r) { if (r.gir != null) { girSum += r.gir; girN++; } });
-    var gir = girN ? Math.round(girSum / girN / 18 * 100) : null;
-    return { id: p.id, name: p.name || 'Joueur', initials: p.initials || (p.name ? p.name.slice(0,2).toUpperCase() : '?'),
-      color: p.color, bg: p.bg, hcp: p.hcp, n: n, avg: avg, gir: gir };
+    function mean(k) { var s = 0, c = 0; rs.forEach(function(r){ if (r[k] != null) { s += r[k]; c++; } }); return c ? s / c : null; }
+    var firSum = 0, firTot = 0;
+    rs.forEach(function(r) { if (r.fir != null) { firSum += r.fir; firTot += (r.fir_total || 14); } });
+    return {
+      id: p.id, name: p.name || 'Joueur', initials: p.initials || (p.name ? p.name.slice(0,2).toUpperCase() : '?'),
+      color: p.color, bg: p.bg, hcp: (p.hcp != null ? Number(p.hcp) : null), n: n,
+      score: n ? mean('score') : null,
+      gir: n ? (mean('gir') / 18 * 100) : null,
+      fir: firTot ? (firSum / firTot * 100) : null,
+      putts: n ? mean('putts') : null
+    };
   });
+}
 
-  // Trier : ceux avec parties d'abord (score croissant), puis sans partie
-  rows.sort(function(a, b) {
-    if (a.avg == null && b.avg == null) return 0;
-    if (a.avg == null) return 1;
-    if (b.avg == null) return -1;
-    return a.avg - b.avg;
+function grpFmtCrit(v, crit) {
+  if (v == null) return '—';
+  if (crit.suffix === '%') return Math.round(v) + '%';
+  return (Math.round(v * 10) / 10).toFixed(1);
+}
+
+function grpRenderLeaderboard(body, rows, critKey, myId) {
+  if (!body) return;
+  var crit = GRP_CRITERIA.filter(function(c) { return c.key === critKey; })[0] || GRP_CRITERIA[0];
+  var sorted = rows.slice().sort(function(a, b) {
+    var va = a[crit.key], vb = b[crit.key];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return crit.lower ? (va - vb) : (vb - va);
   });
 
   body.innerHTML = '';
   var list = document.createElement('div');
   list.className = 'grp-lb';
-  rows.forEach(function(r, i) {
-    var rank = (r.avg != null) ? (i + 1) : '–';
+  sorted.forEach(function(r, i) {
+    var has = r[crit.key] != null;
+    var rank = has ? (i + 1) : '–';
     var medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
     var row = document.createElement('div');
     row.className = 'grp-lb-row' + (r.id === myId ? ' me' : '');
+    row.style.cursor = 'pointer';
+    row.title = 'Voir la fiche';
     row.innerHTML =
       '<div class="grp-lb-rank">' + medal + '</div>'
       + '<div class="ch-player-av grp-lb-av" style="background:' + (r.bg||'var(--gold-dim)') + ';color:' + (r.color||'var(--gold-d)') + '">' + grpEsc(r.initials) + '</div>'
       + '<div class="grp-lb-info"><div class="grp-lb-name">' + grpEsc(r.name) + (r.id === myId ? ' <span class="grp-me-tag">toi</span>' : '') + '</div>'
-      +   '<div class="grp-lb-sub">' + (r.n ? r.n + ' partie' + (r.n>1?'s':'') : 'aucune partie') + (r.gir != null ? ' · GIR ' + r.gir + '%' : '') + '</div></div>'
-      + '<div class="grp-lb-score">' + (r.avg != null ? r.avg.toFixed(1) : '—') + '</div>';
+      +   '<div class="grp-lb-sub">' + (r.n ? r.n + ' partie' + (r.n>1?'s':'') : 'aucune partie') + '</div></div>'
+      + '<div class="grp-lb-score">' + grpFmtCrit(r[crit.key], crit) + '</div>';
+    row.addEventListener('click', function() {
+      if (typeof openPlayerDetailModal === 'function') openPlayerDetailModal(r.id, r.name);
+    });
     list.appendChild(row);
   });
   body.appendChild(list);
+}
+
+function grpRenderRecords(body, allRounds, profiles) {
+  if (!body) return;
+  var withData = allRounds.filter(function(r) { return r.score != null; });
+  if (!withData.length) { body.innerHTML = '<div class="ch-empty-inline">Pas encore de partie dans le groupe.</div>'; return; }
+  var nameById = {}; profiles.forEach(function(p) { nameById[p.id] = p.name || 'Joueur'; });
+  var best = withData.slice().sort(function(a, b) { return (a.score - (a.par||0)) - (b.score - (b.par||0)); })[0];
+  var counts = {}; withData.forEach(function(r) { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+  var mostActiveId = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a]; })[0];
+  body.innerHTML = '<div class="grp-records">'
+    + '<div class="grp-rec"><div class="grp-rec-v">' + best.score + '</div><div class="grp-rec-l">Meilleure partie · ' + grpEsc(nameById[best.user_id]||'') + '</div></div>'
+    + '<div class="grp-rec"><div class="grp-rec-v">' + withData.length + '</div><div class="grp-rec-l">Parties au total</div></div>'
+    + '<div class="grp-rec"><div class="grp-rec-v">' + (counts[mostActiveId]||0) + '</div><div class="grp-rec-l">Plus actif · ' + grpEsc(nameById[mostActiveId]||'') + '</div></div>'
+    + '</div>';
+}
+
+function grpRenderFeed(body, allRounds, profiles) {
+  if (!body) return;
+  var nameById = {}, avById = {};
+  profiles.forEach(function(p) {
+    nameById[p.id] = p.name || 'Joueur';
+    avById[p.id] = { initials: p.initials || (p.name ? p.name.slice(0,2).toUpperCase() : '?'), color: p.color, bg: p.bg };
+  });
+  var feed = allRounds.filter(function(r) { return r.played_on; })
+    .slice().sort(function(a, b) { return new Date(b.played_on) - new Date(a.played_on); }).slice(0, 8);
+  if (!feed.length) { body.innerHTML = '<div class="ch-empty-inline">Aucune activité récente. Jouez une partie !</div>'; return; }
+  body.innerHTML = feed.map(function(r) {
+    var av = avById[r.user_id] || {};
+    return '<div class="grp-feed-item">'
+      + '<div class="ch-player-av grp-feed-av" style="background:' + (av.bg||'var(--gold-dim)') + ';color:' + (av.color||'var(--gold-d)') + '">' + grpEsc(av.initials||'?') + '</div>'
+      + '<div class="grp-feed-txt"><strong>' + grpEsc(nameById[r.user_id]||'Joueur') + '</strong> a joué à ' + grpEsc(r.course||'un parcours') + '</div>'
+      + '<div class="grp-feed-score">' + (r.score != null ? r.score : '') + '</div>'
+      + '<div class="grp-feed-date">' + (r.played_on ? new Date(r.played_on).toLocaleDateString('fr-FR') : '') + '</div>'
+      + '</div>';
+  }).join('');
 }
 
 /* ─────────────── CRÉER UN GROUPE ─────────────── */
