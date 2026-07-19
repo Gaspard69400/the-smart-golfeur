@@ -82,6 +82,7 @@ var NAV_TABS = [
   { page: 'training',    icon: '&#10037;',label: 'Entra\u00eenement', short: 'Exos',    primary: true  },
   { page: 'coach',       icon: '&#9678;', label: 'Coach Hub',    short: 'Coach',   primary: true  },
   { page: 'analyse',     icon: '&#9672;', label: 'Analyse',      short: 'Analyse', primary: false },
+  { page: 'groups',      icon: '&#9673;', label: 'Groupes',      short: 'Groupes', primary: false },
   { page: 'courses',     icon: '&#9971;', label: 'Parcours',     short: 'Parcours',primary: false },
   { page: 'articles',    icon: '&#9638;', label: 'Biblioth\u00e8que', short: 'Articles',primary: false, hidden: true },
   { page: 'leaderboard', icon: '&#8801;', label: 'Classements',  short: 'Classt',  primary: false, hidden: true }
