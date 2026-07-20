@@ -242,6 +242,33 @@ function launchApp() {
 
   // 8. Confirmer
   showToast('Bienvenue ' + currentUser.name + ' \u2014 Bonne session !');
+
+  // 9. Onboarding au tout premier lancement
+  try { maybeShowOnboarding(); } catch (e) {}
+}
+
+/* \u2500\u2500\u2500 ONBOARDING (1er lancement) \u2500\u2500\u2500 */
+function maybeShowOnboarding() {
+  if (lsGet('onboarded')) return;
+  var modal = document.createElement('div');
+  modal.className = 'onb-modal';
+  modal.innerHTML =
+    '<div class="onb-card">'
+    + '<div class="onb-hero"><div class="onb-hero-brand">The Smart Golfer</div>'
+    +   '<div class="onb-hero-tag">Analyser \u00b7 Structurer \u00b7 Performer</div></div>'
+    + '<div class="onb-body">'
+    +   '<div class="onb-intro">Bienvenue ! Ici, tu progresses au golf <strong>par la donn\u00e9e et les d\u00e9cisions</strong>, pas par le swing.</div>'
+    +   '<div class="onb-pillars">'
+    +     '<div class="onb-pillar"><div class="onb-pillar-ico">1</div><div><div class="onb-pillar-t">Analyser</div><div class="onb-pillar-d">Saisis tes parties dans la Scorecard \u2192 ton Dashboard r\u00e9v\u00e8le tes forces et faiblesses.</div></div></div>'
+    +     '<div class="onb-pillar"><div class="onb-pillar-ico">2</div><div><div class="onb-pillar-t">Structurer</div><div class="onb-pillar-d">Ton plan d\'entra\u00eenement te dit quoi travailler en priorit\u00e9. Fixe tes objectifs de saison.</div></div></div>'
+    +     '<div class="onb-pillar"><div class="onb-pillar-ico">3</div><div><div class="onb-pillar-t">Performer</div><div class="onb-pillar-d">Rejoins ton coach et tes amis (Groupes) pour progresser ensemble.</div></div></div>'
+    +   '</div>'
+    +   '<button class="btn-login onb-btn" id="onb-start">C\'est parti \u2192</button>'
+    + '</div></div>';
+  document.body.appendChild(modal);
+  function close() { lsSet('onboarded', true); modal.remove(); }
+  document.getElementById('onb-start').addEventListener('click', close);
+  modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
 }
 
 /* ─── NAVIGATION UI ─── */

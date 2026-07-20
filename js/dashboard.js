@@ -473,90 +473,9 @@ function buildDashboard(container) {
 
   wrap.appendChild(chartsRow);
 
-  /* ── 6. MESSAGES + OBJECTIFS (côte à côte) ── */
+  /* ── 6. OBJECTIFS DE SAISON ── */
   var bottomRow = document.createElement('div');
-  bottomRow.className = 'dash-g21';
-
-  /* Messages */
-  var msgPanel = document.createElement('div');
-  msgPanel.className = 'panel';
-  var msgPH = document.createElement('div');
-  msgPH.className = 'panel-header';
-  var msgPT = document.createElement('div');
-  msgPT.className = 'panel-title';
-  msgPT.textContent = 'Messages';
-  var msgUnreadCount = MESSAGES.filter(function(m) { return m.unread; }).length;
-  var msgBadge = document.createElement('div');
-  msgBadge.style.cssText = 'display:flex;align-items:center;gap:8px';
-  if (msgUnreadCount > 0) {
-    var badge = document.createElement('span');
-    badge.style.cssText = 'background:var(--gold);color:var(--bg);border-radius:10px;padding:1px 7px;font-size:8px;font-weight:500';
-    badge.textContent = msgUnreadCount + ' non lu' + (msgUnreadCount > 1 ? 's' : '');
-    msgBadge.appendChild(badge);
-  }
-  var msgLink = document.createElement('span');
-  msgLink.style.cssText = 'font-size:8px;color:var(--gold-d);text-transform:uppercase;letter-spacing:.1em;cursor:pointer';
-  msgLink.textContent = 'Voir tout \u2192';
-  msgLink.addEventListener('click', function() { showPage('coach'); });
-  msgBadge.appendChild(msgLink);
-  msgPH.appendChild(msgPT); msgPH.appendChild(msgBadge);
-  msgPanel.appendChild(msgPH);
-
-  var msgBody = document.createElement('div');
-  msgBody.className = 'panel-body';
-
-  MESSAGES.forEach(function(m) {
-    var item = document.createElement('div');
-    item.className = 'msg-preview-item';
-    item.addEventListener('click', function() { showPage('coach'); });
-
-    /* Icône ou avatar */
-    if (m.type === 'private') {
-      var av = document.createElement('div');
-      av.className = 'msg-av';
-      av.style.background = m.bg || 'var(--bg2)';
-      av.style.color = m.color || 'var(--tx2)';
-      av.textContent = m.av || '?';
-      item.appendChild(av);
-    } else {
-      var ico = document.createElement('div');
-      ico.className = 'msg-channel-icon';
-      ico.textContent = m.icon;
-      item.appendChild(ico);
-    }
-
-    var content = document.createElement('div');
-    content.className = 'msg-content';
-
-    var from = document.createElement('div');
-    from.className = 'msg-from';
-    var fromSpan = document.createElement('span');
-    var cLabel = m.type === 'private' ? m.from : (m.type === 'public' ? 'Equipe : ' + m.channel : 'Groupe : ' + m.channel);
-    fromSpan.textContent = cLabel;
-    var timeSpan = document.createElement('span');
-    timeSpan.className = 'msg-time';
-    timeSpan.textContent = m.time;
-    from.appendChild(fromSpan); from.appendChild(timeSpan);
-
-    var text = document.createElement('div');
-    text.className = 'msg-text';
-    text.textContent = (m.type === 'private' ? m.from + ': ' : '') + m.text;
-
-    content.appendChild(from);
-    content.appendChild(text);
-    item.appendChild(content);
-
-    if (m.unread) {
-      var dot = document.createElement('div');
-      dot.className = 'msg-unread';
-      item.appendChild(dot);
-    }
-
-    msgBody.appendChild(item);
-  });
-
-  msgPanel.appendChild(msgBody);
-  bottomRow.appendChild(msgPanel);
+  bottomRow.className = 'dash-obj-row';
 
   /* Objectifs (modifiables \u00e0 tout moment) */
   var obj = getObjectives();
