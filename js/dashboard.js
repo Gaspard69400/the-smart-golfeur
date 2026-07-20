@@ -413,6 +413,10 @@ function buildDashboard(container) {
   sgPanel.appendChild(sgBody);
   wrap.appendChild(sgPanel);
 
+  /* ── Plan d'entraînement intelligent (généré depuis les Strokes Gained) ── */
+  try { buildTrainingPlan(wrap, sg_tee, sg_app, sg_arg, sg_putt); }
+  catch (ex) { console.warn('[TSG] Plan entraînement:', ex.message); }
+
   /* ── 5. GRAPHIQUES (Évolution score + Handicap) ── */
   var chartsRow = document.createElement('div');
   chartsRow.className = 'dash-g2';
@@ -973,3 +977,113 @@ function openKpiModal(key, label, title) {
 
 
 
+
+/* ════════════════════════════════════════════
+   PLAN D'ENTRAÎNEMENT INTELLIGENT (S20)
+   Détecte le secteur le plus faible (Strokes Gained) et propose
+   quoi travailler + les exercices adaptés de la bibliothèque.
+════════════════════════════════════════════ */
+function buildTrainingPlan(wrap, sg_tee, sg_app, sg_arg, sg_putt) {
+  var sectors = [
+    { key: 'Drive',     val: parseFloat(sg_tee),  label: 'le driving',   phrase: 'ta mise en jeu' },
+    { key: 'Approche',  val: parseFloat(sg_app),  label: 'les approches', phrase: 'tes fers / approches' },
+    { key: 'Jeu court', val: parseFloat(sg_arg),  label: 'le petit jeu',  phrase: 'ton petit jeu' },
+    { key: 'Putting',   val: parseFloat(sg_putt), label: 'le putting',    phrase: 'ton putting' }
+  ].filter(function(s) { return !isNaN(s.val); });
+  if (!sectors.length) return;
+
+  // Trier du plus faible (val la plus négative) au plus fort
+  sectors.sort(function(a, b) { return a.val - b.val; });
+  var weak = sectors[0];
+  var second = sectors[1];
+
+  var panel = document.createElement('div');
+  panel.className = 'panel plan-panel';
+
+  var header = document.createElement('div');
+  header.className = 'panel-header';
+  header.innerHTML = '<div class="panel-title">🧠 Ton plan d\'entraînement</div>'
+    + '<div class="panel-sub">généré depuis tes données</div>';
+  panel.appendChild(header);
+
+  var body = document.createElement('div');
+  body.className = 'panel-body';
+
+  // Bloc priorité
+  var lossTxt;
+  if (weak.val < 0) {
+    lossTxt = 'Tu perds en moyenne <strong>' + Math.abs(weak.val).toFixed(2) + ' coup/tour</strong> sur ' + weak.phrase
+      + '. C\'est ton <strong>plus gros levier</strong> de progression.';
+  } else {
+    lossTxt = 'Tu joues au-dessus de ton niveau partout — beau travail ! Continue à consolider ton secteur le plus juste : <strong>' + weak.label + '</strong>.';
+  }
+
+  var prio = document.createElement('div');
+  prio.className = 'plan-prio';
+  prio.innerHTML = '<div class="plan-prio-tag">Priorité cette semaine</div>'
+    + '<div class="plan-prio-title">Travaille ' + weak.label + '</div>'
+    + '<div class="plan-prio-txt">' + lossTxt + '</div>';
+  body.appendChild(prio);
+
+  // Exercices adaptés
+  var all = (typeof getTrainings === 'function') ? getTrainings() : [];
+  var matches = all.filter(function(t) { return t.category === weak.key; }).slice(0, 3);
+
+  var exWrap = document.createElement('div');
+  exWrap.className = 'plan-ex';
+  if (matches.length) {
+    var lbl = document.createElement('div');
+    lbl.className = 'plan-ex-label';
+    lbl.textContent = 'Exercices recommandés pour toi';
+    exWrap.appendChild(lbl);
+    matches.forEach(function(t) {
+      var row = document.createElement('div');
+      row.className = 'plan-ex-item';
+      row.innerHTML = '<div class="plan-ex-info"><div class="plan-ex-title">' + planEsc(t.title) + '</div>'
+        + '<div class="plan-ex-sub">' + planEsc(t.category) + (t.duration ? ' · ' + t.duration + ' min' : '') + '</div></div>'
+        + '<span class="plan-ex-go">Faire →</span>';
+      row.addEventListener('click', function() {
+        if (typeof openTrainingDetail === 'function') openTrainingDetail(t);
+      });
+      exWrap.appendChild(row);
+    });
+  } else {
+    var none = document.createElement('div');
+    none.className = 'plan-ex-none';
+    none.textContent = 'Aucun exercice dans ce secteur pour l\'instant. Demande à ton coach, ou crée-en un dans l\'onglet Entraînement.';
+    exWrap.appendChild(none);
+  }
+  body.appendChild(exWrap);
+
+  // Bouton + priorité secondaire
+  var footer = document.createElement('div');
+  footer.className = 'plan-footer';
+  var btn = document.createElement('button');
+  btn.className = 'dash-btn dash-btn-gold';
+  btn.textContent = 'Voir les exercices ' + weak.label + ' →';
+  btn.addEventListener('click', function() { planGoToTraining(weak.key); });
+  footer.appendChild(btn);
+  if (second) {
+    var next = document.createElement('div');
+    next.className = 'plan-next';
+    next.innerHTML = 'Ensuite : <strong>' + second.label + '</strong>';
+    footer.appendChild(next);
+  }
+  body.appendChild(footer);
+
+  panel.appendChild(body);
+  wrap.appendChild(panel);
+}
+
+function planGoToTraining(category) {
+  try {
+    var all = (typeof getTrainings === 'function') ? getTrainings() : [];
+    window.trn_filter = all.some(function(t) { return t.category === category; }) ? category : 'all';
+  } catch (e) {}
+  if (typeof showPage === 'function') showPage('training');
+}
+
+function planEsc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}

@@ -4004,3 +4004,33 @@ html, body {
 .trn-reco-title { font-size: 14px; font-weight: 700; color: var(--tx); }
 .trn-reco-sub { font-size: 11px; color: var(--tx3); margin-top: 2px; }
 .trn-reco-btn { flex-shrink: 0; }
+
+/* ════════════════════════════════════════════
+   PLAN D'ENTRAÎNEMENT INTELLIGENT (S20)
+════════════════════════════════════════════ */
+.plan-panel { border-color: rgba(201,168,76,0.35); box-shadow: 0 2px 12px rgba(201,168,76,0.12); }
+.plan-panel .panel-header { background: linear-gradient(90deg, var(--gold-dim), var(--bg2)); }
+.plan-prio {
+  background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.25);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+}
+.plan-prio-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-d); }
+.plan-prio-title { font-size: 20px; font-weight: 800; color: var(--tx); letter-spacing: -0.4px; margin: 3px 0 6px; }
+.plan-prio-txt { font-size: 13px; color: var(--tx2); line-height: 1.6; }
+.plan-prio-txt strong { color: var(--gold-d); }
+
+.plan-ex-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--tx3); margin-bottom: 8px; }
+.plan-ex-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 11px 12px; background: var(--bg2); border-radius: 10px; margin-bottom: 6px; cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.plan-ex-item:hover { background: var(--bg3); transform: translateX(2px); }
+.plan-ex-title { font-size: 14px; font-weight: 700; color: var(--tx); }
+.plan-ex-sub { font-size: 11px; color: var(--tx3); margin-top: 2px; }
+.plan-ex-go { font-size: 12px; font-weight: 700; color: var(--gold-d); white-space: nowrap; }
+.plan-ex-none { font-size: 12px; color: var(--tx3); font-style: italic; padding: 8px 0; }
+
+.plan-footer { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+.plan-next { font-size: 12px; color: var(--tx3); }
+.plan-next strong { color: var(--tx2); }
