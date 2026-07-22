@@ -203,6 +203,9 @@ function grpBuildDetail(wrap, groupId) {
   // Calendrier des tournois du groupe (tout membre peut en créer)
   if (typeof calendarRenderPanel === 'function') calendarRenderPanel(wrap, 'group', groupId, true);
 
+  // Discussion du groupe
+  if (typeof chatRenderPanel === 'function') chatRenderPanel(wrap, 'group', { group_id: groupId }, 'Discussion du groupe');
+
   // Sélecteur de critère
   setTimeout(function() {
     lbPanel.querySelectorAll('.grp-crit-btn').forEach(function(btn) {

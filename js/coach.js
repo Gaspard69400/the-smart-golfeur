@@ -224,6 +224,8 @@ function coachRenderPlayerView(root) {
         // Tournois proposés par le(s) coach(s) — le joueur peut indiquer s'il joue
         coaches.forEach(function(c) {
           if (typeof calendarRenderPanel === 'function') calendarRenderPanel(root, 'coach', c.id, false);
+          // Discussion avec le coach
+          if (typeof chatRenderPanel === 'function') chatRenderPanel(root, 'coach', { coach_id: c.id, player_id: uid }, 'Discussion avec ' + (c.name || 'ton coach'));
         });
       });
     } else {
@@ -490,5 +492,11 @@ function pdRenderCoachControls(body, playerId) {
         });
       });
     });
+
+    // Discussion coach ↔ joueur (dans la fiche)
+    if (typeof chatRenderPanel === 'function') {
+      var pname = (document.getElementById('pd-name') || {}).textContent || 'le joueur';
+      chatRenderPanel(body, 'coach', { coach_id: currentUser.id, player_id: playerId }, 'Discussion avec ' + pname);
+    }
   }).catch(function(e) { section.innerHTML = '<div class="ch-empty-inline">Erreur : ' + e.message + '</div>'; });
 }
