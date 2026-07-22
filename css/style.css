@@ -4054,3 +4054,30 @@ html, body {
 .onb-pillar-t { font-size: 14px; font-weight: 700; color: var(--tx); }
 .onb-pillar-d { font-size: 12px; color: var(--tx3); margin-top: 1px; line-height: 1.4; }
 .onb-btn { width: 100%; }
+
+/* ════════════════════════════════════════════
+   CALENDRIER DES TOURNOIS (calendar.js)
+════════════════════════════════════════════ */
+.cal-panel { margin-top: 14px; }
+.cal-list { display: flex; flex-direction: column; gap: 10px; }
+.cal-event { border: 1px solid var(--bd-card); border-radius: 12px; padding: 12px 14px; background: var(--bg); }
+.cal-ev-head { display: flex; gap: 12px; align-items: flex-start; }
+.cal-date { flex-shrink: 0; width: 46px; text-align: center; background: var(--gold-dim); border-radius: 10px; padding: 6px 0; }
+.cal-date-d { font-size: 20px; font-weight: 800; color: var(--gold-d); line-height: 1; }
+.cal-date-m { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--tx3); margin-top: 2px; }
+.cal-ev-info { min-width: 0; flex: 1; }
+.cal-ev-title { font-size: 15px; font-weight: 700; color: var(--tx); }
+.cal-ev-sub { font-size: 12px; color: var(--tx3); margin-top: 2px; text-transform: capitalize; }
+.cal-ev-notes { font-size: 12px; color: var(--tx2); margin-top: 5px; line-height: 1.4; }
+.cal-part { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+.cal-avs { display: flex; }
+.cal-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; margin-left: -6px; border: 2px solid var(--white); }
+.cal-av:first-child { margin-left: 0; }
+.cal-part-txt { font-size: 12px; color: var(--tx3); font-weight: 600; }
+.cal-actions { display: flex; gap: 8px; align-items: center; }
+.cal-rsvp { flex: 1; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--bd-card); background: var(--white); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--tx2); cursor: pointer; transition: all 0.15s; }
+.cal-in.on { background: var(--ok-bg); border-color: var(--ok2); color: var(--ok); }
+.cal-out.on { background: var(--ng-bg); border-color: var(--ng2); color: var(--ng); }
+.cal-rsvp:hover { border-color: var(--gold); }
+.cal-del { flex-shrink: 0; background: none; border: none; font-size: 18px; line-height: 1; color: var(--tx3); cursor: pointer; padding: 0 4px; }
+.cal-del:hover { color: var(--ng2); }

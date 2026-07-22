@@ -200,6 +200,9 @@ function grpBuildDetail(wrap, groupId) {
     + '<div class="panel-body" id="grp-feed"><div class="ch-loading">…</div></div>';
   wrap.appendChild(feedPanel);
 
+  // Calendrier des tournois du groupe (tout membre peut en créer)
+  if (typeof calendarRenderPanel === 'function') calendarRenderPanel(wrap, 'group', groupId, true);
+
   // Sélecteur de critère
   setTimeout(function() {
     lbPanel.querySelectorAll('.grp-crit-btn').forEach(function(btn) {

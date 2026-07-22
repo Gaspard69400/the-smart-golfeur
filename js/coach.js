@@ -94,6 +94,9 @@ function coachRenderCoachView(root) {
     playersPanel.appendChild(pbody);
     root.appendChild(playersPanel);
 
+    // Calendrier des tournois de l'équipe (le coach peut en créer)
+    if (typeof calendarRenderPanel === 'function') calendarRenderPanel(root, 'coach', uid, true);
+
     if (!ids.length) {
       pbody.innerHTML = '<div class="ch-empty-inline">Aucun joueur relié pour l\'instant. Partage ton code d\'équipe pour commencer !</div>';
       return;
@@ -217,6 +220,11 @@ function coachRenderPlayerView(root) {
         b.appendChild(hint);
         panel.appendChild(b);
         root.appendChild(panel);
+
+        // Tournois proposés par le(s) coach(s) — le joueur peut indiquer s'il joue
+        coaches.forEach(function(c) {
+          if (typeof calendarRenderPanel === 'function') calendarRenderPanel(root, 'coach', c.id, false);
+        });
       });
     } else {
       // Formulaire pour rejoindre un coach
