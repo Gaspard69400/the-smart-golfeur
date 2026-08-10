@@ -4102,3 +4102,71 @@ html, body {
 .chat-input { flex: 1; padding: 10px 14px; border: 1px solid var(--bd-card); border-radius: 22px; background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; color: var(--tx); }
 .chat-input:focus { outline: none; border-color: var(--gold); }
 .chat-send { border-radius: 22px; flex-shrink: 0; }
+
+/* ════════════════════════════════════════════
+   SAISIE IMMERSIVE (proscore.js)
+════════════════════════════════════════════ */
+.btn-immersive {
+  width: 100%; margin-top: 8px; padding: 12px; border-radius: 12px;
+  border: 1px solid var(--gold); background: var(--gold-dim); color: var(--gold-d);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-immersive:hover:not(:disabled) { background: var(--gold); color: var(--night); }
+.btn-immersive:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.imm-overlay {
+  position: fixed; inset: 0; z-index: 900; background: #16301d;
+  display: flex; align-items: stretch; justify-content: center;
+}
+.imm-stage {
+  width: 100%; max-width: 480px; display: flex; flex-direction: column; height: 100%;
+  background: #16301d;
+}
+.imm-top { display: flex; align-items: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 14px 10px; }
+.imm-x { width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; flex-shrink: 0; }
+.imm-top-c { flex: 1; text-align: center; }
+.imm-top-r { width: 34px; flex-shrink: 0; }
+.imm-course { color: #fff; font-size: 15px; font-weight: 700; }
+.imm-progress { color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 2px; }
+
+.imm-hole { position: relative; flex: 1; min-height: 150px; overflow: hidden; }
+.imm-svg { width: 100%; height: 100%; display: block; }
+.imm-hole-badges { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 6px; }
+.imm-badge { background: rgba(0,0,0,0.45); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 8px; backdrop-filter: blur(4px); }
+
+.imm-panel { background: var(--white); border-radius: 22px 22px 0 0; padding: 18px 18px calc(14px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 24px rgba(0,0,0,0.25); }
+.imm-score-block { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 4px 14px; }
+.imm-step { width: 58px; height: 58px; border-radius: 18px; border: 1px solid var(--bd-card); background: var(--bg2); font-size: 30px; font-weight: 300; color: var(--tx); cursor: pointer; line-height: 1; flex-shrink: 0; transition: all 0.12s; }
+.imm-step:active { transform: scale(0.94); }
+.imm-plus { background: var(--gold); border-color: var(--gold); color: var(--night); }
+.imm-score-mid { text-align: center; flex: 1; }
+.imm-score-val { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+.imm-score-lbl { font-size: 13px; font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.imm-score-block.sc-eagle .imm-score-val, .imm-score-block.sc-eagle .imm-score-lbl { color: var(--gold-d); }
+.imm-score-block.sc-birdie .imm-score-val, .imm-score-block.sc-birdie .imm-score-lbl { color: var(--ok2); }
+.imm-score-block.sc-par .imm-score-val { color: var(--tx); } .imm-score-block.sc-par .imm-score-lbl { color: var(--tx3); }
+.imm-score-block.sc-bogey .imm-score-val, .imm-score-block.sc-bogey .imm-score-lbl { color: var(--wn); }
+.imm-score-block.sc-double .imm-score-val, .imm-score-block.sc-double .imm-score-lbl { color: var(--ng2); }
+
+.imm-sub { display: flex; gap: 10px; border-top: 1px solid var(--bd3); padding-top: 14px; }
+.imm-sub-item { flex: 1; text-align: center; }
+.imm-sub-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--tx3); margin-bottom: 6px; }
+.imm-putts { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.imm-pstep { width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--bd-card); background: var(--bg2); font-size: 18px; color: var(--tx); cursor: pointer; line-height: 1; }
+.imm-putts-v { font-size: 22px; font-weight: 800; color: var(--tx); min-width: 24px; }
+.imm-gir { font-size: 15px; font-weight: 800; padding: 6px 0; border-radius: 10px; }
+.imm-gir.ok { color: var(--ok2); } .imm-gir.no { color: var(--tx4); }
+.imm-fir-toggle { display: flex; gap: 4px; }
+.imm-fir { flex: 1; padding: 7px 0; border-radius: 9px; border: 1px solid var(--bd-card); background: var(--white); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700; color: var(--tx3); cursor: pointer; }
+.imm-fir.on { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-d); }
+
+.imm-nav { display: flex; gap: 10px; padding: 12px 18px calc(16px + env(safe-area-inset-bottom)); background: var(--white); }
+.imm-nav-btn { flex: 1; padding: 14px; border-radius: 14px; border: 1px solid var(--bd-card); background: var(--bg2); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: var(--tx2); cursor: pointer; }
+.imm-nav-btn:disabled { opacity: 0.35; }
+.imm-next { background: var(--night); border-color: var(--night); color: #fff; flex: 1.4; }
+.imm-finish { background: var(--gold); border-color: var(--gold); color: var(--night); flex: 1.6; }
+
+/* Bouton Terminer (haut) de la saisie immersive */
+.imm-finish-top { flex-shrink: 0; background: rgba(201,168,76,0.9); color: var(--night); border: none; border-radius: 20px; padding: 7px 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
+.imm-finish-top:hover { background: var(--gold); }

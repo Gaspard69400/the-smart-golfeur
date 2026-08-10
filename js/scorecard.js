@@ -131,6 +131,8 @@ function selectCourse(c) {
     btnStart.disabled = false;
     btnStart.textContent = 'Démarrer la partie →';
   }
+  var btnImm = document.getElementById('btn-immersive');
+  if (btnImm) btnImm.disabled = false;
 }
 
 // ── BUILD TABLES ──
@@ -814,6 +816,10 @@ function initScorecardPage() {
 
     '<button class="btn-start-round" id="btn-start" onclick="startRound()" disabled>',
       'Sélectionnez un parcours',
+    '</button>',
+
+    '<button class="btn-immersive" id="btn-immersive" onclick="openImmersiveScoring()" disabled>',
+      '⛳ Saisie immersive · trou par trou',
     '</button>',
 
     '<div class="sc-sb-section-title" id="hist-title" style="display:none">Historique</div>',
