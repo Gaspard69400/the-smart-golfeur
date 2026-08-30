@@ -34,6 +34,34 @@ function lsSet(key, value) {
 }
 
 
+/* ─── THÈME (clair / sombre / système) ─── */
+
+function tsgApplyTheme(mode) {
+  var m = (mode === 'dark' || mode === 'light' || mode === 'auto') ? mode : 'auto';
+  document.documentElement.setAttribute('data-theme', m);
+  // Couleur de la barre système (mobile / PWA)
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    var dark = (m === 'dark');
+    if (m === 'auto') {
+      try { dark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { dark = false; }
+    }
+    meta.setAttribute('content', dark ? '#14100A' : '#C9A84C');
+  }
+}
+
+function tsgGetTheme() { return lsGet('theme') || 'auto'; }
+
+function tsgSetTheme(mode) {
+  lsSet('theme', mode);
+  tsgApplyTheme(mode);
+}
+
+function tsgInitTheme() { tsgApplyTheme(tsgGetTheme()); }
+
+// Appliquer immédiatement (évite le flash de thème au chargement)
+try { tsgInitTheme(); } catch (e) {}
+
 /* ─── TOAST ─── */
 
 function showToast(msg) {
@@ -579,6 +607,10 @@ function showPage(pageId) {
   if (pageId === 'groups' && target && typeof buildGroupsPage === 'function') {
     try { _grpView = { mode: 'list' }; buildGroupsPage(target); } catch(e) { console.warn('Groups rebuild:', e.message); }
   }
+  // Si on va sur la Scorecard : afficher la bannière de reprise si une partie est en cours
+  if (pageId === 'scorecard' && typeof qsRenderResumeBanner === 'function') {
+    try { qsRenderResumeBanner(); } catch(e) { console.warn('Resume banner:', e.message); }
+  }
   // Si on va sur l'onglet Communauté : reconstruire (XP, badges, fil à jour)
   if (pageId === 'community' && target && typeof buildCommunityPage === 'function') {
     try { buildCommunityPage(target); } catch(e) { console.warn('Community rebuild:', e.message); }
@@ -753,6 +785,15 @@ function openSettingsModal() {
     +       '<div class="settings-hint">Le fichier export\u00e9 contient toutes tes donn\u00e9es au format JSON. Garde-le pr\u00e9cieusement \u2014 il te permet de tout restaurer sur un autre appareil.</div>'
     +     '</div>'
     +     '<div class="settings-section">'
+    +       '<div class="settings-section-title">Apparence</div>'
+    +       '<div class="settings-section-sub">Choisis ton th\u00e8me. « Syst\u00e8me » suit le r\u00e9glage de ton t\u00e9l\u00e9phone.</div>'
+    +       '<div class="theme-picker" id="theme-picker">'
+    +         '<button class="theme-opt" data-theme-set="light"><span class="theme-sw theme-sw-light"></span>Clair</button>'
+    +         '<button class="theme-opt" data-theme-set="dark"><span class="theme-sw theme-sw-dark"></span>Sombre</button>'
+    +         '<button class="theme-opt" data-theme-set="auto"><span class="theme-sw theme-sw-auto"></span>Syst\u00e8me</button>'
+    +       '</div>'
+    +     '</div>'
+    +     '<div class="settings-section">'
     +       '<div class="settings-section-title">\u00c0 propos</div>'
     +       '<div class="settings-about">'
     +         '<div><strong>The Smart Golfer</strong></div>'
@@ -768,6 +809,22 @@ function openSettingsModal() {
   // Listeners
   document.getElementById('settings-close-btn').addEventListener('click', closeSettingsModal);
   modal.addEventListener('click', function(ev) { if (ev.target === modal) closeSettingsModal(); });
+
+  // Sélecteur de thème
+  var picker = document.getElementById('theme-picker');
+  if (picker) {
+    var cur = tsgGetTheme();
+    picker.querySelectorAll('[data-theme-set]').forEach(function(btn) {
+      if (btn.getAttribute('data-theme-set') === cur) btn.classList.add('on');
+      btn.addEventListener('click', function() {
+        var mode = btn.getAttribute('data-theme-set');
+        tsgSetTheme(mode);
+        picker.querySelectorAll('[data-theme-set]').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on');
+        showToast(mode === 'dark' ? 'Th\u00e8me sombre activ\u00e9' : (mode === 'light' ? 'Th\u00e8me clair activ\u00e9' : 'Th\u00e8me syst\u00e8me activ\u00e9'));
+      });
+    });
+  }
 
   document.getElementById('settings-export-btn').addEventListener('click', exportUserData);
   document.getElementById('settings-import-btn').addEventListener('click', function() {

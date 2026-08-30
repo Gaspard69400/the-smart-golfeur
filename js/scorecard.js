@@ -133,6 +133,8 @@ function selectCourse(c) {
   }
   var btnImm = document.getElementById('btn-immersive');
   if (btnImm) btnImm.disabled = false;
+  var btnExp = document.getElementById('btn-express');
+  if (btnExp) btnExp.disabled = false;
 }
 
 // ── BUILD TABLES ──
@@ -704,6 +706,10 @@ function saveRound() {
   renderHistory();
   clearDraftShots();
   showToast('Partie enregistrée ✓  ' + entry.date + ' · ' + entry.course + ' · ' + scoreTotal + ' (+'+(scoreTotal-par)+')');
+  // Le brouillon de saisie express n'a plus lieu d'être
+  if (typeof qsClearDraft === 'function') { try { qsClearDraft(); qsRenderResumeBanner(); } catch(ex) {} }
+  // Écran de célébration (record, birdies, seuils…)
+  if (typeof qsCelebrate === 'function') { try { qsCelebrate(entry); } catch(ex) { console.warn('celebrate:', ex.message); } }
   // Rediriger vers le dashboard et rebuild
   setTimeout(function() {
     try {
@@ -814,12 +820,21 @@ function initScorecardPage() {
 
     '<div class="sc-fg"><div class="sc-fl">Notes</div><input class="sc-fi" id="f-notes" placeholder="Observations..."></div>',
 
-    '<button class="btn-start-round" id="btn-start" onclick="startRound()" disabled>',
-      'Sélectionnez un parcours',
+    '<button class="btn-express" id="btn-express" onclick="openQuickScore()" disabled>',
+      '<span class="btn-express-t">⚡ Saisie express</span>',
+      '<span class="btn-express-s">1 tap par trou · reprise automatique</span>',
     '</button>',
 
     '<button class="btn-immersive" id="btn-immersive" onclick="openImmersiveScoring()" disabled>',
       '⛳ Saisie immersive · trou par trou',
+    '</button>',
+
+    '<button class="btn-start-round" id="btn-start" onclick="startRound()" disabled>',
+      'Sélectionnez un parcours',
+    '</button>',
+
+    '<button class="btn-quicktotal" onclick="openQuickTotal()">',
+      '✎ J\'ai déjà joué — entrer juste le score',
     '</button>',
 
     '<div class="sc-sb-section-title" id="hist-title" style="display:none">Historique</div>',
@@ -830,6 +845,11 @@ function initScorecardPage() {
   var main = document.createElement('div');
   main.className = 'sc-main';
   main.id = 'sc-main';
+
+  // Bannière « reprendre la partie en cours » (saisie express)
+  var resumeHost = document.createElement('div');
+  resumeHost.id = 'qs-resume-host';
+  main.appendChild(resumeHost);
 
   // Empty state
   var empty = document.createElement('div');
