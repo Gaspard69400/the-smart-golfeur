@@ -503,6 +503,8 @@ function buildPages() {
         buildCoachPage(page);
       } else if (tab.page === 'groups') {
         buildGroupsPage(page);
+      } else if (tab.page === 'community') {
+        buildCommunityPage(page);
       } else {
         buildComingSoon(page, tab.label);
       }
@@ -576,6 +578,10 @@ function showPage(pageId) {
   // Si on va sur l'onglet Groupes : revenir à la liste + reconstruire
   if (pageId === 'groups' && target && typeof buildGroupsPage === 'function') {
     try { _grpView = { mode: 'list' }; buildGroupsPage(target); } catch(e) { console.warn('Groups rebuild:', e.message); }
+  }
+  // Si on va sur l'onglet Communauté : reconstruire (XP, badges, fil à jour)
+  if (pageId === 'community' && target && typeof buildCommunityPage === 'function') {
+    try { buildCommunityPage(target); } catch(e) { console.warn('Community rebuild:', e.message); }
   }
 }
 

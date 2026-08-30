@@ -4170,3 +4170,145 @@ html, body {
 /* Bouton Terminer (haut) de la saisie immersive */
 .imm-finish-top { flex-shrink: 0; background: rgba(201,168,76,0.9); color: var(--night); border: none; border-radius: 20px; padding: 7px 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
 .imm-finish-top:hover { background: var(--gold); }
+
+/* ════════════════════════════════════════════
+   COMMUNAUTÉ — Gamification + Fil d'activité (Session 25)
+════════════════════════════════════════════ */
+
+/* ── Héros niveau / XP ── */
+.comm-hero {
+  background: linear-gradient(135deg, var(--night) 0%, var(--night2) 60%, var(--night3) 100%);
+  border-radius: 18px;
+  padding: 20px 22px;
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.comm-hero::after {
+  content: '';
+  position: absolute; right: -40px; top: -40px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,168,76,0.35), transparent 70%);
+  pointer-events: none;
+}
+.comm-hero-top { display: flex; align-items: center; gap: 16px; position: relative; z-index: 1; }
+.comm-level-badge {
+  width: 60px; height: 60px; flex: 0 0 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-l), var(--gold-d));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(201,168,76,0.45);
+  border: 2px solid rgba(255,255,255,0.35);
+}
+.comm-level-num { font-size: 26px; font-weight: 800; color: var(--night); }
+.comm-hero-info { flex: 1 1 auto; min-width: 0; }
+.comm-hero-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.comm-hero-sub { font-size: 12.5px; color: rgba(255,255,255,0.72); margin-top: 2px; }
+.comm-hero-streak { text-align: center; flex: 0 0 auto; }
+.comm-streak-val { font-size: 24px; font-weight: 800; color: var(--gold-l); line-height: 1; }
+.comm-streak-lbl { font-size: 10px; color: rgba(255,255,255,0.65); margin-top: 3px; }
+.comm-xp-bar {
+  height: 9px; border-radius: 6px; background: rgba(255,255,255,0.14);
+  margin: 16px 0 6px; overflow: hidden; position: relative; z-index: 1;
+}
+.comm-xp-fill {
+  height: 100%; border-radius: 6px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-l));
+  transition: width 0.6s cubic-bezier(0.2,0.8,0.2,1);
+}
+.comm-xp-text { font-size: 11.5px; color: rgba(255,255,255,0.7); position: relative; z-index: 1; }
+
+/* ── Pills stats ── */
+.comm-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
+.comm-pill {
+  background: var(--white); border: 1px solid var(--bd-card); border-radius: 14px;
+  padding: 12px 6px; text-align: center; box-shadow: var(--shadow-sm);
+}
+.comm-pill-v { font-size: 21px; font-weight: 800; color: var(--tx); letter-spacing: -0.02em; }
+.comm-pill-l { font-size: 10.5px; color: var(--tx3); margin-top: 2px; font-weight: 500; }
+
+/* ── En-tête de section ── */
+.comm-section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.comm-section-title { font-size: 16px; font-weight: 800; color: var(--tx); letter-spacing: -0.01em; }
+.comm-section-sub { font-size: 12px; color: var(--tx3); }
+
+/* ── Grille de badges ── */
+.comm-badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.comm-badge {
+  background: var(--white); border: 1px solid var(--bd-card); border-radius: 16px;
+  padding: 16px 14px; text-align: center; box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.comm-badge.on {
+  border-color: rgba(201,168,76,0.5);
+  background: linear-gradient(180deg, var(--white), var(--gold-dim2));
+}
+.comm-badge.on:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.comm-badge.off { opacity: 0.62; }
+.comm-badge.off .comm-badge-ico { filter: grayscale(1); opacity: 0.5; }
+.comm-badge-ico { font-size: 34px; line-height: 1; margin-bottom: 8px; }
+.comm-badge-title { font-size: 13.5px; font-weight: 700; color: var(--tx); }
+.comm-badge-desc { font-size: 11px; color: var(--tx3); margin-top: 3px; line-height: 1.35; }
+.comm-badge-prog { height: 6px; border-radius: 4px; background: var(--bg4); overflow: hidden; margin: 10px 0 4px; }
+.comm-badge-prog-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-l)); }
+.comm-badge-progtxt { font-size: 10.5px; color: var(--tx4); font-weight: 600; }
+.comm-badge-check { font-size: 11px; font-weight: 700; color: var(--ok2); margin-top: 8px; }
+
+/* ── Fil d'activité ── */
+.comm-feed-loading, .comm-feed-empty { text-align: center; color: var(--tx3); font-size: 13px; padding: 26px 12px; }
+.comm-feed-list { display: flex; flex-direction: column; gap: 12px; }
+.comm-cta {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, var(--gold-dim), var(--gold-dim2));
+  border: 1px solid rgba(201,168,76,0.35); border-radius: 16px;
+  padding: 16px 18px; margin-bottom: 14px;
+}
+.comm-cta-ico { font-size: 30px; flex: 0 0 auto; }
+.comm-cta-txt { font-size: 13px; color: var(--tx2); line-height: 1.45; }
+
+.comm-card {
+  background: var(--white); border: 1px solid var(--bd-card); border-radius: 16px;
+  padding: 14px 16px; box-shadow: var(--shadow-sm);
+}
+.comm-card-head { display: flex; align-items: center; gap: 12px; }
+.comm-av {
+  width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800;
+}
+.comm-card-who { flex: 1 1 auto; min-width: 0; }
+.comm-card-name { font-size: 14px; font-weight: 700; color: var(--tx); }
+.comm-me {
+  font-size: 9.5px; font-weight: 700; color: var(--gold-d);
+  background: var(--gold-dim); padding: 1px 7px; border-radius: 20px; vertical-align: middle;
+}
+.comm-card-when { font-size: 11.5px; color: var(--tx3); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comm-card-score { text-align: center; flex: 0 0 auto; padding-left: 8px; }
+.comm-card-score-v { font-size: 22px; font-weight: 800; color: var(--tx); line-height: 1; letter-spacing: -0.02em; }
+.comm-card-score-r { font-size: 11px; font-weight: 700; margin-top: 2px; }
+.comm-card-score.good .comm-card-score-r { color: var(--ok2); }
+.comm-card-score.par .comm-card-score-r { color: var(--tx3); }
+.comm-card-score.over .comm-card-score-r { color: var(--wn); }
+.comm-card-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.comm-chip {
+  font-size: 11px; font-weight: 600; color: var(--tx2);
+  background: var(--bg3); border-radius: 20px; padding: 4px 10px;
+}
+.comm-card-foot { margin-top: 12px; border-top: 1px solid var(--bd3); padding-top: 10px; }
+.comm-kudos {
+  border: 1px solid var(--bd-card); background: var(--bg2); color: var(--tx2);
+  border-radius: 20px; padding: 5px 14px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.comm-kudos:hover { background: var(--bg3); }
+.comm-kudos.on { background: var(--gold-dim); border-color: rgba(201,168,76,0.5); color: var(--gold-d); }
+.comm-kudos.pop { animation: commPop 0.35s ease; }
+@keyframes commPop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.comm-kudos-n { font-weight: 800; }
+
+@media (max-width: 560px) {
+  .comm-pills { grid-template-columns: repeat(2, 1fr); }
+  .comm-badges-grid { grid-template-columns: repeat(2, 1fr); }
+}
