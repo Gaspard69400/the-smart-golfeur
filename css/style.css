@@ -4352,3 +4352,32 @@ html, body {
   .comm-ach { padding: 12px 11px 13px; }
   .comm-ach-medal { width: 42px; height: 42px; flex: 0 0 42px; font-size: 21px; }
 }
+
+/* ── Bibliothèque d'entraînement : sélection du moment (Session 26) ── */
+.trn-sel-panel {
+  border: 1px solid rgba(201,168,76,0.4);
+  background: linear-gradient(180deg, var(--gold-dim2), var(--white));
+  margin-bottom: 18px;
+}
+.trn-sel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.trn-sel-sub { font-size: 12.5px; color: var(--tx3); margin-top: 4px; line-height: 1.45; max-width: 640px; }
+.trn-sel-sub strong { color: var(--tx2); }
+.trn-sel-lvl {
+  flex: 0 0 auto; font-size: 11px; font-weight: 700; color: var(--gold-d);
+  background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.35);
+  padding: 4px 10px; border-radius: 20px; white-space: nowrap;
+}
+.trn-sel-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px; padding: 4px 16px 16px;
+}
+.trn-lib-badge {
+  font-size: 10px; font-weight: 700; color: var(--gold-d);
+  background: var(--gold-dim); border-radius: 20px; padding: 2px 8px; margin-left: auto;
+}
+.trn-card-head { display: flex; align-items: center; gap: 6px; }
+
+@media (max-width: 560px) {
+  .trn-sel-grid { grid-template-columns: 1fr; }
+  .trn-sel-head { flex-direction: column; }
+}

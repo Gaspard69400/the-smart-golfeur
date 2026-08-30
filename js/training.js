@@ -19,13 +19,9 @@ function trnIsCoach() {
 }
 
 function getTrainings() {
-  var t = lsGet('trainings');
-  if (t === null || t === undefined) {
-    // Seed initial : quelques exemples pour ne pas avoir une page vide
-    t = TRAINING_SEED();
-    lsSet('trainings', t);
-  }
-  return t || [];
+  // Les exercices « coach » (créés via l'app / synchro cloud). Le contenu de base
+  // est désormais fourni par la BIBLIOTHÈQUE intégrée (traininglib.js) — plus de seed.
+  return lsGet('trainings') || [];
 }
 
 function saveTraining(item) {
@@ -98,7 +94,7 @@ function buildTrainingPage(container) {
   if (!container) return;
   while (container.firstChild) container.removeChild(container.firstChild);
 
-  var all = getTrainings();
+  var all = (typeof getAllExercises === 'function') ? getAllExercises() : getTrainings();
 
   var wrap = document.createElement('div');
   wrap.className = 'dash-wrap';
@@ -112,8 +108,8 @@ function buildTrainingPage(container) {
   title.textContent = 'Entraînement';
   var meta = document.createElement('div');
   meta.className = 'dash-meta';
-  meta.textContent = all.length + ' exercice' + (all.length > 1 ? 's' : '') + ' & entraînements'
-    + (trnIsCoach() ? ' · vous pouvez en créer' : ' · proposés par ton coach');
+  meta.textContent = all.length + ' exercice' + (all.length > 1 ? 's' : '') + ' dans ta bibliothèque'
+    + (trnIsCoach() ? ' · vous pouvez en créer' : '');
   left.appendChild(title); left.appendChild(meta);
   header.appendChild(left);
 
@@ -127,6 +123,11 @@ function buildTrainingPage(container) {
     header.appendChild(right);
   }
   wrap.appendChild(header);
+
+  /* Section "Ta sélection du moment" (reco depuis la bibliothèque) */
+  var sel = document.createElement('div');
+  sel.id = 'trn-selection';
+  wrap.appendChild(sel);
 
   /* Section "Recommandé par ton coach" (joueur, cloud) */
   var reco = document.createElement('div');
@@ -162,7 +163,44 @@ function buildTrainingPage(container) {
 
   container.appendChild(wrap);
   trnRenderGrid();
+  trnRenderSelection();
   trnRenderReco();
+}
+
+/* ─── SÉLECTION DU MOMENT (bibliothèque, personnalisée) ─── */
+function trnRenderSelection() {
+  var host = document.getElementById('trn-selection');
+  if (!host || typeof trnPickSelection !== 'function') return;
+  var res = trnPickSelection();
+  if (!res.picks.length) return;
+
+  var subtitle;
+  if (res.sectors) {
+    var w1 = res.sectors[0], w2 = res.sectors[1];
+    if (w1.sg < 0) {
+      subtitle = 'Tu perds le plus de coups sur <strong>' + w1.label + '</strong> et <strong>' + w2.label
+        + '</strong> — voici les exercices à travailler en priorité.';
+    } else {
+      subtitle = 'Ton jeu est solide partout ! On consolide <strong>' + w1.label + '</strong> et <strong>'
+        + w2.label + '</strong>, tes secteurs les plus justes.';
+    }
+  } else {
+    subtitle = 'Enregistre des parties pour une sélection sur-mesure. En attendant, voici de quoi bien démarrer.';
+  }
+
+  var panel = document.createElement('div');
+  panel.className = 'panel trn-sel-panel';
+  panel.innerHTML = '<div class="panel-header trn-sel-head">'
+    + '<div><div class="panel-title">★ Ta sélection du moment</div>'
+    + '<div class="trn-sel-sub">' + subtitle + '</div></div>'
+    + '<div class="trn-sel-lvl">Niveau : ' + trnEsc(res.level) + '</div></div>';
+  var body = document.createElement('div');
+  body.className = 'trn-sel-grid';
+  res.picks.forEach(function(t) {
+    body.appendChild(trnBuildCard(t));
+  });
+  panel.appendChild(body);
+  host.appendChild(panel);
 }
 
 /* Exercices recommandés par le coach (assignations) — côté joueur */
@@ -207,7 +245,7 @@ function trnRenderReco() {
 function trnRenderGrid() {
   var grid = document.getElementById('trn-grid');
   if (!grid) return;
-  var all = getTrainings();
+  var all = (typeof getAllExercises === 'function') ? getAllExercises() : getTrainings();
   var list = (trn_filter === 'all') ? all : all.filter(function(t) { return t.category === trn_filter; });
 
   while (grid.firstChild) grid.removeChild(grid.firstChild);
@@ -243,7 +281,8 @@ function trnBuildCard(t) {
   head.innerHTML = ''
     + '<span class="trn-type trn-type-' + (t.type === 'entrainement' ? 'training' : 'exercise') + '">'
     +   (t.type === 'entrainement' ? 'Entraînement' : 'Exercice') + '</span>'
-    + '<span class="trn-cat">' + trnEsc(t.category) + '</span>';
+    + '<span class="trn-cat">' + trnEsc(t.category) + '</span>'
+    + (t.library ? '<span class="trn-lib-badge">★ Bibliothèque</span>' : '');
   card.appendChild(head);
 
   var titleEl = document.createElement('div');
@@ -279,8 +318,8 @@ function trnBuildCard(t) {
   viewBtn.addEventListener('click', function() { openTrainingDetail(t); });
   actions.appendChild(viewBtn);
 
-  // Le coach peut éditer/supprimer ses propres créations
-  if (trnIsCoach()) {
+  // Le coach peut éditer/supprimer ses propres créations (pas les exos de la bibliothèque)
+  if (trnIsCoach() && !t.library) {
     var editBtn = document.createElement('button');
     editBtn.className = 'dash-btn dash-btn-outline trn-icon-btn';
     editBtn.title = 'Modifier'; editBtn.innerHTML = '✎';

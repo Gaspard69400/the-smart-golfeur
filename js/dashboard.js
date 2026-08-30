@@ -945,7 +945,8 @@ function buildTrainingPlan(wrap, sg_tee, sg_app, sg_arg, sg_putt) {
   body.appendChild(prio);
 
   // Exercices adaptés
-  var all = (typeof getTrainings === 'function') ? getTrainings() : [];
+  var all = (typeof getAllExercises === 'function') ? getAllExercises()
+    : ((typeof getTrainings === 'function') ? getTrainings() : []);
   var matches = all.filter(function(t) { return t.category === weak.key; }).slice(0, 3);
 
   var exWrap = document.createElement('div');
