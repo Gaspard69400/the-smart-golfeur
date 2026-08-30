@@ -4312,3 +4312,43 @@ html, body {
   .comm-pills { grid-template-columns: repeat(2, 1fr); }
   .comm-badges-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Trophées à PALIERS (Session 26) ── */
+.comm-ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.comm-ach {
+  background: var(--white); border: 1px solid var(--bd-card); border-radius: 16px;
+  padding: 14px 14px 15px; box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.comm-ach.on:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.comm-ach.off { opacity: 0.72; }
+.comm-ach.off .comm-ach-medal { filter: grayscale(0.6); }
+.comm-ach-top { display: flex; align-items: center; gap: 11px; }
+.comm-ach-medal {
+  position: relative; width: 48px; height: 48px; flex: 0 0 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+  border: 2.5px solid var(--bd-card); background: var(--bg3);
+}
+.comm-ach-tiernum {
+  position: absolute; right: -4px; bottom: -4px;
+  min-width: 18px; height: 18px; padding: 0 4px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: #fff; border: 2px solid var(--white);
+  background: var(--gold);
+}
+.comm-ach-head { flex: 1 1 auto; min-width: 0; }
+.comm-ach-title { font-size: 13.5px; font-weight: 700; color: var(--tx); line-height: 1.2; }
+.comm-ach-tier { font-size: 11.5px; font-weight: 700; color: var(--tx3); margin-top: 2px; }
+.comm-pips { display: flex; gap: 5px; margin: 11px 0 9px; }
+.comm-pip { flex: 1 1 0; height: 5px; border-radius: 3px; background: var(--bg4); }
+.comm-ach-next { font-size: 11.5px; color: var(--tx3); font-weight: 500; }
+.comm-ach-next.done { color: var(--ok2); font-weight: 700; }
+.comm-ach-bar { height: 6px; border-radius: 4px; background: var(--bg4); overflow: hidden; margin: 7px 0 4px; }
+.comm-ach-bar-fill { height: 100%; border-radius: 4px; background: var(--gold); transition: width 0.5s ease; }
+.comm-ach-count { font-size: 10.5px; color: var(--tx4); font-weight: 600; }
+
+@media (max-width: 560px) {
+  .comm-ach-grid { grid-template-columns: repeat(2, 1fr); }
+  .comm-ach { padding: 12px 11px 13px; }
+  .comm-ach-medal { width: 42px; height: 42px; flex: 0 0 42px; font-size: 21px; }
+}

@@ -1,18 +1,28 @@
 /* ════════════════════════════════════════════
  * THE SMART GOLFER — community.js
- * Onglet COMMUNAUTÉ : Gamification (XP, niveaux, badges, séries)
- * + Fil d'activité type « Strava » (parties des membres de tes groupes).
+ * Onglet COMMUNAUTÉ : Gamification à PALIERS (XP, niveaux, séries,
+ * trophées multi-paliers Bronze→Légende) + Fil d'activité type « Strava ».
  *
  * Gamification = 100 % local (fonctionne en démo ET en cloud, sans réseau).
  * Fil social = cloud uniquement (lit les parties des groupmates via la
  * policy RLS rounds_select_groupmate déjà en place côté Supabase).
  *
- * Dépend de : app.js (lsGet, showToast, currentUser), data.js (getAllCourses),
+ * Dépend de : app.js (lsGet, lsSet, showToast, currentUser), data.js (getAllCourses),
  *             auth.js (cloudActive), supabaseClient.js (window.sbClient).
  * ════════════════════════════════════════════ */
 
-/* ─── Barème XP ─── */
+/* ─── Barème XP de base ─── */
 var COMM_XP = { round: 50, birdie: 15, eagle: 40, par: 3, gir: 2 };
+
+/* ─── Médailles de palier (index 0 = 1er palier) ─── */
+var COMM_MEDALS = [
+  { name: 'Bronze',  c: '#B87333', bg: 'rgba(184,115,51,0.14)' },
+  { name: 'Argent',  c: '#8A97A8', bg: 'rgba(138,151,168,0.18)' },
+  { name: 'Or',      c: '#C9A84C', bg: 'rgba(201,168,76,0.18)' },
+  { name: 'Platine', c: '#2FA39C', bg: 'rgba(47,163,156,0.16)' },
+  { name: 'Diamant', c: '#5B8DEF', bg: 'rgba(91,141,239,0.16)' },
+  { name: 'Légende', c: '#9B5DE5', bg: 'rgba(155,93,229,0.16)' }
+];
 
 /* ─── Titres de niveau ─── */
 function commLevelTitle(level) {
@@ -36,6 +46,8 @@ function commLevelFromXp(xp) {
   return { level: lvl, into: xp - acc, need: need, title: commLevelTitle(lvl) };
 }
 
+function commClamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+
 /* Pars par trou d'une partie (via son parcours), ou null si introuvable */
 function commCoursePars(round) {
   if (!round || !round.courseId) return null;
@@ -53,7 +65,6 @@ function commWeekKey(dateStr) {
   var d = new Date(dateStr);
   if (isNaN(d.getTime())) return null;
   d.setHours(0, 0, 0, 0);
-  // Jeudi de la semaine courante (norme ISO 8601)
   d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
   var week1 = new Date(d.getFullYear(), 0, 4);
   var weekNo = 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
@@ -63,25 +74,14 @@ function commWeekKey(dateStr) {
 /* Plus longue série de semaines consécutives jouées */
 function commLongestWeekStreak(rounds) {
   var keys = {};
-  rounds.forEach(function(r) {
-    var k = commWeekKey(r.date);
-    if (k) keys[k] = true;
-  });
+  rounds.forEach(function(r) { var k = commWeekKey(r.date); if (k) keys[k] = true; });
   var list = Object.keys(keys).sort();
   if (!list.length) return 0;
-  // Convertir chaque clé en index de semaine absolu comparable
-  function absWeek(k) {
-    var parts = k.split('-W');
-    return parseInt(parts[0], 10) * 53 + parseInt(parts[1], 10);
-  }
+  function absWeek(k) { var p = k.split('-W'); return parseInt(p[0], 10) * 53 + parseInt(p[1], 10); }
   var best = 1, cur = 1;
   for (var i = 1; i < list.length; i++) {
-    if (absWeek(list[i]) - absWeek(list[i - 1]) === 1) {
-      cur++;
-      if (cur > best) best = cur;
-    } else {
-      cur = 1;
-    }
+    if (absWeek(list[i]) - absWeek(list[i - 1]) === 1) { cur++; if (cur > best) best = cur; }
+    else { cur = 1; }
   }
   return best;
 }
@@ -89,24 +89,22 @@ function commLongestWeekStreak(rounds) {
 /* Statistiques agrégées à partir des parties locales */
 function commComputeStats(rounds) {
   var s = {
-    rounds: rounds.length, birdies: 0, eagles: 0, pars: 0, totalGir: 0,
-    bestScore18: null, bestGir: 0, bestFir: 0, minPutts: null,
-    streak: 0, xp: 0
+    rounds: rounds.length, birdies: 0, eagles: 0, pars: 0, totalGir: 0, totalFir: 0,
+    bestScore18: null, bestGir: 0, bestFir: 0, minPutts: null, streak: 0, baseXp: 0, xp: 0
   };
 
   rounds.forEach(function(r) {
     s.totalGir += (r.gir || 0);
+    s.totalFir += (r.fir || 0);
     if ((r.gir || 0) > s.bestGir) s.bestGir = r.gir || 0;
     if ((r.fir || 0) > s.bestFir) s.bestFir = r.fir || 0;
     if (r.putts != null && (s.minPutts === null || r.putts < s.minPutts)) s.minPutts = r.putts;
 
-    // Score 18 trous (parties complètes uniquement)
     var filled = Array.isArray(r.scores) ? r.scores.filter(function(x) { return x != null; }).length : 0;
     if (filled === 18 && r.score != null) {
       if (s.bestScore18 === null || r.score < s.bestScore18) s.bestScore18 = r.score;
     }
 
-    // Birdies / eagles / pars par trou
     var pars = commCoursePars(r);
     if (pars && Array.isArray(r.scores)) {
       r.scores.forEach(function(sc, i) {
@@ -120,44 +118,58 @@ function commComputeStats(rounds) {
   });
 
   s.streak = commLongestWeekStreak(rounds);
-  s.xp = s.rounds * COMM_XP.round + s.birdies * COMM_XP.birdie + s.eagles * COMM_XP.eagle
-       + s.pars * COMM_XP.par + s.totalGir * COMM_XP.gir;
+  s.baseXp = s.rounds * COMM_XP.round + s.birdies * COMM_XP.birdie + s.eagles * COMM_XP.eagle
+           + s.pars * COMM_XP.par + s.totalGir * COMM_XP.gir;
   return s;
 }
 
-/* Définition des badges (progression cur/target) */
-function commBadges(s) {
-  function b(icon, title, desc, cur, target) {
-    var c = Math.min(cur, target);
-    return { icon: icon, title: title, desc: desc, cur: c, target: target,
-      done: cur >= target, pct: Math.round(Math.min(1, cur / target) * 100) };
-  }
-  // Score : plus c'est bas mieux c'est → on convertit en « atteint / pas atteint »
-  function score(icon, title, desc, best, threshold) {
-    var done = (best !== null && best < threshold);
-    return { icon: icon, title: title, desc: desc, cur: done ? 1 : 0, target: 1,
-      done: done, pct: done ? 100 : 0 };
-  }
-  return [
-    b('🏌️', 'Première partie', 'Enregistre ta 1re partie', s.rounds, 1),
-    b('📅', 'Habitué', '5 parties enregistrées', s.rounds, 5),
-    b('🔥', 'Passionné', '15 parties enregistrées', s.rounds, 15),
-    b('👑', 'Légende du club', '30 parties enregistrées', s.rounds, 30),
-    b('🐦', 'Premier birdie', 'Réalise un birdie', s.birdies, 1),
-    b('🦅', 'Aigle royal', 'Réalise un eagle', s.eagles, 1),
-    b('🎯', 'Chasseur de birdies', '10 birdies au total', s.birdies, 10),
-    b('🟢', 'GIR machine', '9 greens régulés dans une partie', s.bestGir, 9),
-    b('💚', 'Sniper des greens', '14 greens régulés dans une partie', s.bestGir, 14),
-    b('🛣️', 'Rouleau compresseur', '10 fairways touchés dans une partie', s.bestFir, 10),
-    score('🧘', 'Putting zen', '30 putts ou moins sur une partie', s.minPutts, 31),
-    score('🪄', 'Maître du putter', '27 putts ou moins sur une partie', s.minPutts, 28),
-    score('💯', 'Sous les 100', 'Une carte 18 trous sous 100', s.bestScore18, 100),
-    score('🎖️', 'Sous les 90', 'Une carte 18 trous sous 90', s.bestScore18, 90),
-    score('🏆', 'Sous les 85', 'Une carte 18 trous sous 85', s.bestScore18, 85),
-    score('💎', 'Sous les 80', 'Une carte 18 trous sous 80', s.bestScore18, 80),
-    b('⚡', 'Série de 3', '3 semaines de golf d\'affilée', s.streak, 3),
-    b('🌟', 'Série de 8', '8 semaines de golf d\'affilée', s.streak, 8)
+/* ─── Trophées à PALIERS ─── */
+function commAchievements(s) {
+  var defs = [
+    { icon: '🏌️', title: 'Parties jouées',       unit: 'parties',  val: s.rounds,      tiers: [1, 5, 10, 25, 50, 100] },
+    { icon: '🐦', title: 'Birdies',              unit: 'birdies',  val: s.birdies,     tiers: [1, 5, 10, 25, 100, 1000] },
+    { icon: '🦅', title: 'Eagles',               unit: 'eagles',   val: s.eagles,      tiers: [1, 3, 5, 10, 25] },
+    { icon: '🎯', title: 'Pars réalisés',        unit: 'pars',     val: s.pars,        tiers: [10, 50, 100, 250, 500, 1000] },
+    { icon: '🟢', title: 'Greens en régulation', unit: 'GIR',      val: s.totalGir,    tiers: [10, 50, 100, 250, 500] },
+    { icon: '🛣️', title: 'Fairways touchés',     unit: 'fairways', val: s.totalFir,    tiers: [10, 50, 100, 250, 500] },
+    { icon: '🔥', title: 'Série de semaines',     unit: 'sem.',     val: s.streak,      tiers: [2, 3, 5, 8, 12, 20] },
+    { icon: '🏆', title: 'Meilleure carte 18',   unit: '',         val: s.bestScore18, inverse: true, tiers: [100, 95, 90, 85, 80, 75] },
+    { icon: '🧘', title: 'Économie de putts',    unit: 'putts',    val: s.minPutts,    inverse: true, tiers: [34, 32, 30, 28, 26] }
   ];
+  return defs.map(commComputeAch);
+}
+
+function commComputeAch(d) {
+  var tiers = d.tiers, val = d.val, n = tiers.length, ti = 0, i;
+  if (d.inverse) {
+    if (val != null) { for (i = 0; i < n; i++) { if (val <= tiers[i]) ti = i + 1; } }
+  } else {
+    for (i = 0; i < n; i++) { if ((val || 0) >= tiers[i]) ti = i + 1; }
+  }
+  var maxed = ti >= n;
+  var nextV = maxed ? null : tiers[ti];
+  var prevV = ti > 0 ? tiers[ti - 1] : (d.inverse ? null : 0);
+
+  var pct = 0;
+  if (maxed) {
+    pct = 100;
+  } else if (d.inverse) {
+    if (val != null) {
+      var hi = (ti > 0) ? tiers[ti - 1] : (tiers[0] + Math.max(2, tiers[0] - tiers[1]));
+      pct = Math.round(commClamp((hi - val) / (hi - nextV), 0, 1) * 100);
+    }
+  } else {
+    pct = Math.round(commClamp(((val || 0) - prevV) / (nextV - prevV), 0, 1) * 100);
+  }
+
+  var bonusXp = 0;
+  for (var t = 1; t <= ti; t++) bonusXp += t * 30;
+
+  return {
+    icon: d.icon, title: d.title, unit: d.unit, inverse: !!d.inverse, val: val,
+    tiers: tiers, tierIndex: ti, maxed: maxed, nextV: nextV, pct: pct, bonusXp: bonusXp,
+    medal: ti > 0 ? COMM_MEDALS[Math.min(ti - 1, COMM_MEDALS.length - 1)] : null
+  };
 }
 
 /* ─── PAGE ─── */
@@ -167,10 +179,15 @@ function buildCommunityPage(container) {
 
   var rounds = (typeof lsGet === 'function' && lsGet('rounds')) || [];
   var s = commComputeStats(rounds);
+  var achs = commAchievements(s);
+
+  var tierXp = achs.reduce(function(a, x) { return a + x.bonusXp; }, 0);
+  s.xp = s.baseXp + tierXp;
   var lv = commLevelFromXp(s.xp);
-  var badges = commBadges(s);
-  var unlocked = badges.filter(function(x) { return x.done; }).length;
   var pctLevel = Math.round((lv.into / lv.need) * 100);
+
+  var paliersDone = achs.reduce(function(a, x) { return a + x.tierIndex; }, 0);
+  var paliersTot = achs.reduce(function(a, x) { return a + x.tiers.length; }, 0);
 
   // ── Héros : niveau + XP ──
   var hero = ''
@@ -187,37 +204,25 @@ function buildCommunityPage(container) {
     + '<div class="comm-xp-text">' + lv.into + ' / ' + lv.need + ' XP vers le niveau ' + (lv.level + 1) + '</div>'
     + '</div>';
 
-  // ── Stat pills ──
+  // ── Pills stats ──
   var pills = ''
     + '<div class="comm-pills">'
     +   '<div class="comm-pill"><div class="comm-pill-v">' + s.rounds + '</div><div class="comm-pill-l">Parties</div></div>'
     +   '<div class="comm-pill"><div class="comm-pill-v">' + s.birdies + '</div><div class="comm-pill-l">Birdies</div></div>'
-    +   '<div class="comm-pill"><div class="comm-pill-v">' + unlocked + '/' + badges.length + '</div><div class="comm-pill-l">Trophées</div></div>'
+    +   '<div class="comm-pill"><div class="comm-pill-v">' + paliersDone + '/' + paliersTot + '</div><div class="comm-pill-l">Paliers</div></div>'
     +   '<div class="comm-pill"><div class="comm-pill-v">' + (s.bestScore18 !== null ? s.bestScore18 : '—') + '</div><div class="comm-pill-l">Meilleur 18</div></div>'
     + '</div>';
 
-  // ── Grille de badges ──
-  var cards = badges.map(function(bd) {
-    var prog = (!bd.done && bd.target > 1)
-      ? '<div class="comm-badge-prog"><div class="comm-badge-prog-fill" style="width:' + bd.pct + '%"></div></div><div class="comm-badge-progtxt">' + bd.cur + ' / ' + bd.target + '</div>'
-      : '';
-    return '<div class="comm-badge ' + (bd.done ? 'on' : 'off') + '">'
-      + '<div class="comm-badge-ico">' + bd.icon + '</div>'
-      + '<div class="comm-badge-title">' + commEsc(bd.title) + '</div>'
-      + '<div class="comm-badge-desc">' + commEsc(bd.desc) + '</div>'
-      + prog
-      + (bd.done ? '<div class="comm-badge-check">✓ Débloqué</div>' : '')
-      + '</div>';
-  }).join('');
-
+  // ── Trophées à paliers ──
+  var cards = achs.map(commAchCard).join('');
   var badgeSection = ''
     + '<div class="comm-section-head"><div class="comm-section-title">🏅 Mes trophées</div>'
-    + '<div class="comm-section-sub">' + unlocked + ' débloqué' + (unlocked > 1 ? 's' : '') + ' sur ' + badges.length + '</div></div>'
-    + '<div class="comm-badges-grid">' + cards + '</div>';
+    + '<div class="comm-section-sub">' + paliersDone + ' palier' + (paliersDone > 1 ? 's' : '') + ' débloqué' + (paliersDone > 1 ? 's' : '') + ' sur ' + paliersTot + '</div></div>'
+    + '<div class="comm-ach-grid">' + cards + '</div>';
 
   container.innerHTML = ''
     + '<div class="dash-header"><div><div class="dash-greeting">Communauté</div>'
-    + '<div class="dash-meta">Gagne de l\'XP, débloque des trophées et suis les performances de tes amis</div></div></div>'
+    + '<div class="dash-meta">Franchis les paliers, débloque tes médailles et suis les performances de tes amis</div></div></div>'
     + hero + pills + badgeSection
     + '<div class="comm-section-head" style="margin-top:26px"><div class="comm-section-title">📣 Fil d\'activité</div>'
     + '<div class="comm-section-sub">Les dernières parties de ta communauté</div></div>'
@@ -226,12 +231,56 @@ function buildCommunityPage(container) {
   commRenderFeed();
 }
 
+/* Une carte de trophée (paliers) */
+function commAchCard(a) {
+  var pips = '';
+  for (var i = 0; i < a.tiers.length; i++) {
+    pips += '<span class="comm-pip' + (i < a.tierIndex ? ' on' : '') + '"'
+      + (i < a.tierIndex && a.medal ? ' style="background:' + a.medal.c + '"' : '') + '></span>';
+  }
+  var tierLabel = a.tierIndex > 0 ? ('Palier ' + a.tierIndex + '/' + a.tiers.length + ' · ' + a.medal.name) : 'À débloquer';
+  var medalStyle = a.medal ? ('border-color:' + a.medal.c + ';color:' + a.medal.c + ';background:' + a.medal.bg) : '';
+
+  var nextLine;
+  if (a.maxed) {
+    nextLine = '<div class="comm-ach-next done">🏅 Palier maximum atteint !</div>';
+  } else if (a.inverse) {
+    var sym = (a.unit === 'putts') ? '≤ ' : 'sous ';
+    nextLine = '<div class="comm-ach-next">Prochain : ' + sym + a.nextV + (a.unit ? ' ' + a.unit : '') + '</div>';
+  } else {
+    nextLine = '<div class="comm-ach-next">Prochain : ' + a.nextV + ' ' + a.unit + '</div>';
+  }
+
+  var showBar = (!a.inverse || a.val != null);
+  var bar = showBar
+    ? '<div class="comm-ach-bar"><div class="comm-ach-bar-fill" style="width:' + a.pct + '%' + (a.medal ? ';background:' + a.medal.c : '') + '"></div></div>'
+    : '';
+
+  var count = '';
+  if (!a.maxed) {
+    count = a.inverse
+      ? '<div class="comm-ach-count">' + (a.val != null ? 'Meilleur : ' + a.val : 'Pas encore de donnée') + '</div>'
+      : '<div class="comm-ach-count">' + (a.val || 0) + ' / ' + a.nextV + '</div>';
+  }
+
+  var tierNum = a.tierIndex > 0 ? '<span class="comm-ach-tiernum" style="background:' + a.medal.c + '">' + a.tierIndex + '</span>' : '';
+
+  return '<div class="comm-ach ' + (a.tierIndex > 0 ? 'on' : 'off') + '">'
+    + '<div class="comm-ach-top">'
+    +   '<div class="comm-ach-medal" style="' + medalStyle + '">' + a.icon + tierNum + '</div>'
+    +   '<div class="comm-ach-head"><div class="comm-ach-title">' + commEsc(a.title) + '</div>'
+    +     '<div class="comm-ach-tier"' + (a.medal ? ' style="color:' + a.medal.c + '"' : '') + '>' + commEsc(tierLabel) + '</div></div>'
+    + '</div>'
+    + '<div class="comm-pips">' + pips + '</div>'
+    + nextLine + bar + count
+    + '</div>';
+}
+
 /* ─── FIL D'ACTIVITÉ ─── */
 function commRenderFeed() {
   var host = document.getElementById('comm-feed');
   if (!host) return;
 
-  // Mode local / démo : pas de communauté → on montre le fil perso + une invitation
   if (typeof cloudActive !== 'function' || !cloudActive()) {
     var mine = (lsGet('rounds') || []).slice(0, 10);
     var cta = '<div class="comm-cta">'
@@ -246,7 +295,6 @@ function commRenderFeed() {
     return;
   }
 
-  // Mode cloud : parties des membres de mes groupes (+ les miennes)
   var sb = window.sbClient, uid = currentUser.id;
   sb.from('group_members').select('group_id').eq('user_id', uid).then(function(res) {
     var gids = (res.data || []).map(function(r) { return r.group_id; });
