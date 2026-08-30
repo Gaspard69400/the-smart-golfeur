@@ -259,6 +259,14 @@ function launchApp() {
   // 5. Construire les pages (chacune protégée)
   buildPages();
 
+  // 5b. Recalculer les Strokes Gained de tout l'historique avec le modèle courant
+  try {
+    if (typeof sgBackfillRounds === 'function') {
+      var nsg = sgBackfillRounds();
+      if (nsg) console.log('[TSG] Strokes Gained recalculés sur ' + nsg + ' partie(s)');
+    }
+  } catch(e) { console.warn('SG backfill:', e.message); }
+
   // 6. Initialiser la scorecard
   try { initScorecardPage(); } catch(e) { console.warn('SC:', e.message); }
 

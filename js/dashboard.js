@@ -337,7 +337,13 @@ function buildDashboard(container) {
   sgTitleWrap.appendChild(sgInfo);
   var sgSub = document.createElement('div');
   sgSub.className = 'panel-sub';
-  sgSub.textContent = 'Vert = mieux que ton niveau · Rouge = à travailler';
+  var sgRefTxt = 'ton niveau';
+  try {
+    if (hasReal && typeof sgRefHcp === 'function' && typeof sgReferenceLabel === 'function') {
+      sgRefTxt = sgReferenceLabel(sgRefHcp());
+    }
+  } catch (e) {}
+  sgSub.textContent = 'Comparé à ' + sgRefTxt + ' · vert = mieux · rouge = à travailler';
   sgHeader.appendChild(sgTitleWrap);
   sgHeader.appendChild(sgSub);
   sgPanel.appendChild(sgHeader);
@@ -377,7 +383,8 @@ function buildDashboard(container) {
     barTrack.className = 'sg-bar-track';
     var barFill = document.createElement('div');
     barFill.className = 'sg-bar-fill';
-    var pct = Math.min(100, Math.max(0, (s.val + 1) * 50));
+    // Échelle ±3 coups/tour : les Strokes Gained réels sortent largement de ±1
+    var pct = Math.min(100, Math.max(0, (s.val / 3 + 1) * 50));
     barFill.style.width = pct + '%';
     barFill.style.background = isPos ? 'var(--ok2)' : isNeg ? 'var(--ng2)' : 'var(--tx3)';
     barTrack.appendChild(barFill);
@@ -409,6 +416,22 @@ function buildDashboard(container) {
     +   (sgTotal >= 0 ? '+' : '') + sgTotal.toFixed(2) + ' coups/tour'
     + '</div>';
   sgBody.appendChild(sgTotalDiv);
+
+  /* Note de méthode — l'utilisateur doit savoir d'où sortent ces chiffres */
+  if (hasReal) {
+    var sgNote = document.createElement('div');
+    sgNote.style.cssText = 'margin-top:10px;font-size:10.5px;line-height:1.5;color:var(--tx3)';
+    sgNote.innerHTML = 'Calcul&nbsp;: ton score, tes fairways, tes greens et tes putts sont compar\u00e9s aux '
+      + 'moyennes publi\u00e9es pour ' + sgRefTxt + ', ajust\u00e9es au rating et au slope du parcours. '
+      + 'Le putting est exact (un putt = un coup)&nbsp;; le petit jeu est le reste de l\'\u00e9cart. '
+      + 'Saisis tes putts pour d\u00e9bloquer les 4 secteurs.';
+    if (rounds.length < 5) {
+      sgNote.innerHTML += ' <strong>Avec seulement ' + rounds.length + ' partie'
+        + (rounds.length > 1 ? 's' : '') + ', la r\u00e9f\u00e9rence reste approximative</strong> \u2014 '
+        + 'elle s\'affinera au fil de tes cartes.';
+    }
+    sgBody.appendChild(sgNote);
+  }
 
   sgPanel.appendChild(sgBody);
   wrap.appendChild(sgPanel);

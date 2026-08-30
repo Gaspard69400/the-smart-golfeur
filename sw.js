@@ -4,7 +4,7 @@
  * dernière version), avec repli sur le cache hors-ligne.
  * Ne touche JAMAIS aux requêtes cross-origin (Supabase, CDN).
  * ════════════════════════════════════════════ */
-var CACHE = 'tsg-cache-v32';
+var CACHE = 'tsg-cache-v34';
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();

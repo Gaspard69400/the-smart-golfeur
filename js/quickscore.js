@@ -464,16 +464,15 @@ function qtSave(close) {
     hcp: (currentUser && currentUser.hcp) || null,
     notes: 'Saisie rapide (score total)',
     scores: new Array(18).fill(null),
-    sg_tee: parseFloat((((fir / (firTotal || 14)) - 0.5) * 1.2).toFixed(2)),
-    sg_app: parseFloat((((gir / 18) - 0.38) * 2.1).toFixed(2)),
-    sg_arg: parseFloat(((gir / 18) >= 0.5 ? 0.1 : -0.1).toFixed(2)),
-    sg_putt: parseFloat((puttsTotal ? ((32 - puttsTotal) * 0.15) : 0).toFixed(2)),
+    sg_tee: null, sg_app: null, sg_arg: null, sg_putt: null,
     quickEntry: true,
     detailMode: false,
     proMode: false,
     shots: {}, shotsOnGreen: {}, shotsPutts: {}, shotsFairway: {}, shotsFairwayMissSide: {},
     clubs: [], fairwayPos: [], distRemain: [], clubsApp: [], distFromTarget2: []
   };
+
+  if (typeof sgApplyToRound === 'function') { try { sgApplyToRound(entry); } catch(ex) {} }
 
   roundHistory.unshift(entry);
   if (roundHistory.length > 50) roundHistory.pop();

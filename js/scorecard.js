@@ -663,10 +663,8 @@ function saveRound() {
     hcp: parseFloat(document.getElementById('f-hcp').value),
     notes: document.getElementById('f-notes').value,
     scores: [...scores],
-    sg_tee:  parseFloat((((firHit / (selectedCourse.trous.filter(function(h){return h.par!==3;}).length||14)) - 0.5) * 1.2).toFixed(2)),
-    sg_app:  parseFloat((((girHit / 18) - 0.38) * 2.1).toFixed(2)),
-    sg_arg:  parseFloat(((girHit / 18) >= 0.5 ? 0.1 : -0.1).toFixed(2)),
-    sg_putt: parseFloat((puttsTotal > 0 ? ((32 - puttsTotal) * 0.15) : 0).toFixed(2)),
+    // Strokes Gained : calculés plus bas par le modèle de référence (strokesgained.js)
+    sg_tee: null, sg_app: null, sg_arg: null, sg_putt: null,
     // Données détaillées (si saisie détaillée activée)
     detailMode: sc_detailMode,
     proMode: sc_proMode,
@@ -691,6 +689,9 @@ function saveRound() {
     entry.clubsApp.push(d.clubApp || null);
     entry.distFromTarget2.push(d.distFromTarget2 ? parseInt(d.distFromTarget2) : null);
   }
+
+  // Strokes Gained réels (modèle de référence par handicap)
+  if (typeof sgApplyToRound === 'function') { try { sgApplyToRound(entry); } catch(ex) { console.warn('SG:', ex.message); } }
 
   roundHistory.unshift(entry);
   if (roundHistory.length > 50) roundHistory.pop();
