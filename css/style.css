@@ -4765,3 +4765,67 @@ html, body {
   .qs-nav-b:first-child { grid-column: 1 / -1; }
   .qt-grid3 { grid-template-columns: 1fr 1fr; }
 }
+
+/* ════════════════════════════════════════════
+   PARTAGE DE CARTE + HORS-LIGNE (Session 30)
+════════════════════════════════════════════ */
+
+/* ── Modale de partage ── */
+.shr-modal {
+  position: fixed; inset: 0; z-index: 980; display: flex;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(26,18,9,0.72); backdrop-filter: blur(4px);
+}
+.shr-card {
+  background: var(--white); border-radius: 20px; width: 100%; max-width: 420px;
+  max-height: 92vh; display: flex; flex-direction: column;
+  border: 1px solid var(--bd-card); box-shadow: 0 24px 70px rgba(0,0,0,.4);
+}
+.shr-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 18px 20px 12px; }
+.shr-tag { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-d); }
+.shr-title { font-size: 18px; font-weight: 800; color: var(--tx); margin-top: 3px; }
+.shr-close { border: none; background: transparent; font-size: 26px; color: var(--tx3); cursor: pointer; line-height: 1; padding: 0 4px; }
+.shr-preview {
+  flex: 1 1 auto; overflow-y: auto; padding: 0 20px;
+  display: flex; align-items: center; justify-content: center; min-height: 200px;
+}
+.shr-canvas {
+  width: 100%; height: auto; border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.28);
+}
+.shr-loading { font-size: 13px; color: var(--tx3); padding: 40px 0; }
+.shr-actions { display: flex; gap: 9px; justify-content: flex-end; padding: 16px 20px 18px; }
+
+/* ── Bouton de partage dans l'historique ── */
+.hr-share {
+  border: 1px solid var(--bd); background: var(--bg2); color: var(--tx3);
+  border-radius: 7px; padding: 3px 7px; font-size: 12px; cursor: pointer;
+  font-family: inherit; line-height: 1.2; transition: background .15s, border-color .15s;
+}
+.hr-share:hover { background: var(--gold-dim); border-color: var(--gold); }
+
+/* ── Bandeau hors-ligne ── */
+.offline-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 995;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  background: var(--night); color: #F5EFE3;
+  font-size: 12px; font-weight: 600; padding: 9px 16px;
+  text-align: center; line-height: 1.4;
+  box-shadow: 0 -3px 14px rgba(0,0,0,.25);
+  animation: offIn .25s ease;
+}
+@keyframes offIn { from { transform: translateY(100%); } to { transform: none; } }
+.offline-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--wn2);
+  flex-shrink: 0; animation: offPulse 1.9s ease-in-out infinite;
+}
+@keyframes offPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* Sur mobile la barre de nav est déjà en bas : on remonte le bandeau */
+@media (max-width: 900px) {
+  .offline-bar { bottom: 62px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offline-bar, .offline-dot { animation: none !important; }
+}

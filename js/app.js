@@ -62,6 +62,29 @@ function tsgInitTheme() { tsgApplyTheme(tsgGetTheme()); }
 // Appliquer immédiatement (évite le flash de thème au chargement)
 try { tsgInitTheme(); } catch (e) {}
 
+/* ─── ÉTAT RÉSEAU (bandeau hors-ligne) ─── */
+
+function tsgUpdateOnlineState() {
+  var off = !navigator.onLine;
+  var bar = document.getElementById('offline-bar');
+  if (off && !bar) {
+    bar = document.createElement('div');
+    bar.id = 'offline-bar';
+    bar.className = 'offline-bar';
+    bar.innerHTML = '<span class="offline-dot"></span>Hors-ligne \u2014 tu peux continuer \u00e0 saisir, tout se synchronisera au retour du r\u00e9seau.';
+    document.body.appendChild(bar);
+  } else if (!off && bar) {
+    bar.remove();
+  }
+  document.documentElement.classList.toggle('is-offline', off);
+}
+
+window.addEventListener('online', function() {
+  tsgUpdateOnlineState();
+  if (typeof showToast === 'function') showToast('Connexion r\u00e9tablie \u2713');
+});
+window.addEventListener('offline', tsgUpdateOnlineState);
+
 /* ─── TOAST ─── */
 
 function showToast(msg) {
@@ -281,6 +304,9 @@ function launchApp() {
 
   // 9. Onboarding au tout premier lancement
   try { maybeShowOnboarding(); } catch (e) {}
+
+  // 10. Bandeau hors-ligne si le réseau est absent
+  try { tsgUpdateOnlineState(); } catch (e) {}
 }
 
 /* \u2500\u2500\u2500 ONBOARDING (1er lancement) \u2500\u2500\u2500 */

@@ -45,6 +45,7 @@ function qsCelebrate(entry) {
     +   (highlights ? '<div class="cel-hls">' + highlights + '</div>' : '')
     +   '<div class="cel-actions">'
     +     '<button class="qs-btn-ghost" id="cel-close">Fermer</button>'
+    +     '<button class="qs-btn-ghost" id="cel-share">📸 Partager</button>'
     +     '<button class="qs-btn-gold" id="cel-go">Voir mon analyse →</button>'
     +   '</div>'
     + '</div>';
@@ -59,6 +60,10 @@ function qsCelebrate(entry) {
   document.getElementById('cel-go').addEventListener('click', function() {
     close();
     if (typeof showPage === 'function') showPage('dashboard');
+  });
+  var shareBtn = document.getElementById('cel-share');
+  if (shareBtn) shareBtn.addEventListener('click', function() {
+    if (typeof openShareCard === 'function') openShareCard(entry);
   });
   m.addEventListener('click', function(e) { if (e.target === m) close(); });
 

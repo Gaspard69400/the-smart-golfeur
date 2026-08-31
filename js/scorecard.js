@@ -735,7 +735,7 @@ function renderHistory() {
   // L'ID peut être 'roundHistory-list' ou 'history-list' selon les versions
   var cont = document.getElementById('roundHistory-list') || document.getElementById('history-list');
   if (!cont) return;
-  cont.innerHTML = roundHistory.slice(0,5).map(e => {
+  cont.innerHTML = roundHistory.slice(0,5).map((e, i) => {
     const vsPar = e.score - e.par;
     const col = vsPar < 0 ? 'var(--ok2)' : vsPar <= 7 ? 'var(--wn2)' : 'var(--ng2)';
     return `<div class="roundHistory-row">
@@ -743,8 +743,15 @@ function renderHistory() {
       <div class="hr-course" style="font-size:10px">${e.course}</div>
       <div class="hr-score" style="color:${col}">${e.score}</div>
       <div class="hr-diff" style="color:${vsPar>=0?'var(--wn2)':'var(--ok2)'}">${vsPar>=0?'+':''}${vsPar}</div>
+      <button class="hr-share" data-share="${i}" title="Partager cette partie">📸</button>
     </div>`;
   }).join('');
+  cont.querySelectorAll('[data-share]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var idx = parseInt(btn.getAttribute('data-share'), 10);
+      if (typeof openShareCard === 'function') openShareCard(roundHistory[idx]);
+    });
+  });
 }
 
 /* showToast handled by app shell */
