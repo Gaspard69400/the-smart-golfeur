@@ -142,7 +142,9 @@ function saveUserCourse(course) {
     userCourses.push(course);
   }
   localStorage.setItem('tsg_user_courses', JSON.stringify(userCourses));
-  if (window.tsgSync) window.tsgSync.pushUserCourse(course);
+  // La synchro cloud est un bonus : si elle échoue, le parcours reste enregistré en local
+  try { if (window.tsgSync) window.tsgSync.pushUserCourse(course); }
+  catch (e) { console.warn('[TSG] sync pushUserCourse:', e.message); }
 }
 
 function deleteUserCourse(courseId) {
@@ -153,5 +155,6 @@ function deleteUserCourse(courseId) {
   } catch(e) {}
   userCourses = userCourses.filter(function(c) { return c.id !== courseId; });
   localStorage.setItem('tsg_user_courses', JSON.stringify(userCourses));
-  if (window.tsgSync) window.tsgSync.deleteUserCourse(courseId);
+  try { if (window.tsgSync) window.tsgSync.deleteUserCourse(courseId); }
+  catch (e) { console.warn('[TSG] sync deleteUserCourse:', e.message); }
 }

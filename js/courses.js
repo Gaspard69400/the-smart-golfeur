@@ -57,6 +57,10 @@ function buildCoursesPage(container) {
   header.appendChild(right);
   wrap.appendChild(header);
 
+  /* ── Parcours de la communauté (import en un clic) ── */
+  try { if (typeof shcRenderPanel === 'function') shcRenderPanel(wrap); }
+  catch (e) { console.warn('[TSG] Parcours partagés:', e.message); }
+
   /* ── BARRE DE RECHERCHE + FILTRES ── */
   var controls = document.createElement('div');
   controls.className = 'crs-controls';

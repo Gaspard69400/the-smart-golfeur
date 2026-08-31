@@ -1102,10 +1102,16 @@ function openCourseCreator(existingCourse) {
     trous: []
   };
 
-  // Initialiser les 18 trous si vide
+  // Initialiser les 18 trous avec un GABARIT réaliste (par 72 standard) plutôt
+  // que 18 par-4 à 0 m : le joueur n'ajuste plus que ce qui diffère chez lui.
   if (!formState.trous || formState.trous.length === 0) {
+    var TPL_PAR = [4,5,4,3,4,4,5,4,3, 4,4,5,3,4,4,3,5,4];   // par 72
+    var TPL_LEN = { 3: 155, 4: 365, 5: 480 };
+    // Index de difficulté : impairs sur l'aller, pairs sur le retour (usage courant)
+    var TPL_SI  = [7,3,11,17,5,1,9,13,15, 8,2,6,18,4,10,16,12,14];
     for (var i = 1; i <= 18; i++) {
-      formState.trous.push({ num: i, par: 4, longueur: 0, si: i });
+      var pr = TPL_PAR[i - 1];
+      formState.trous.push({ num: i, par: pr, longueur: TPL_LEN[pr], si: TPL_SI[i - 1] });
     }
   }
 
@@ -1184,6 +1190,9 @@ function openCourseCreator(existingCourse) {
     +       '<div class="cc-hint">Astuce : utilise <strong>Tab</strong> pour passer rapidement d\'une case \u00e0 l\'autre.</div>'
     +     '</div>'
     +     '<div id="cc-warnings" class="cc-warnings"></div>'
+    +     '<label class="cc-share"><input type="checkbox" id="cc-share"' + (formState.shared ? ' checked' : '') + '>'
+    +       '<span><strong>Partager ce parcours avec la communaut\u00e9</strong>'
+    +       '<small>Les autres joueurs pourront l\'ajouter sans tout ressaisir. Ton pr\u00e9nom appara\u00eetra comme contributeur.</small></span></label>'
     +   '</div>'
     +   '<div class="cc-footer">'
     +     '<button class="cc-btn cc-btn-cancel" id="cc-cancel-btn">Annuler</button>'
@@ -1261,6 +1270,10 @@ function openCourseCreator(existingCourse) {
 
   // Sauvegarde
   document.getElementById('cc-save-btn').addEventListener('click', function() {
+    // Choix de partage (case à cocher)
+    var shareBox = document.getElementById('cc-share');
+    formState.shared = !!(shareBox && shareBox.checked);
+
     // Validation
     var warnings = [];
     if (!formState.name || formState.name.trim().length < 2) {

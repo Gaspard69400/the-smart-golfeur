@@ -293,7 +293,21 @@ window.tsgSync = {
   },
   pushUserCourse: function(course) {
     if (!cloudActive()) return;
-    window.sbClient.from('user_courses').upsert({ id: course.id, user_id: sbUserId(), data: course }).then(null, logSync('pushUserCourse'));
+    // Colonnes dénormalisées : elles permettent de chercher un parcours partagé
+    // sans avoir à lire le JSON complet de chacun.
+    window.sbClient.from('user_courses').upsert({
+      id: course.id,
+      user_id: sbUserId(),
+      data: course,
+      shared: !!course.shared,
+      name: course.name || null,
+      region: course.region || null,
+      ville: course.ville || null,
+      par_total: course.par_total || null,
+      holes: (course.trous && course.trous.length) || null,
+      author_name: (currentUser && currentUser.name) || null,
+      updated_at: new Date().toISOString()
+    }).then(null, logSync('pushUserCourse'));
   },
   deleteUserCourse: function(id) {
     if (!cloudActive()) return;
