@@ -3,14 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Analyser · Structurer · Performer — Application de performance golf">
+  <meta name="description" content="Progresse au golf par la donnée et les décisions, pas par le swing. Strokes Gained réels, saisie de carte en un tap, plan d'entraînement personnalisé.">
+
+  <!-- Aperçu lors du partage du lien -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Smart Golfer">
+  <meta property="og:description" content="Progresse au golf par la donnée et les décisions, pas par le swing.">
+  <meta property="og:site_name" content="The Smart Golfer">
+  <meta name="twitter:card" content="summary">
   <title>The Smart Golfer</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23C9A84C'/%3E%3Ctext x='50' y='68' font-family='Plus Jakarta Sans, sans-serif' font-size='56' font-weight='700' fill='%231A1209' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json?v=39">
+  <link rel="manifest" href="manifest.json?v=40">
   <meta name="theme-color" content="#C9A84C">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=39">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=40">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -23,13 +30,112 @@
 
 
   <!-- Styles -->
-  <link rel="stylesheet" href="css/style.css?v=39">
+  <link rel="stylesheet" href="css/style.css?v=40">
 </head>
 <body>
 
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════
+     PAGE D'ACCUEIL (1re visite)
+══════════════════════════════════ -->
+<div id="landing">
+
+  <!-- Hero -->
+  <section class="ld-hero">
+    <div class="ld-inner">
+      <div class="ld-brand">The Smart <span>Golfer</span></div>
+      <div class="ld-tagline">Analyser &nbsp;&middot;&nbsp; Structurer &nbsp;&middot;&nbsp; Performer</div>
+
+      <h1 class="ld-h1">Progresse par la donn&eacute;e,<br>pas par le swing.</h1>
+      <p class="ld-lede">
+        La plupart des golfeurs travaillent au hasard. Ici, tes cartes de score r&eacute;v&egrave;lent
+        <strong>o&ugrave; tu perds vraiment tes coups</strong> &mdash; et ce qu'il faut travailler en priorit&eacute;.
+      </p>
+
+      <div class="ld-cta">
+        <button class="ld-btn-gold" id="ld-signup">Cr&eacute;er mon compte &rarr;</button>
+        <button class="ld-btn-ghost" id="ld-demo">Essayer sans compte</button>
+      </div>
+      <div class="ld-note">Gratuit &middot; aucune carte bancaire &middot; tes donn&eacute;es t'appartiennent</div>
+    </div>
+  </section>
+
+  <!-- Les 3 piliers -->
+  <section class="ld-sec">
+    <div class="ld-inner">
+      <div class="ld-eyebrow">Le principe</div>
+      <h2 class="ld-h2">Trois &eacute;tapes, dans cet ordre</h2>
+      <div class="ld-pillars">
+        <div class="ld-pillar">
+          <div class="ld-pillar-n">1</div>
+          <h3>Analyser</h3>
+          <p>Saisis ta partie en un tap par trou. L'app calcule tes <strong>Strokes Gained</strong> :
+             combien de coups tu gagnes ou perds au d&eacute;part, &agrave; l'approche, au petit jeu et au putting.</p>
+        </div>
+        <div class="ld-pillar">
+          <div class="ld-pillar-n">2</div>
+          <h3>Structurer</h3>
+          <p>Ton plan d'entra&icirc;nement se g&eacute;n&egrave;re tout seul depuis tes chiffres.
+             Il te dit <strong>quoi travailler cette semaine</strong>, avec les exercices adapt&eacute;s &agrave; ton niveau.</p>
+        </div>
+        <div class="ld-pillar">
+          <div class="ld-pillar-n">3</div>
+          <h3>Performer</h3>
+          <p>Suis ta progression, d&eacute;bloque des paliers, compare-toi &agrave; tes amis
+             et pr&eacute;pare tes comp&eacute;titions <strong>avec ton coach</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fonctionnalités -->
+  <section class="ld-sec ld-sec-alt">
+    <div class="ld-inner">
+      <div class="ld-eyebrow">Ce que tu obtiens</div>
+      <h2 class="ld-h2">Tout est d&eacute;j&agrave; l&agrave;</h2>
+      <div class="ld-feats">
+        <div class="ld-feat"><div class="ld-feat-i">&#9889;</div>
+          <h4>Saisie en un tap</h4>
+          <p>Birdie, par, bogey : un bouton par trou et on passe au suivant. Tu fermes l'app, elle reprend o&ugrave; tu en &eacute;tais.</p></div>
+        <div class="ld-feat"><div class="ld-feat-i">&#128200;</div>
+          <h4>Strokes Gained r&eacute;els</h4>
+          <p>Compar&eacute;s aux bar&egrave;mes de ton niveau et ajust&eacute;s au rating de ton parcours. Pas une approximation.</p></div>
+        <div class="ld-feat"><div class="ld-feat-i">&#127919;</div>
+          <h4>Entra&icirc;nement sur mesure</h4>
+          <p>Une biblioth&egrave;que d'exercices, et une s&eacute;lection choisie pour tes deux secteurs les plus faibles.</p></div>
+        <div class="ld-feat"><div class="ld-feat-i">&#127942;</div>
+          <h4>Troph&eacute;es &agrave; paliers</h4>
+          <p>Du bronze &agrave; la l&eacute;gende. Chaque partie fait progresser ton niveau et d&eacute;bloque des paliers.</p></div>
+        <div class="ld-feat"><div class="ld-feat-i">&#128101;</div>
+          <h4>Groupes &amp; coach</h4>
+          <p>Cr&eacute;e ton &eacute;quipe, compare tes stats, discute, et partage tes cartes avec ton coach.</p></div>
+        <div class="ld-feat"><div class="ld-feat-i">&#128246;</div>
+          <h4>Fonctionne hors-ligne</h4>
+          <p>Pas de r&eacute;seau sur le parcours ? L'app tourne quand m&ecirc;me et se synchronise au retour.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA final -->
+  <section class="ld-sec ld-final">
+    <div class="ld-inner">
+      <h2 class="ld-h2">Ta prochaine partie m&eacute;rite mieux qu'un carnet.</h2>
+      <p class="ld-lede-sm">Commence par une carte. D&egrave;s la premi&egrave;re, tu verras o&ugrave; partent tes coups.</p>
+      <div class="ld-cta">
+        <button class="ld-btn-gold" id="ld-signup-2">Cr&eacute;er mon compte &rarr;</button>
+        <button class="ld-btn-ghost" id="ld-demo-2">Essayer sans compte</button>
+      </div>
+      <div class="ld-foot">
+        The Smart Golfer &mdash; application en d&eacute;veloppement actif.<br>
+        Tes retours fa&ccedil;onnent la suite.
+      </div>
+    </div>
+  </section>
+
+</div>
 
 <!-- ══════════════════════════════════
      LOGIN SCREEN
@@ -154,41 +260,42 @@
 </div>
 
 <!-- Librairies servies en local : l'app fonctionne hors-ligne et sans CDN tiers -->
-<script src="vendor/chart.umd.min.js?v=39"></script>
-<script src="vendor/supabase.min.js?v=39"></script>
+<script src="vendor/chart.umd.min.js?v=40"></script>
+<script src="vendor/supabase.min.js?v=40"></script>
 
 
   <!-- Scripts dans l'ordre de dépendance -->
-  <script src="js/config.js?v=39"></script>
-  <script src="js/supabaseClient.js?v=39"></script>
-  <script src="js/data.js?v=39"></script>
-  <script src="js/traininglib.js?v=39"></script>
-  <script src="js/app.js?v=39"></script>
-  <script src="js/strokesgained.js?v=39"></script>
-  <script src="js/dashboard.js?v=39"></script>
-  <script src="js/scorecard.js?v=39"></script>
-  <script src="js/proscore.js?v=39"></script>
-  <script src="js/quickscore.js?v=39"></script>
-  <script src="js/celebrate.js?v=39"></script>
-  <script src="js/sharecard.js?v=39"></script>
-  <script src="js/radar.js?v=39"></script>
-  <script src="js/analyse.js?v=39"></script>
-  <script src="js/sharedcourses.js?v=39"></script>
-  <script src="js/courses.js?v=39"></script>
-  <script src="js/training.js?v=39"></script>
-  <script src="js/coach.js?v=39"></script>
-  <script src="js/groups.js?v=39"></script>
-  <script src="js/community.js?v=39"></script>
-  <script src="js/calendar.js?v=39"></script>
-  <script src="js/chat.js?v=39"></script>
-  <script src="js/auth.js?v=39"></script>
-  <script src="js/boot.js?v=39"></script>
+  <script src="js/config.js?v=40"></script>
+  <script src="js/supabaseClient.js?v=40"></script>
+  <script src="js/data.js?v=40"></script>
+  <script src="js/traininglib.js?v=40"></script>
+  <script src="js/app.js?v=40"></script>
+  <script src="js/strokesgained.js?v=40"></script>
+  <script src="js/dashboard.js?v=40"></script>
+  <script src="js/scorecard.js?v=40"></script>
+  <script src="js/proscore.js?v=40"></script>
+  <script src="js/quickscore.js?v=40"></script>
+  <script src="js/celebrate.js?v=40"></script>
+  <script src="js/sharecard.js?v=40"></script>
+  <script src="js/radar.js?v=40"></script>
+  <script src="js/analyse.js?v=40"></script>
+  <script src="js/sharedcourses.js?v=40"></script>
+  <script src="js/courses.js?v=40"></script>
+  <script src="js/training.js?v=40"></script>
+  <script src="js/coach.js?v=40"></script>
+  <script src="js/groups.js?v=40"></script>
+  <script src="js/community.js?v=40"></script>
+  <script src="js/calendar.js?v=40"></script>
+  <script src="js/chat.js?v=40"></script>
+  <script src="js/auth.js?v=40"></script>
+  <script src="js/landing.js?v=40"></script>
+  <script src="js/boot.js?v=40"></script>
 
   <!-- Enregistrement du Service Worker (PWA installable + hors-ligne) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js?v=39').catch(function (e) {
+        navigator.serviceWorker.register('sw.js?v=40').catch(function (e) {
           console.warn('[TSG] SW non enregistré:', e && e.message);
         });
       });

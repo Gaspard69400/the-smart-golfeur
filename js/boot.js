@@ -6,6 +6,11 @@
  * ════════════════════════════════════════════ */
 
 (function init() {
+  // Page d'accueil (1re visite uniquement)
+  if (typeof landingInit === 'function') {
+    try { landingInit(); } catch (e) { console.warn('[TSG] landing:', e.message); }
+  }
+
   // Préparer l'UI d'authentification
   if (typeof initAuthUI === 'function') {
     try { initAuthUI(); } catch (e) { console.warn('[TSG] initAuthUI:', e.message); }
@@ -19,6 +24,9 @@
   // Reprendre une session Supabase si présente (auto-login cloud).
   // Si connecté : onAuthenticated() lance l'app. Sinon : on reste sur le login.
   if (typeof authBootstrap === 'function') {
-    authBootstrap(function(loggedIn) { /* rien de plus */ });
+    authBootstrap(function(loggedIn) {
+      // Session retrouvée → l'app démarre, la page d'accueil n'a plus lieu d'être
+      if (loggedIn && typeof landingHide === 'function') landingHide();
+    });
   }
 })();
