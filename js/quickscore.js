@@ -396,6 +396,8 @@ function openQuickTotal() {
     +     '<div class="qt-intro">Tu n\'as pas saisi trou par trou ? Renseigne juste l\'essentiel — c\'est toujours mieux qu\'une partie perdue.</div>'
     +     '<div class="qt-field"><label class="qt-l" for="qt-course">Parcours</label>'
     +       '<select class="qt-i" id="qt-course">' + opts + '</select></div>'
+    +     '<div class="qt-field"><label class="qt-l" for="qt-tee">Départ</label>'
+    +       '<select class="qt-i" id="qt-tee"></select></div>'
     +     '<div class="qt-grid">'
     +       '<div class="qt-field"><label class="qt-l" for="qt-date">Date</label>'
     +         '<input class="qt-i" type="date" id="qt-date" value="' + today + '"></div>'
@@ -419,6 +421,24 @@ function openQuickTotal() {
     + '</div>';
   document.body.appendChild(m);
 
+  // Départs du parcours choisi (mis à jour si on change de parcours)
+  function fillTees() {
+    var selT = document.getElementById('qt-tee');
+    var cid = document.getElementById('qt-course').value;
+    var all = (typeof getAllCourses === 'function') ? getAllCourses() : [];
+    var crs = null;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === cid) { crs = all[i]; break; } }
+    if (!selT || !crs || typeof getCourseTees !== 'function') return;
+    var tees = getCourseTees(crs);
+    selT.innerHTML = tees.map(function(t) {
+      var extra = t.rating ? (' · SSS ' + Number(t.rating).toFixed(1)) : '';
+      return '<option value="' + qsEsc(t.id) + '">' + qsEsc(t.name + extra) + '</option>';
+    }).join('');
+    selT.disabled = tees.length < 2;
+  }
+  fillTees();
+  document.getElementById('qt-course').addEventListener('change', fillTees);
+
   function close() { m.remove(); }
   document.getElementById('qt-close').addEventListener('click', close);
   document.getElementById('qt-cancel').addEventListener('click', close);
@@ -441,11 +461,16 @@ function qtSave(close) {
   var vGir = parseInt(document.getElementById('qt-gir').value, 10);
   var vFir = parseInt(document.getElementById('qt-fir').value, 10);
 
+  var teeSel = document.getElementById('qt-tee');
+  var tee = (typeof findTee === 'function' && teeSel) ? findTee(course, teeSel.value) : null;
+  var teeRating = (tee && tee.rating) ? tee.rating : course.rating;
+  var teeSlope  = (tee && tee.slope)  ? tee.slope  : course.slope;
+
   var firTotal = course.trous.filter(function(h) { return h.par !== 3; }).length;
   var gir = isNaN(vGir) ? 0 : vGir;
   var fir = isNaN(vFir) ? 0 : vFir;
   var puttsTotal = isNaN(vPutts) ? null : vPutts;
-  var diff = ((total - course.rating) * 113 / course.slope).toFixed(1);
+  var diff = ((total - teeRating) * 113 / teeSlope).toFixed(1);
 
   var entry = {
     id: Date.now(),
@@ -455,6 +480,10 @@ function qtSave(close) {
     score: total,
     par: course.par_total,
     diff: parseFloat(diff),
+    teeId: tee ? tee.id : null,
+    teeName: tee ? tee.name : null,
+    teeRating: teeRating,
+    teeSlope: teeSlope,
     fir: fir,
     firTotal: firTotal,
     gir: gir,

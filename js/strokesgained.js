@@ -94,8 +94,9 @@ function sgComputeRound(round, refHcp) {
   if (factor <= 0) return null;
 
   var base   = sgBaseline(refHcp);
-  var rating = (course && course.rating) ? course.rating : ((round.par || 72) + 1.5);
-  var slope  = (course && course.slope)  ? course.slope  : 113;
+  // Le départ joué prime : son rating/slope décrivent la vraie difficulté rencontrée
+  var rating = round.teeRating || (course && course.rating) || ((round.par || 72) + 1.5);
+  var slope  = round.teeSlope  || (course && course.slope)  || 113;
 
   /* Score attendu sur CE parcours pour ce niveau, ramené aux trous joués */
   var courseHcp     = (refHcp === null || refHcp === undefined || isNaN(refHcp)) ? 18 : (Number(refHcp) * slope / 113);

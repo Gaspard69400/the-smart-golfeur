@@ -135,6 +135,37 @@ function selectCourse(c) {
   if (btnImm) btnImm.disabled = false;
   var btnExp = document.getElementById('btn-express');
   if (btnExp) btnExp.disabled = false;
+
+  // Départs disponibles sur ce parcours
+  if (typeof teeFillSelect === 'function') {
+    try {
+      teeFillSelect(c);
+      var sel = document.getElementById('f-tee');
+      if (sel && !sel._teeWired) {
+        sel._teeWired = true;
+        sel.addEventListener('change', function() {
+          if (selectedCourse && typeof teeRemember === 'function') teeRemember(selectedCourse.id, sel.value);
+          scApplyTee();
+        });
+      }
+      scApplyTee();
+    } catch (e) { console.warn('[TSG] départs:', e.message); }
+  }
+}
+
+/* Répercute le départ choisi sur la carte du parcours (SSS / slope / longueur) */
+function scApplyTee() {
+  if (!selectedCourse || typeof currentTee !== 'function') return;
+  var t = currentTee(selectedCourse);
+  if (!t) return;
+  var sss = document.getElementById('cc-sss');
+  var slo = document.getElementById('cc-slope');
+  var rat = document.getElementById('cc-rating');
+  var len = document.getElementById('cc-len');
+  if (sss && t.rating) sss.textContent = Number(t.rating).toFixed(1);
+  if (slo && t.slope) slo.textContent = t.slope;
+  if (rat && t.rating) rat.textContent = Number(t.rating).toFixed(1);
+  if (len && t.longueur) len.textContent = t.longueur + 'm';
 }
 
 // ── BUILD TABLES ──
@@ -641,7 +672,11 @@ function saveRound() {
 
   const scoreTotal = scores.reduce((a,s)=>s!==null?a+s:a, 0);
   const par = selectedCourse.par_total;
-  const diff = ((scoreTotal - selectedCourse.rating) * 113 / selectedCourse.slope).toFixed(1);
+  // Chaque départ a son propre rating/slope : jouer 88 des blancs n'est pas jouer 88 des rouges
+  const tee = (typeof currentTee === 'function') ? currentTee(selectedCourse) : null;
+  const teeRating = (tee && tee.rating) ? tee.rating : selectedCourse.rating;
+  const teeSlope  = (tee && tee.slope)  ? tee.slope  : selectedCourse.slope;
+  const diff = ((scoreTotal - teeRating) * 113 / teeSlope).toFixed(1);
   const firHit = Object.values(firState).filter(v=>v==='hit').length;
   const girHit = Object.values(girState).filter(v=>v==='hit').length;
   const puttsTotal = putts.reduce((a,p)=>p!==null?a+p:a, 0);
@@ -654,6 +689,10 @@ function saveRound() {
     score: scoreTotal,
     par: par,
     diff: parseFloat(diff),
+    teeId: tee ? tee.id : null,
+    teeName: tee ? tee.name : null,
+    teeRating: teeRating,
+    teeSlope: teeSlope,
     fir: firHit,
     firTotal: selectedCourse.trous.filter(h=>h.par!==3).length,
     gir: girHit,
@@ -817,7 +856,7 @@ function initScorecardPage() {
     '<div class="sc-fg"><div class="sc-fl">Date</div><input class="sc-fi" type="date" id="f-date"></div>',
 
     '<div class="sc-fr">',
-      '<div class="sc-fg"><div class="sc-fl">Départ</div><select class="sc-fs" id="f-tee"><option>Blanc</option><option>Jaune</option><option>Rouge</option><option>Bleu</option></select></div>',
+      '<div class="sc-fg"><div class="sc-fl">Départ</div><select class="sc-fs" id="f-tee"><option>—</option></select></div>',
       '<div class="sc-fg"><div class="sc-fl">Format</div><select class="sc-fs" id="f-format"><option value="stroke">Stroke play</option><option value="stableford">Stableford</option></select></div>',
     '</div>',
 
@@ -1178,6 +1217,11 @@ function openCourseCreator(existingCourse) {
     +       '</div>'
     +     '</div>'
     +     '<div class="cc-section">'
+    +       '<div class="cc-section-title">D\u00e9parts (rep\u00e8res)</div>'
+    +       '<div class="cc-tees-hint">Coche les d\u00e9parts que tu joues et renseigne leur SSS et leur slope. '
+    +         'Chaque d\u00e9part a les siens \u2014 c\'est ce qui rend ton diff\u00e9rentiel et tes Strokes Gained justes. '
+    +         'Si tu n\'en coches aucun, les valeurs g\u00e9n\u00e9rales ci-dessus sont utilis\u00e9es.</div>'
+    +       '<div class="cc-tees" id="cc-tees"></div>'
     +       '<div class="cc-section-title">Saisie des 18 trous</div>'
     +       '<div class="cc-table-wrap">'
     +         '<table class="cc-table">'
@@ -1203,6 +1247,24 @@ function openCourseCreator(existingCourse) {
   document.body.appendChild(modal);
 
   // Construire les 18 lignes
+  // ── Lignes de départs ──
+  var teesHost = document.getElementById('cc-tees');
+  if (teesHost && typeof TEE_PRESETS !== 'undefined') {
+    var existing = {};
+    (formState.departs || []).forEach(function(t) { existing[t.id] = t; });
+    teesHost.innerHTML = TEE_PRESETS.map(function(p) {
+      var e = existing[p.id];
+      return '<div class="cc-tee-row">'
+        + '<label class="cc-tee-on"><input type="checkbox" data-tee="' + p.id + '"' + (e ? ' checked' : '') + '>'
+        +   '<span class="cc-tee-dot" style="background:' + p.dot + ';border-color:' + p.ring + '"></span>'
+        +   '<span class="cc-tee-name">' + p.name + '</span></label>'
+        + '<input type="number" class="cc-input cc-tee-in" data-tee-f="longueur" data-tee-id="' + p.id + '" placeholder="m" value="' + (e && e.longueur ? e.longueur : '') + '">'
+        + '<input type="number" step="0.1" class="cc-input cc-tee-in" data-tee-f="rating" data-tee-id="' + p.id + '" placeholder="SSS" value="' + (e && e.rating ? e.rating : '') + '">'
+        + '<input type="number" class="cc-input cc-tee-in" data-tee-f="slope" data-tee-id="' + p.id + '" placeholder="slope" value="' + (e && e.slope ? e.slope : '') + '">'
+        + '</div>';
+    }).join('');
+  }
+
   var trousBody = document.getElementById('cc-trous-body');
   formState.trous.forEach(function(t, idx) {
     var tr = document.createElement('tr');
@@ -1273,6 +1335,22 @@ function openCourseCreator(existingCourse) {
     // Choix de partage (case à cocher)
     var shareBox = document.getElementById('cc-share');
     formState.shared = !!(shareBox && shareBox.checked);
+
+    // Départs cochés : on ne garde que ceux qui ont un SSS ET un slope
+    var departs = [];
+    modal.querySelectorAll('[data-tee]').forEach(function(box) {
+      if (!box.checked) return;
+      var id = box.getAttribute('data-tee');
+      function val(f) {
+        var el = modal.querySelector('[data-tee-f="' + f + '"][data-tee-id="' + id + '"]');
+        var v = el ? parseFloat(el.value) : NaN;
+        return isNaN(v) ? null : v;
+      }
+      var rating = val('rating'), slope = val('slope');
+      if (!rating || !slope) return;   // sans ces deux valeurs, le départ n'apporte rien
+      departs.push({ id: id, name: teeMeta(id).name, rating: rating, slope: slope, longueur: val('longueur') });
+    });
+    formState.departs = departs;
 
     // Validation
     var warnings = [];
