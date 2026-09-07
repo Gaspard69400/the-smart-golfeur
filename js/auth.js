@@ -14,6 +14,38 @@ function sbUserId() {
   catch (e) { return null; }
 }
 
+/* ─────────────── CONNEXION GOOGLE (OAuth) ─────────────── */
+
+function authGoogle() {
+  if (!window.sbClient) { authError('Service indisponible.'); return; }
+  var btn = document.getElementById('auth-google');
+  if (btn) { btn.disabled = true; btn.classList.add('is-loading'); }
+  authError('');
+
+  // On revient sur l'app elle-même après le détour par Google
+  var back = window.location.origin + window.location.pathname;
+
+  window.sbClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: back }
+  }).then(function(res) {
+    if (res && res.error) {
+      if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+      var m = res.error.message || '';
+      // Message parlant tant que le provider n'est pas activé côté Supabase
+      if (/provider is not enabled|Unsupported provider/i.test(m)) {
+        authError('La connexion Google n\'est pas encore activ\u00e9e sur le serveur. Utilise ton email pour l\'instant.');
+      } else {
+        authError(m);
+      }
+    }
+    // Succès : le navigateur part sur Google, rien à faire ici
+  }, function(e) {
+    if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+    authError(e && e.message ? e.message : 'Connexion Google impossible.');
+  });
+}
+
 /* ─────────────── UI AUTH ─────────────── */
 
 function initAuthUI() {
@@ -37,6 +69,9 @@ function initAuthUI() {
   if (tabSignup) tabSignup.addEventListener('click', function() { setMode('signup'); });
 
   submit.addEventListener('click', function() { authSubmit(); });
+
+  var gBtn = document.getElementById('auth-google');
+  if (gBtn) gBtn.addEventListener('click', function() { authGoogle(); });
   ['auth-email', 'auth-password'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') authSubmit(); });
@@ -138,6 +173,19 @@ function traduireErreur(msg) {
 /* Appelé au démarrage (boot) : reprend la session si elle existe */
 function authBootstrap(onDone) {
   if (!window.sbClient) { onDone(false); return; }
+
+  // Retour d'un login OAuth : la session est lue depuis l'URL de façon
+  // asynchrone, donc getSession() peut encore être vide à cet instant.
+  // On écoute l'événement pour ne pas rater la connexion.
+  try {
+    window.sbClient.auth.onAuthStateChange(function(event, session) {
+      if (event === 'SIGNED_IN' && session && !window.tsgCloud) {
+        onAuthenticated(session, true);
+        if (typeof landingHide === 'function') landingHide();
+      }
+    });
+  } catch (e) {}
+
   window.sbClient.auth.getSession().then(function(res) {
     var session = res && res.data ? res.data.session : null;
     if (session) { onAuthenticated(session, true); onDone(true); }

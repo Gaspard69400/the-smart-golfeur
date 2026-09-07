@@ -5012,3 +5012,28 @@ body.ld-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .ld-btn-gold:hover, .ld-feat:hover { transform: none !important; }
 }
+
+/* ── Bouton « Continuer avec Google » (Session 33) ── */
+.btn-google {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--white); color: var(--tx);
+  border: 1px solid var(--bd); border-radius: 10px;
+  padding: 12px 16px; margin-bottom: 14px;
+  font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .12s ease;
+}
+.btn-google:hover:not(:disabled) { background: var(--bg2); border-color: var(--gold); transform: translateY(-1px); }
+.btn-google:disabled { opacity: .6; cursor: wait; }
+.btn-google.is-loading span::after { content: ' …'; }
+.btn-google-ico { width: 18px; height: 18px; flex-shrink: 0; }
+
+.auth-or {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 0 14px; color: var(--tx4); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.auth-or::before, .auth-or::after {
+  content: ''; flex: 1 1 auto; height: 1px; background: var(--bd2);
+}
+
+@media (prefers-reduced-motion: reduce) { .btn-google:hover { transform: none !important; } }
