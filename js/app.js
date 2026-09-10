@@ -336,22 +336,19 @@ function maybeShowOnboarding() {
 /* ─── NAVIGATION UI ─── */
 
 
+/* Index du joueur — calcul officiel WHS (whs.js).
+   Point d'entrée unique : la nav, les Strokes Gained et le handicap de jeu
+   du stableford lisent tous cette valeur. */
 function calcHandicapFromRounds() {
-  var rounds = lsGet('rounds') || [];
-  if (rounds.length < 3) return null;
-  // Prendre les 20 dernières parties
-  var recent = rounds.slice(0, 20);
-  // Extraire les différentiels valides
-  var diffs = recent.map(function(r) { return r.diff; }).filter(function(d) {
-    return d !== null && d !== undefined && !isNaN(d);
-  });
-  if (diffs.length < 3) return null;
-  // Trier croissant et prendre les 8 meilleurs (ou moins si peu de parties)
-  diffs.sort(function(a, b) { return a - b; });
-  var n = Math.min(8, Math.max(3, Math.floor(diffs.length * 0.4)));
-  var best = diffs.slice(0, n);
-  var avg = best.reduce(function(a, b) { return a + b; }, 0) / best.length;
-  return Math.round(avg * 10) / 10;
+  if (typeof whsCompute !== 'function') return null;
+  try {
+    var res = whsCompute();
+    if (res && res.index !== null && res.index !== undefined) {
+      if (typeof whsRecord === 'function') whsRecord(res.index);
+      return res.index;
+    }
+  } catch (e) { console.warn('[TSG] WHS:', e.message); }
+  return null;
 }
 
 function updateNavUI() {
@@ -392,6 +389,17 @@ function updateNavUI() {
       displayHcp = '\u2014';
     }
     hcp.textContent = displayHcp;
+  }
+
+  // La pastille Hcp ouvre le détail du calcul WHS
+  var hcpBlock = document.querySelector('.nav-hcp-block');
+  if (hcpBlock && !hcpBlock._whsWired) {
+    hcpBlock._whsWired = true;
+    hcpBlock.classList.add('is-clickable');
+    hcpBlock.title = 'Voir le d\u00e9tail du calcul de ton index';
+    hcpBlock.addEventListener('click', function() {
+      if (typeof openWhsModal === 'function') openWhsModal();
+    });
   }
 
   // Badge rôle

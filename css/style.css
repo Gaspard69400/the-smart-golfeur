@@ -5082,3 +5082,63 @@ body.ld-open { overflow: hidden; }
 
 /* Le bandeau des 18 trous affiche des points en stableford : on garde la lisibilité */
 .qs-cell.sc-par { background: var(--bg4); border-color: var(--bd); color: var(--tx2); }
+
+/* ── Index WHS : détail du calcul (Session 36) ── */
+.nav-hcp-block.is-clickable { cursor: pointer; border-radius: 8px; transition: background .15s; }
+.nav-hcp-block.is-clickable:hover { background: var(--gold-dim); }
+
+.whs-modal {
+  position: fixed; inset: 0; z-index: 970; display: flex;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(26,18,9,0.65); backdrop-filter: blur(4px);
+}
+.whs-card {
+  background: var(--white); border-radius: 20px; width: 100%; max-width: 620px;
+  max-height: 90vh; display: flex; flex-direction: column;
+  border: 1px solid var(--bd-card); box-shadow: 0 24px 70px rgba(0,0,0,.4);
+}
+.whs-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 22px 8px; }
+.whs-tag { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-d); }
+.whs-title { font-size: 19px; font-weight: 800; color: var(--tx); margin-top: 3px; }
+.whs-close { border: none; background: transparent; font-size: 26px; color: var(--tx3); cursor: pointer; line-height: 1; padding: 0 4px; }
+.whs-body { padding: 8px 22px 22px; overflow-y: auto; }
+
+.whs-hero { text-align: center; padding: 10px 0 14px; }
+.whs-hero-v { font-size: 52px; font-weight: 800; color: var(--tx); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.whs-hero-l { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-d); margin-top: 5px; }
+
+.whs-formula {
+  background: var(--bg3); border-radius: 11px; padding: 12px 14px;
+  font-size: 13px; color: var(--tx2); line-height: 1.55; margin-bottom: 12px;
+}
+.whs-cap {
+  background: var(--wn-bg); border: 1px solid var(--wn2); border-radius: 11px;
+  padding: 11px 14px; font-size: 12.5px; color: var(--tx2); line-height: 1.5; margin-bottom: 12px;
+}
+
+.whs-tablewrap { overflow-x: auto; border: 1px solid var(--bd-card); border-radius: 11px; }
+.whs-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.whs-table th {
+  text-align: left; font-size: 10px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tx3); padding: 9px 10px;
+  border-bottom: 1px solid var(--bd-card); background: var(--bg2);
+}
+.whs-table td { padding: 8px 10px; border-bottom: 1px solid var(--bd3); color: var(--tx2); }
+.whs-table tr:last-child td { border-bottom: none; }
+.whs-num { text-align: right; font-variant-numeric: tabular-nums; }
+.whs-diff { font-weight: 700; color: var(--tx); }
+.whs-course { color: var(--tx3); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.whs-tee { font-size: 10px; color: var(--tx4); }
+.whs-keep { text-align: center; color: var(--ok2); font-weight: 800; width: 26px; }
+.whs-kept { background: var(--ok-bg2); }
+.whs-kept .whs-diff { color: var(--ok2); }
+.whs-capped { color: var(--wn); font-weight: 600; }
+
+.whs-note { font-size: 11.5px; color: var(--tx3); line-height: 1.6; margin-top: 12px; }
+.whs-empty { display: flex; align-items: center; gap: 14px; padding: 20px 4px; font-size: 13.5px; color: var(--tx2); line-height: 1.55; }
+.whs-empty-ico { font-size: 32px; flex-shrink: 0; }
+
+@media (max-width: 560px) {
+  .whs-course { max-width: 100px; }
+  .whs-hero-v { font-size: 42px; }
+}
