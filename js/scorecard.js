@@ -136,6 +136,18 @@ function selectCourse(c) {
   var btnExp = document.getElementById('btn-express');
   if (btnExp) btnExp.disabled = false;
 
+  // Changement de format : rafraîchir la carte et la saisie en cours
+  var fmt = document.getElementById('f-format');
+  if (fmt && !fmt._fmtWired) {
+    fmt._fmtWired = true;
+    fmt.addEventListener('change', function() {
+      if (typeof qsRender === 'function' && document.getElementById('qs-stage')) qsRender();
+      if (typeof updateTotals === 'function') { try { updateTotals(); } catch (e) {} }
+      var head = document.getElementById('stab-head');
+      if (head) head.style.display = (fmt.value === 'stableford') ? '' : 'none';
+    });
+  }
+
   // Départs disponibles sur ce parcours
   if (typeof teeFillSelect === 'function') {
     try {
@@ -369,11 +381,15 @@ function onScoreInput(num, par, inp) {
   // Stableford
   const stabCell = document.getElementById(`stab-${num}`);
   if (v !== null) {
-    const hcp = parseFloat(document.getElementById('f-hcp').value) || 14.2;
+    // Handicap DE JEU (index ajusté au slope et au rating du départ), pas l'index brut
     const si = selectedCourse.trous[num-1].si;
-    const strokes = Math.floor(hcp / 18) + (si <= (hcp % 18) ? 1 : 0);
-    const net = v - par + strokes;
-    const pts = Math.max(0, 2 - net);
+    const teeSel = (typeof currentTee === 'function') ? currentTee(selectedCourse) : null;
+    const ch = (typeof courseHandicap === 'function')
+      ? courseHandicap(currentIndex(), (teeSel && teeSel.slope) || selectedCourse.slope,
+                       (teeSel && teeSel.rating) || selectedCourse.rating, selectedCourse.par_total)
+      : parseFloat(document.getElementById('f-hcp').value);
+    const strokes = (typeof strokesOnHole === 'function') ? strokesOnHole(ch, si) : 0;
+    const pts = (typeof stablefordPoints === 'function') ? stablefordPoints(v, par, strokes) : 0;
     stabCell.textContent = pts;
     stabCell.style.color = pts >= 3 ? 'var(--gold-l)' : pts === 2 ? 'var(--ok2)' : pts === 1 ? 'var(--tx2)' : 'var(--ng2)';
   } else {
@@ -729,6 +745,18 @@ function saveRound() {
     entry.distFromTarget2.push(d.distFromTarget2 ? parseInt(d.distFromTarget2) : null);
   }
 
+  // Stableford : points et handicap de jeu, si c'est le format choisi
+  if (typeof stablefordRound === 'function' && entry.format === 'stableford') {
+    try {
+      var stbRes = stablefordRound(selectedCourse, scores, entry.hcp, tee);
+      if (stbRes) {
+        entry.points = stbRes.points;
+        entry.courseHcp = stbRes.ch;
+        entry.pointsByHole = stbRes.byHole.map(function(h) { return h ? h.points : null; });
+      }
+    } catch (ex) { console.warn('[TSG] stableford:', ex.message); }
+  }
+
   // Strokes Gained réels (modèle de référence par handicap)
   if (typeof sgApplyToRound === 'function') { try { sgApplyToRound(entry); } catch(ex) { console.warn('SG:', ex.message); } }
 
@@ -780,7 +808,7 @@ function renderHistory() {
     return `<div class="roundHistory-row">
       <div class="hr-date">${e.date}</div>
       <div class="hr-course" style="font-size:10px">${e.course}</div>
-      <div class="hr-score" style="color:${col}">${e.score}</div>
+      <div class="hr-score" style="color:${col}">${e.points != null ? e.points + ' pts' : e.score}</div>
       <div class="hr-diff" style="color:${vsPar>=0?'var(--wn2)':'var(--ok2)'}">${vsPar>=0?'+':''}${vsPar}</div>
       <button class="hr-share" data-share="${i}" title="Partager cette partie">📸</button>
     </div>`;

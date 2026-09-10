@@ -160,6 +160,14 @@ function qsRender() {
   var par = hole.par;
   var sc = scores[idx];
 
+  // Stableford : coups rendus sur ce trou + points, si le format est choisi
+  var isStb = (typeof currentFormat === 'function') && currentFormat() === 'stableford';
+  var stb = null;
+  if (isStb && typeof stablefordRound === 'function') {
+    var tee = (typeof currentTee === 'function') ? currentTee(course) : null;
+    stb = stablefordRound(course, scores, currentIndex(), tee);
+  }
+
   /* Bandeau des 18 trous */
   var strip = '';
   course.trous.forEach(function(h, i) {
@@ -168,6 +176,7 @@ function qsRender() {
     if (i + 1 === _qsHole) cls += ' cur';
     if (v !== null && v !== undefined) cls += ' ' + qsRelClass(v - h.par);
     var label = (v !== null && v !== undefined) ? v : (i + 1);
+    if (stb && v !== null && v !== undefined && stb.byHole[i]) label = stb.byHole[i].points;
     strip += '<button class="' + cls + '" data-go="' + (i + 1) + '" title="Trou ' + (i + 1) + ' · par ' + h.par + '">' + label + '</button>';
   });
 
@@ -179,6 +188,8 @@ function qsRender() {
   var relStr = 'PAR';
   if (rel > 0) relStr = '+' + rel;
   if (rel < 0) relStr = '' + rel;
+  var totalTxt = cnt + '/18 trous · <strong>' + relStr + '</strong>';
+  if (stb) totalTxt = cnt + '/18 · <strong>' + stb.points + ' pts</strong> · ' + relStr;
 
   /* Boutons rapides */
   var quick = [
@@ -221,7 +232,7 @@ function qsRender() {
     +   '<button class="qs-x" id="qs-x" title="Fermer (la partie est sauvegardée)">×</button>'
     +   '<div class="qs-top-c">'
     +     '<div class="qs-course">' + qsEsc(course.name) + '</div>'
-    +     '<div class="qs-total">' + cnt + '/18 trous · <strong>' + relStr + '</strong></div>'
+    +     '<div class="qs-total">' + totalTxt + '</div>'
     +   '</div>'
     +   '<button class="qs-finish-top" id="qs-finish-top">Terminer</button>'
     + '</div>'
@@ -232,13 +243,13 @@ function qsRender() {
     /* Trou courant */
     + '<div class="qs-hole">'
     +   '<div class="qs-hole-n">Trou ' + _qsHole + '</div>'
-    +   '<div class="qs-hole-meta">Par ' + par + ' · ' + (hole.longueur || '—') + ' m · SI ' + (hole.si || '—') + '</div>'
+    +   '<div class="qs-hole-meta">Par ' + par + ' · ' + (hole.longueur || '—') + ' m · SI ' + (hole.si || '—') + qsStrokeBadge(stb, hole) + '</div>'
     + '</div>'
 
     /* Score choisi */
     + '<div class="qs-score ' + scoreCls + '">'
     +   '<button class="qs-step" data-adj="-1" title="Un coup de moins">−</button>'
-    +   '<div class="qs-score-mid"><div class="qs-score-v">' + scoreBig + '</div><div class="qs-score-l">' + scoreLbl + '</div></div>'
+    +   '<div class="qs-score-mid"><div class="qs-score-v">' + scoreBig + '</div><div class="qs-score-l">' + scoreLbl + '</div>' + qsPointsBadge(stb, idx) + '</div>'
     +   '<button class="qs-step" data-adj="1" title="Un coup de plus">+</button>'
     + '</div>'
 
@@ -516,6 +527,24 @@ function qtSave(close) {
 }
 
 /* ─────────── UTILS ─────────── */
+
+/* « +1 coup rendu » sous le numéro de trou */
+function qsStrokeBadge(stb, hole) {
+  if (!stb) return '';
+  var n = (typeof strokesOnHole === 'function') ? strokesOnHole(stb.ch, hole.si) : 0;
+  if (!n) return ' · <span class="qs-stroke-none">0 coup rendu</span>';
+  var sign = n > 0 ? '+' : '';
+  return ' · <span class="qs-stroke">' + sign + n + ' coup' + (Math.abs(n) > 1 ? 's' : '') + ' rendu' + (Math.abs(n) > 1 ? 's' : '') + '</span>';
+}
+
+/* Points stableford du trou courant, sous le score */
+function qsPointsBadge(stb, idx) {
+  if (!stb) return '';
+  var h = stb.byHole[idx];
+  if (!h) return '';
+  var cls = (typeof stablefordClass === 'function') ? stablefordClass(h.points) : '';
+  return '<div class="qs-points ' + cls + '">' + h.points + ' pt' + (h.points > 1 ? 's' : '') + '</div>';
+}
 
 function qsRelClass(rel) {
   if (rel <= -2) return 'sc-eagle';

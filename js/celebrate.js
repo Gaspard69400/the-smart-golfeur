@@ -36,6 +36,8 @@ function qsCelebrate(entry) {
     +   '<div class="cel-kicker">' + celEsc(facts.kicker) + '</div>'
     +   '<div class="cel-score"><span class="cel-score-v">' + entry.score + '</span>'
     +     '<span class="cel-score-r">' + relStr + '</span></div>'
+    +   (entry.points !== null && entry.points !== undefined
+        ? '<div class="cel-points">' + entry.points + ' points stableford</div>' : '')
     +   '<div class="cel-course">' + celEsc(entry.course) + holesNote + '</div>'
     +   '<div class="cel-stats">'
     +     '<div class="cel-stat"><div class="cel-stat-v">' + (entry.gir !== null && entry.gir !== undefined ? entry.gir : '—') + '</div><div class="cel-stat-l">Greens</div></div>'
@@ -149,6 +151,16 @@ function celBuildFacts(entry) {
   var puttsSeuil = Math.round(pl.holes * 1.7);   // ~30 putts sur 18 trous
   if (puttsCredible && entry.putts <= puttsSeuil) {
     highlights.push({ icon: '🧘', title: entry.putts + ' putt' + (entry.putts > 1 ? 's' : '') + ' seulement', desc: 'Un vrai travail sur les greens.' });
+  }
+  /* Stableford : 36 points = jouer exactement son handicap */
+  if (entry.points !== null && entry.points !== undefined && pl.holes === 18) {
+    if (entry.points >= 40) {
+      confetti = true;
+      if (kicker === 'Partie enregistrée') kicker = '🎯 ' + entry.points + ' points !';
+      highlights.push({ icon: '🎯', title: entry.points + ' points stableford', desc: 'Très au-dessus de ton handicap — la carte d\'une bonne journée.' });
+    } else if (entry.points >= 36) {
+      highlights.push({ icon: '🎯', title: entry.points + ' points stableford', desc: 'Tu as joué ton handicap, voire mieux.' });
+    }
   }
   /* Greens */
   if (entry.gir >= 9) {
