@@ -48,7 +48,7 @@ function trnGetDone(id) {
   var uid = (currentUser && currentUser.id) || 'default';
   return (map[uid] && map[uid][id]) || null;
 }
-function trnMarkDone(id) {
+function trnMarkDone(id, result) {
   var map = trnGetDoneMap();
   var uid = (currentUser && currentUser.id) || 'default';
   if (!map[uid]) map[uid] = {};
@@ -59,7 +59,7 @@ function trnMarkDone(id) {
   lsSet('training_done', map);
   if (window.tsgSync) window.tsgSync.pushTrainingDone(id, cur);
   // Journal daté (les défis de la semaine en ont besoin) + vérification
-  if (typeof chLogTraining === 'function') { try { chLogTraining(id); chCheck(true); } catch (e) {} }
+  if (typeof chLogTraining === 'function') { try { chLogTraining(id, result); chCheck(true); } catch (e) {} }
 }
 
 function TRAINING_SEED() {
@@ -126,6 +126,11 @@ function buildTrainingPage(container) {
   }
   wrap.appendChild(header);
 
+  /* Programme de 4 semaines (le plan qui se déroule) */
+  var prog = document.createElement('div');
+  prog.id = 'trn-program';
+  wrap.appendChild(prog);
+
   /* Section "Ta sélection du moment" (reco depuis la bibliothèque) */
   var sel = document.createElement('div');
   sel.id = 'trn-selection';
@@ -165,6 +170,9 @@ function buildTrainingPage(container) {
 
   container.appendChild(wrap);
   trnRenderGrid();
+  if (typeof prgRenderPanel === 'function') {
+    try { prgRenderPanel(prog); } catch (e) { console.warn('[TSG] programme:', e.message); }
+  }
   trnRenderSelection();
   trnRenderReco();
 }
@@ -346,7 +354,65 @@ function trnBuildCard(t) {
 
 /* ─── DÉTAIL + MARQUER COMME FAIT ─── */
 
-function openTrainingDetail(t) {
+/* Résultats chiffrés passés d'un exercice, du plus ancien au plus récent */
+function trnResults(id) {
+  return (lsGet('trainingLog') || []).filter(function(l) {
+    return l.id === id && l.score !== null && l.score !== undefined;
+  });
+}
+
+/* Petite courbe de progression (SVG) + meilleur / dernier / tendance */
+function trnProgressHtml(t) {
+  var res = trnResults(t.id);
+  if (!res.length) return '';
+  var m = t.measure || {};
+  var last = res.slice(-10);
+  var vals = last.map(function(r) { return r.score; });
+  var best = m.lower ? Math.min.apply(null, res.map(function(r) { return r.score; }))
+                     : Math.max.apply(null, res.map(function(r) { return r.score; }));
+  var lastV = vals[vals.length - 1];
+  var unit = m.unit ? ' ' + m.unit : '';
+
+  var W = 280, H = 70, pad = 6;
+  var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  if (m.max && !m.lower) { lo = 0; hi = m.max; }
+  if (hi === lo) { hi = lo + 1; }
+  var pts = vals.map(function(v, i) {
+    var x = pad + (vals.length === 1 ? (W - 2 * pad) / 2 : i * (W - 2 * pad) / (vals.length - 1));
+    var y = H - pad - (v - lo) / (hi - lo) * (H - 2 * pad);
+    return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+  });
+  var line = pts.map(function(p) { return p.join(','); }).join(' ');
+  var area = 'M' + pts[0][0] + ',' + (H - pad) + ' L' + line.replace(/ /g, ' L') + ' L' + pts[pts.length - 1][0] + ',' + (H - pad) + ' Z';
+  var dots = pts.map(function(p, i) {
+    return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i === pts.length - 1 ? 4 : 2.5) + '" class="' + (i === pts.length - 1 ? 'trn-pt-last' : 'trn-pt') + '"/>';
+  }).join('');
+
+  var trend = '';
+  if (vals.length >= 3) {
+    var first = vals[0], d = lastV - first;
+    var better = m.lower ? d < 0 : d > 0;
+    if (d !== 0) trend = '<span class="trn-trend ' + (better ? 'up' : 'down') + '">' + (better ? '↗ en progrès' : '↘ en baisse') + '</span>';
+    else trend = '<span class="trn-trend flat">→ stable</span>';
+  }
+
+  return '<div class="trn-modal-section-title">Ta progression</div>'
+    + '<div class="trn-prog">'
+    +   '<svg viewBox="0 0 ' + W + ' ' + H + '" class="trn-prog-svg" preserveAspectRatio="none" aria-hidden="true">'
+    +     '<path d="' + area + '" class="trn-prog-area"/>'
+    +     '<polyline points="' + line + '" class="trn-prog-line"/>' + dots
+    +   '</svg>'
+    +   '<div class="trn-prog-stats">'
+    +     '<div><span>Dernier</span><strong>' + lastV + (m.max ? '/' + m.max : '') + unit + '</strong></div>'
+    +     '<div><span>Record</span><strong>' + best + (m.max ? '/' + m.max : '') + unit + '</strong></div>'
+    +     '<div><span>Séances</span><strong>' + res.length + '</strong></div>'
+    +   '</div>'
+    +   trend
+    + '</div>';
+}
+
+function openTrainingDetail(t, opts) {
+  opts = opts || {};
   var existing = document.getElementById('trn-detail-modal');
   if (existing) existing.remove();
 
@@ -375,6 +441,14 @@ function openTrainingDetail(t) {
     +     '<div class="trn-modal-section-title">Consignes</div>'
     +     (stepsHtml ? '<ol class="trn-steps">' + stepsHtml + '</ol>' : '<div class="trn-modal-obj">Pas de consigne détaillée.</div>')
     +     (done && done.count > 0 ? '<div class="trn-done-info">Tu as fait cet exercice <strong>' + done.count + '×</strong>' + (done.last ? ' · dernière fois le ' + new Date(done.last).toLocaleDateString('fr-FR') : '') + '</div>' : '')
+    +     trnProgressHtml(t)
+    +     (t.measure
+          ? '<div class="trn-result"><label class="trn-result-l" for="trn-result-in">Ton résultat aujourd\'hui <span>(facultatif)</span></label>'
+            + '<div class="trn-result-row"><span class="trn-result-what">' + trnEsc(t.measure.label) + '</span>'
+            + '<input type="number" inputmode="numeric" min="0"' + (t.measure.max ? ' max="' + t.measure.max + '"' : '') + ' id="trn-result-in" class="trn-result-in" placeholder="—">'
+            + (t.measure.max ? '<span class="trn-result-max">/ ' + t.measure.max + '</span>' : (t.measure.unit ? '<span class="trn-result-max">' + trnEsc(t.measure.unit) + '</span>' : ''))
+            + '</div></div>'
+          : '')
     +   '</div>'
     +   '<div class="trn-modal-actions">'
     +     '<button class="dash-btn dash-btn-outline" id="trn-detail-cancel">Fermer</button>'
@@ -388,10 +462,22 @@ function openTrainingDetail(t) {
   document.getElementById('trn-detail-cancel').addEventListener('click', close);
   modal.addEventListener('click', function(ev) { if (ev.target === modal) close(); });
   document.getElementById('trn-detail-done').addEventListener('click', function() {
-    trnMarkDone(t.id);
-    showToast('Bravo ! Exercice marqué comme fait ✓');
+    var result = null;
+    var inp = document.getElementById('trn-result-in');
+    if (inp && inp.value !== '') {
+      var v = parseFloat(inp.value);
+      if (isNaN(v) || v < 0 || (t.measure && t.measure.max && v > t.measure.max)) {
+        inp.classList.add('is-bad');
+        showToast(t.measure && t.measure.max ? 'Résultat entre 0 et ' + t.measure.max : 'Résultat invalide');
+        return;
+      }
+      result = { score: v, max: t.measure ? t.measure.max : null };
+    }
+    trnMarkDone(t.id, result);
+    showToast(result ? 'Bravo ! ' + result.score + (result.max ? '/' + result.max : '') + ' enregistré ✓' : 'Bravo ! Exercice marqué comme fait ✓');
     close();
-    trnRefresh();
+    if (typeof opts.onDone === 'function') opts.onDone(t, result);
+    else trnRefresh();
   });
 }
 

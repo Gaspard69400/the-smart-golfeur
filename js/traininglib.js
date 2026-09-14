@@ -122,6 +122,31 @@ var TRAINING_LIBRARY = [
     description: '1. Joue 2 balles par coup et garde la meilleure.\n2. Rejoue le 2e coup depuis la meilleure position.\n3. Observe où se gagnent réellement les coups.\n4. Idéal pour repérer ton secteur à fort potentiel.' }
 ];
 
+/* Ce qui se mesure dans chaque exercice : permet de noter un résultat à chaque
+   séance et de suivre sa progression. `lower:true` = plus petit est meilleur.
+   Les exercices mentaux / physiques / parcours n'ont pas de mesure honnête. */
+var TRAINING_MEASURES = {
+  'lib-putt-echelle':   { label: 'Séries complètes',           max: 5 },
+  'lib-putt-horloge':   { label: 'Balles rentrées d\'affilée',  max: 6 },
+  'lib-putt-portail':   { label: 'Putts réussis d\'affilée',    max: 10 },
+  'lib-putt-lag':       { label: 'Balles dans le cercle',      max: 15 },
+  'lib-putt-pression':  { label: 'Putts rentrés',              max: 50 },
+  'lib-app-3dist':      { label: 'Balles à moins de 5 m',      max: 30 },
+  'lib-app-horloge':    { label: 'Frappes à ± 5 m de la cible', max: 30 },
+  'lib-app-fenetre':    { label: 'Balles dans le couloir',     max: 15 },
+  'lib-app-green':      { label: 'Greens touchés',             max: 20 },
+  'lib-arg-chip3':      { label: 'Chips à moins de 2 m',       max: 15 },
+  'lib-arg-updown':     { label: 'Up & down réussis',          max: 10 },
+  'lib-arg-bunker':     { label: 'Sorties sur le green',       max: 10 },
+  'lib-arg-traj':       { label: 'Balles à moins de 2 m',      max: 10 },
+  'lib-arg-landing':    { label: 'Atterrissages sur la cible', max: 10 },
+  'lib-drv-couloir':    { label: 'Drives dans le couloir',     max: 10 },
+  'lib-drv-tempo':      { label: 'Contacts centrés',           max: 15 },
+  'lib-drv-routine':    { label: 'Drives bien alignés',        max: 10 },
+  'lib-drv-dispersion': { label: 'Dispersion (mètres)',        max: null, lower: true, unit: 'm' }
+};
+TRAINING_LIBRARY.forEach(function(e) { if (TRAINING_MEASURES[e.id]) e.measure = TRAINING_MEASURES[e.id]; });
+
 /* Bibliothèque intégrée (statique) */
 function getLibrary() { return TRAINING_LIBRARY; }
 

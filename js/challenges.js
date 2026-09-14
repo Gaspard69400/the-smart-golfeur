@@ -90,14 +90,19 @@ function chGetWeek() {
 }
 
 /* ── Journal d'entraînement (la carte « training_done » ne garde que la dernière date) ── */
-function chLogTraining(trainingId) {
+function chLogTraining(trainingId, result) {
   var log = lsGet('trainingLog') || [];
   var cat = null;
   try {
     var all = (typeof getAllExercises === 'function') ? getAllExercises() : [];
     for (var i = 0; i < all.length; i++) { if (all[i].id === trainingId) { cat = all[i].category; break; } }
   } catch (e) {}
-  log.push({ id: trainingId, category: cat, date: new Date().toISOString() });
+  var entry = { id: trainingId, category: cat, date: new Date().toISOString() };
+  if (result && result.score !== null && result.score !== undefined && !isNaN(result.score)) {
+    entry.score = Number(result.score);
+    if (result.max) entry.max = Number(result.max);
+  }
+  log.push(entry);
   if (log.length > 500) log = log.slice(-500);
   lsSet('trainingLog', log);
 }
