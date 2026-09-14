@@ -205,6 +205,15 @@ function crsBuildCard(c) {
   playBtn.addEventListener('click', function() { crsPlayCourse(c); });
   actions.appendChild(playBtn);
 
+  if (typeof gpOpenCourse === 'function') {
+    var planBtn = document.createElement('button');
+    planBtn.className = 'dash-btn dash-btn-outline crs-plan-btn';
+    planBtn.textContent = '🧭 Plan de jeu';
+    planBtn.title = 'Tes trous noirs, tes trous forts et la stratégie trou par trou';
+    planBtn.addEventListener('click', function() { gpOpenCourse(c); });
+    actions.appendChild(planBtn);
+  }
+
   if (isUser) {
     var editBtn = document.createElement('button');
     editBtn.className = 'dash-btn dash-btn-outline crs-icon-btn';

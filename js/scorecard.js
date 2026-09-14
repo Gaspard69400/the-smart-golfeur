@@ -135,6 +135,8 @@ function selectCourse(c) {
   if (btnImm) btnImm.disabled = false;
   var btnExp = document.getElementById('btn-express');
   if (btnExp) btnExp.disabled = false;
+  var btnGp = document.getElementById('btn-gameplan');
+  if (btnGp) btnGp.disabled = false;
 
   // Changement de format : rafraîchir la carte et la saisie en cours
   var fmt = document.getElementById('f-format');
@@ -898,6 +900,10 @@ function initScorecardPage() {
     '</div>',
 
     '<div class="sc-fg"><div class="sc-fl">Notes</div><input class="sc-fi" id="f-notes" placeholder="Observations..."></div>',
+
+    '<button class="btn-quicktotal" id="btn-gameplan" onclick="if(selectedCourse&&typeof gpOpenCourse===\'function\')gpOpenCourse(selectedCourse)" disabled>',
+      '🧭 Mon plan de jeu sur ce parcours',
+    '</button>',
 
     '<button class="btn-express" id="btn-express" onclick="openQuickScore()" disabled>',
       '<span class="btn-express-t">⚡ Saisie express</span>',

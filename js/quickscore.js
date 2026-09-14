@@ -256,6 +256,7 @@ function qsRender() {
     /* Boutons 1 tap */
     + '<div class="qs-quicks">' + quickHtml + '</div>'
     + '<div class="qs-hint">Un tap enregistre le trou et passe au suivant.</div>'
+    + ((typeof gpHoleTipHtml === 'function') ? gpHoleTipHtml(course, idx) : '')
 
     /* Détail optionnel */
     + '<details class="qs-opt"' + (pt !== null && pt !== undefined ? ' open' : '') + '>'

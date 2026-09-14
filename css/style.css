@@ -5345,3 +5345,71 @@ body.ld-open { overflow: hidden; }
 .trn-trend.up { color: var(--ok2); }
 .trn-trend.down { color: var(--wn); }
 .trn-trend.flat { color: var(--tx3); }
+
+/* ── Game plan par trou (Session 40) ── */
+.crs-plan-btn { white-space: nowrap; }
+#btn-gameplan:disabled { opacity: .45; cursor: not-allowed; }
+
+.gp-modal {
+  position: fixed; inset: 0; z-index: 975; display: flex; align-items: center; justify-content: center;
+  padding: 18px; background: rgba(26,18,9,0.65); backdrop-filter: blur(4px);
+}
+.gp-card {
+  background: var(--white); border-radius: 20px; width: 100%; max-width: 960px; max-height: 92vh;
+  display: flex; flex-direction: column; border: 1px solid var(--bd-card); box-shadow: 0 24px 70px rgba(0,0,0,.4);
+}
+.gp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 22px 12px; border-bottom: 1px solid var(--bd3); }
+.gp-tag { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-d); }
+.gp-title { font-size: 19px; font-weight: 800; color: var(--tx); margin-top: 2px; }
+.gp-sub { font-size: 12px; color: var(--tx3); margin-top: 3px; }
+.gp-close { border: none; background: transparent; font-size: 26px; color: var(--tx3); cursor: pointer; line-height: 1; padding: 0 4px; }
+.gp-body { padding: 14px 22px 22px; overflow-y: auto; }
+
+.gp-nodata { font-size: 13px; color: var(--tx2); background: var(--bg3); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; line-height: 1.5; }
+.gp-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.gp-sum-block { background: var(--bg2); border: 1px solid var(--bd2); border-radius: 12px; padding: 10px 12px; }
+.gp-sum-t { font-size: 12px; font-weight: 800; color: var(--tx); margin-bottom: 7px; }
+.gp-pill { display: inline-block; font-size: 11.5px; font-weight: 800; border-radius: 20px; padding: 3px 10px; margin: 0 5px 5px 0; font-variant-numeric: tabular-nums; }
+.gp-pill.black { background: var(--ng-bg); color: var(--ng2); }
+.gp-pill.strong { background: var(--ok-bg2); color: var(--ok2); }
+.gp-none { font-size: 12px; color: var(--tx4); }
+.gp-potential { font-size: 12.5px; color: var(--tx2); background: var(--gold-dim); border-radius: 11px; padding: 10px 13px; margin-bottom: 12px; line-height: 1.5; }
+.gp-legend { font-size: 11.5px; color: var(--tx3); margin: 2px 0 10px; }
+
+.gp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.gp-hole { background: var(--bg2); border: 1px solid var(--bd2); border-left: 4px solid var(--bd); border-radius: 12px; padding: 11px 12px; }
+.gp-hole.tone-black { border-left-color: var(--ng2); }
+.gp-hole.tone-strong { border-left-color: var(--ok2); }
+.gp-h-head { display: flex; align-items: center; gap: 9px; }
+.gp-h-num {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--night); color: #F6F1E6;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;
+}
+.gp-h-meta { flex: 1 1 auto; font-size: 12px; font-weight: 600; color: var(--tx2); }
+.gp-h-cost { font-size: 15px; font-weight: 800; color: var(--tx3); font-variant-numeric: tabular-nums; }
+.gp-hole.tone-black .gp-h-cost { color: var(--ng2); }
+.gp-hole.tone-strong .gp-h-cost { color: var(--ok2); }
+.gp-h-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--tx3); margin-top: 8px; }
+.gp-h-stats strong { color: var(--tx); }
+.gp-dist { display: flex; height: 6px; border-radius: 4px; overflow: hidden; background: var(--bg4); margin-top: 6px; }
+.gp-dist i { display: block; height: 100%; }
+.d-eagle { background: #6B4FA8; } .d-birdie { background: var(--ok2); } .d-par { background: var(--tx4); }
+.d-bogey { background: var(--wn2); } .d-double { background: var(--ng2); }
+.gp-h-personal { font-size: 12px; font-weight: 700; color: var(--tx); margin-top: 8px; line-height: 1.4; }
+.gp-h-strategy { font-size: 12px; color: var(--tx2); margin-top: 5px; line-height: 1.45; }
+
+/* Conseil pendant la saisie express */
+.gp-tip {
+  display: flex; gap: 9px; align-items: flex-start; margin: -4px 0 14px;
+  background: var(--bg2); border: 1px solid var(--bd2); border-left: 3px solid var(--gold); border-radius: 10px; padding: 9px 11px;
+}
+.gp-tip.tone-black { border-left-color: var(--ng2); }
+.gp-tip.tone-strong { border-left-color: var(--ok2); }
+.gp-tip-ico { font-size: 15px; line-height: 1.2; flex-shrink: 0; }
+.gp-tip-txt { font-size: 12px; color: var(--tx2); line-height: 1.45; }
+.gp-tip-txt strong { color: var(--tx); }
+
+@media (max-width: 560px) {
+  .gp-summary { grid-template-columns: 1fr; }
+  .gp-body { padding: 12px 14px 18px; }
+}
