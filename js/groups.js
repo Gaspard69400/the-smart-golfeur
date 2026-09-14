@@ -180,6 +180,9 @@ function grpBuildDetail(wrap, groupId) {
   recPanel.innerHTML = '<div class="panel-body" id="grp-records"><div class="ch-loading">…</div></div>';
   wrap.appendChild(recPanel);
 
+  // Défis entre amis (groupchallenges.js)
+  if (typeof gchRenderPanel === 'function') gchRenderPanel(wrap, groupId, _grpView.groupName);
+
   // Classement (avec sélecteur de critère)
   var lbPanel = document.createElement('div');
   lbPanel.className = 'panel';

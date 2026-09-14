@@ -179,7 +179,8 @@ function commCurrentLevel() {
   var s = commComputeStats(rounds);
   var achs = commAchievements(s);
   var tierXp = achs.reduce(function(a, x) { return a + x.bonusXp; }, 0);
-  var chXp = (typeof chTotalXp === 'function') ? chTotalXp() : 0;
+  var chXp = ((typeof chTotalXp === 'function') ? chTotalXp() : 0)
+    + ((typeof gchTotalXp === 'function') ? gchTotalXp() : 0);   // défis hebdo + défis gagnés entre amis
   var xp = s.baseXp + tierXp + chXp;
   return { xp: xp, tierXp: tierXp, chXp: chXp, stats: s, achievements: achs, level: commLevelFromXp(xp) };
 }
