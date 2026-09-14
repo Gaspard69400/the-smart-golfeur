@@ -6,6 +6,11 @@
  * ════════════════════════════════════════════ */
 
 (function init() {
+  // Lien d'invitation (?join=CODE) : mis de côté AVANT tout (retour de connexion Google compris)
+  if (typeof invCaptureFromUrl === 'function') {
+    try { invCaptureFromUrl(); } catch (e) { console.warn('[TSG] invitation:', e.message); }
+  }
+
   // Page d'accueil (1re visite uniquement)
   if (typeof landingInit === 'function') {
     try { landingInit(); } catch (e) { console.warn('[TSG] landing:', e.message); }
@@ -14,6 +19,11 @@
   // Préparer l'UI d'authentification
   if (typeof initAuthUI === 'function') {
     try { initAuthUI(); } catch (e) { console.warn('[TSG] initAuthUI:', e.message); }
+  }
+
+  // Bandeau « Tu es invité dans un groupe »
+  if (typeof invRenderAuthBanners === 'function') {
+    try { invRenderAuthBanners(); } catch (e) {}
   }
 
   // Préparer les profils de démo (dans la section repliée)

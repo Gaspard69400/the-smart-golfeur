@@ -290,9 +290,10 @@ function launchAppCore() {
   var loginEl = document.getElementById('login-screen');
   if (loginEl) loginEl.style.display = 'none';
 
-  // 2. Afficher l'app
+  // 2. Afficher l'app (en haut de page : l'écran de connexion a pu être défilé)
   var appEl = document.getElementById('app');
   if (appEl) appEl.classList.add('visible');
+  try { window.scrollTo(0, 0); } catch (e) {}
 
   // 3. Mettre à jour la barre de navigation
   updateNavUI();
@@ -335,6 +336,9 @@ function launchAppCore() {
 
   // 11. Instantané automatique des données (si le dernier a plus de 6 h)
   if (typeof tsgAutoBackup === 'function') { setTimeout(function() { tsgAutoBackup(false); }, 1500); }
+
+  // 12. Invitation à un groupe reçue par lien / QR code
+  if (typeof invProcessPending === 'function') { setTimeout(function() { try { invProcessPending(); } catch (e) {} }, 700); }
 }
 
 /* \u2500\u2500\u2500 ONBOARDING (1er lancement) \u2500\u2500\u2500 */

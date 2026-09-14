@@ -65,7 +65,7 @@ function grpBuildList(wrap) {
   joinPanel.innerHTML = '<div class="panel-body">'
     + '<div class="grp-join-intro">Un ami t\'a donné un <strong>code de groupe</strong> ?</div>'
     + '<div class="ch-join-row">'
-    +   '<input type="text" class="ch-join-input" id="grp-join-code" placeholder="Ex : A1B2C3" maxlength="12" autocomplete="off">'
+    +   '<input type="text" class="ch-join-input" id="grp-join-code" placeholder="Code ou lien reçu" maxlength="200" autocomplete="off">'
     +   '<button class="dash-btn dash-btn-outline" id="grp-join-btn">Rejoindre</button>'
     + '</div><div class="ch-join-error" id="grp-join-error" style="display:none"></div></div>';
   wrap.appendChild(joinPanel);
@@ -85,9 +85,10 @@ function grpBuildList(wrap) {
     var jb = document.getElementById('grp-join-btn');
     var ji = document.getElementById('grp-join-code');
     function join() {
-      var code = (ji.value || '').trim();
+      var raw = (ji.value || '').trim();
+      var code = (typeof invExtractCode === 'function' ? invExtractCode(raw) : null) || raw;
       var err = document.getElementById('grp-join-error');
-      if (!code) { err.style.display = 'block'; err.textContent = 'Saisis un code.'; return; }
+      if (!code) { err.style.display = 'block'; err.textContent = 'Saisis un code ou colle le lien reçu.'; return; }
       jb.disabled = true; err.style.display = 'none';
       window.sbClient.rpc('join_group', { p_code: code }).then(function(res) {
         jb.disabled = false;
@@ -167,7 +168,8 @@ function grpBuildDetail(wrap, groupId) {
   infoPanel.innerHTML = '<div class="panel-body grp-info-body">'
     + '<div class="grp-code-block"><div class="grp-code-lbl">Code d\'invitation</div>'
     +   '<div class="grp-code" id="grp-code-val">…</div></div>'
-    + '<button class="dash-btn dash-btn-outline" id="grp-copy-btn">Copier</button>'
+    + '<button class="dash-btn dash-btn-gold" id="grp-invite-btn">Inviter</button>'
+    + '<button class="dash-btn dash-btn-outline" id="grp-copy-btn">Copier le code</button>'
     + '<button class="dash-btn dash-btn-outline grp-leave-btn" id="grp-leave-btn">Quitter</button>'
     + '</div>';
   wrap.appendChild(infoPanel);
@@ -224,6 +226,8 @@ function grpBuildDetail(wrap, groupId) {
     if (g) {
       var cv = document.getElementById('grp-code-val'); if (cv) cv.textContent = g.invite_code || '—';
       var nm = document.getElementById('grp-detail-name'); if (nm) nm.textContent = g.name;
+      var inv = document.getElementById('grp-invite-btn');
+      if (inv && typeof invOpenShare === 'function') inv.addEventListener('click', function() { invOpenShare(g); });
       var copy = document.getElementById('grp-copy-btn');
       if (copy) copy.addEventListener('click', function() {
         try { navigator.clipboard.writeText(g.invite_code); showToast('Code copié : ' + g.invite_code); }
@@ -392,9 +396,11 @@ function grpOpenCreate() {
       if (res.error) { err.style.display = 'block'; err.textContent = res.error.message; return; }
       if (d && d.ok) {
         close();
-        showToast('Groupe « ' + d.name + ' » créé ✓  Code : ' + d.invite_code);
+        showToast('Groupe « ' + d.name + ' » créé ✓');
         _grpView = { mode: 'detail', groupId: d.id, groupName: d.name };
         grpRefresh();
+        // Un groupe vide ne sert à rien : proposer tout de suite d'inviter
+        if (typeof invOpenShare === 'function') invOpenShare({ name: d.name, invite_code: d.invite_code });
       } else { err.style.display = 'block'; err.textContent = (d && d.error) || 'Erreur.'; }
     }, function(e) { err.style.display = 'block'; err.textContent = e.message; });
   });
