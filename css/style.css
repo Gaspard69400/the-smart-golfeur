@@ -5883,3 +5883,17 @@ body:not(:has(#app.visible)) .fb-fab { display: none; }
 .fb-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .acc-row .settings-btn { flex: 0 0 auto; }
 .cc-formats { display: flex; gap: 6px; flex-wrap: wrap; } .cc-formats .theme-opt { flex: 1; justify-content: center; min-width: 110px; }
+
+/* ════════════ INSTALLER L'APP (S57) ════════════ */
+.ins-banner { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, var(--gold-dim), var(--gold-dim2)); border: 1px solid rgba(201,168,76,.45); border-radius: 14px; padding: 10px 12px; margin-bottom: 14px; }
+.ins-b-ico { font-size: 24px; }
+.ins-b-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 13px; color: var(--tx); }
+.ins-b-txt span { font-size: 11.5px; color: var(--tx3); }
+.ins-banner .dash-btn { flex: 0 0 auto; padding: 7px 12px; }
+.ins-b-x { border: none; background: none; color: var(--tx4); font-size: 20px; cursor: pointer; padding: 0 2px; line-height: 1; }
+.ins-steps { list-style: none; margin: 8px 0 10px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ins-steps li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--tx2); line-height: 1.4; }
+.ins-n { width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%; background: var(--gold); color: #1A1209; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.ins-ico { width: 20px; height: 20px; vertical-align: -5px; color: #0A84FF; }
+.ins-note { font-size: 12px; color: var(--tx3); line-height: 1.5; }
+.ins-modal { z-index: 10030; }

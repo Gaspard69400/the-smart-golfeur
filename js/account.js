@@ -33,6 +33,8 @@ function accRenderSettingsSection(host) {
     +   '<button class="settings-btn settings-btn-secondary" type="button" data-gloss="">📖 Les mots du golf</button>'
     +   '<button class="settings-btn settings-btn-secondary" type="button" id="acc-level-btn">🎯 Mon niveau de départ</button>'
     +   '<button class="settings-btn settings-btn-secondary" type="button" id="acc-fb-btn">💬 Donner mon avis</button>'
+    +   '<button class="settings-btn settings-btn-secondary" type="button" id="acc-install-btn">📲 Installer l\'app</button>'
+    +   '<button class="settings-btn settings-btn-secondary" type="button" id="acc-shareapp-btn">📣 Faire découvrir l\'app</button>'
     +   '<label class="acc-toggle"><input type="checkbox" id="acc-usage-toggle"' + (accUsageEnabled() ? ' checked' : '') + '>'
     +     '<span>Statistiques d\'usage anonymes</span></label>'
     + '</div>'
@@ -47,6 +49,10 @@ function accRenderSettingsSection(host) {
   host.querySelector('#acc-privacy-btn').addEventListener('click', accOpenPrivacy);
   var lvl = host.querySelector('#acc-level-btn');
   if (lvl) lvl.addEventListener('click', function() { if (typeof bgnOpenLevel === 'function') bgnOpenLevel(); });
+  var insb = host.querySelector('#acc-install-btn');
+  if (insb) insb.addEventListener('click', function() { if (typeof insOpen === 'function') insOpen(); });
+  var shb = host.querySelector('#acc-shareapp-btn');
+  if (shb) shb.addEventListener('click', function() { if (typeof insShareApp === 'function') insShareApp(); });
   var fbb = host.querySelector('#acc-fb-btn');
   if (fbb) fbb.addEventListener('click', function() { if (typeof fbOpen === 'function') fbOpen(); });
   host.querySelector('#acc-usage-toggle').addEventListener('change', function(e) {

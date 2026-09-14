@@ -234,7 +234,8 @@ function buildCommunityPage(container) {
 
   container.innerHTML = ''
     + '<div class="dash-header"><div><div class="dash-greeting">Communauté</div>'
-    + '<div class="dash-meta">Franchis les paliers, débloque tes médailles et suis les performances de tes amis</div></div></div>'
+    + '<div class="dash-meta">Franchis les paliers, débloque tes médailles et suis les performances de tes amis</div></div>'
+    + '<div><button class="dash-btn dash-btn-outline" type="button" id="comm-share-app">📣 Inviter un ami</button></div></div>'
     + hero + pills + badgeSection
     + '<div class="comm-section-head" style="margin-top:26px"><div class="comm-section-title">📣 Fil d\'activité</div>'
     + '<div class="comm-section-sub">Les dernières parties de ta communauté</div></div>'
@@ -263,6 +264,9 @@ function buildCommunityPage(container) {
       smRenderPanel(smSlot);
     } catch (e) { console.warn('[TSG] trophées du mois:', e.message); }
   }
+
+  var shareApp = container.querySelector('#comm-share-app');
+  if (shareApp) shareApp.addEventListener('click', function() { if (typeof insShareApp === 'function') insShareApp(); });
 
   commRenderFeed();
 }

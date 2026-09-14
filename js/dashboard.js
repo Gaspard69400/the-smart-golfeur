@@ -275,6 +275,9 @@ function buildDashboard(container) {
   header.appendChild(headerRight);
   wrap.appendChild(header);
 
+  // Installer l'app sur le téléphone (install.js)
+  if (typeof insRenderBanner === 'function') { try { insRenderBanner(wrap); } catch (e) {} }
+
   /* ── 2. BANNIÈRE DÉMO (si pas de vraies données) ── */
   if (!hasReal) {
     var banner = document.createElement('div');
