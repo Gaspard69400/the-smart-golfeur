@@ -5734,3 +5734,62 @@ body.ld-open { overflow: hidden; }
 .pgs-row.same .pgs-d { color: var(--tx4); }
 @media (max-width: 420px) { .pgs-head, .pgs-row { grid-template-columns: 1fr 48px 12px 52px 46px; } .pgs-row { font-size: 12px; } }
 .pgs-subhead { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--tx4); padding: 12px 4px 4px; border-top: 1px solid var(--bd3); }
+
+/* ════════════ FINITIONS : squelettes, appui, apparition (S51) ════════════ */
+/* Chargement : des lignes qui scintillent au lieu d'un simple « Chargement… » */
+.ch-loading {
+  position: relative; text-align: left; font-size: 11.5px; color: var(--tx4);
+  padding: 58px 4px 6px; min-height: 64px;
+}
+.ch-loading::before {
+  content: ""; position: absolute; left: 4px; right: 4px; top: 6px; height: 44px; border-radius: 10px;
+  background:
+    linear-gradient(var(--bg3), var(--bg3)) 0 0 / 72% 12px no-repeat,
+    linear-gradient(var(--bg3), var(--bg3)) 0 18px / 94% 10px no-repeat,
+    linear-gradient(var(--bg3), var(--bg3)) 0 34px / 56% 10px no-repeat;
+  -webkit-mask: linear-gradient(100deg, rgba(0,0,0,.55) 30%, #000 50%, rgba(0,0,0,.55) 70%) 0 0 / 250% 100%;
+          mask: linear-gradient(100deg, rgba(0,0,0,.55) 30%, #000 50%, rgba(0,0,0,.55) 70%) 0 0 / 250% 100%;
+  animation: tsgShimmer 1.3s linear infinite;
+}
+@keyframes tsgShimmer { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: -150% 0; mask-position: -150% 0; } }
+
+/* Appui : le bouton s'enfonce légèrement sous le doigt */
+.dash-btn, .qs-quick, .qs-step, .qs-nav-b, .qs-opt-b, .sgm-b, .sgm-tab, .sgm-allpar, .comm-kudos, .comm-cmt-btn,
+.btn-express, .btn-quicktotal, .btn-immersive, .theme-opt, .hn-club, .gch-opt, .sgm-game, .sgm-slot, .settings-btn, .acc-danger-btn {
+  transition: transform .09s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.dash-btn:active:not(:disabled), .qs-quick:active, .qs-step:active, .qs-nav-b:active:not(:disabled), .qs-opt-b:active:not(:disabled),
+.sgm-b:active:not(:disabled), .sgm-tab:active, .sgm-allpar:active, .comm-kudos:active, .comm-cmt-btn:active, .btn-express:active:not(:disabled),
+.btn-quicktotal:active, .btn-immersive:active:not(:disabled), .theme-opt:active, .hn-club:active, .gch-opt:active, .sgm-game:active, .sgm-slot:active,
+.settings-btn:active, .acc-danger-btn:active:not(:disabled) { transform: scale(.965); }
+
+/* Cartes qui se soulèvent au survol (souris uniquement) */
+@media (hover: hover) {
+  .slv-card, .gch-card, .pts-kpi, .sgm-game { transition: transform .18s ease, box-shadow .18s ease; }
+  .slv-card:hover, .gch-card:hover, .pts-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+}
+
+/* Apparition en cascade des blocs d'une page */
+@keyframes tsgRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.app-page.active .dash-wrap > .panel, .app-page.active .dash-wrap > .dash-g5 > .kpi-card, .app-page.active .an-card {
+  animation: tsgRise .38s cubic-bezier(.2,.7,.2,1) both;
+}
+.app-page.active .dash-wrap > .dash-g5 > .kpi-card:nth-child(2) { animation-delay: .04s; }
+.app-page.active .dash-wrap > .dash-g5 > .kpi-card:nth-child(3) { animation-delay: .08s; }
+.app-page.active .dash-wrap > .dash-g5 > .kpi-card:nth-child(4) { animation-delay: .12s; }
+.app-page.active .dash-wrap > .dash-g5 > .kpi-card:nth-child(5) { animation-delay: .16s; }
+.app-page.active .dash-wrap > .panel:nth-of-type(2) { animation-delay: .06s; }
+.app-page.active .dash-wrap > .panel:nth-of-type(3) { animation-delay: .1s; }
+.app-page.active .dash-wrap > .panel:nth-of-type(n+4) { animation-delay: .14s; }
+
+/* Le toast arrive avec un léger rebond */
+.toast.show { transition: opacity .2s ease, transform .32s cubic-bezier(.3,1.5,.5,1); }
+
+.tsg-haptics-row { margin-top: 12px; }
+.tsg-haptics-row em { font-style: normal; color: var(--tx4); font-size: 11.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-loading::before { animation: none; }
+  .app-page.active .dash-wrap > .panel, .app-page.active .dash-wrap > .dash-g5 > .kpi-card, .app-page.active .an-card { animation: none; }
+  .dash-btn:active, .qs-quick:active, .sgm-b:active, .btn-express:active { transform: none; }
+}
