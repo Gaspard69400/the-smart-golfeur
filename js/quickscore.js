@@ -520,6 +520,8 @@ function qtSave(close) {
   if (window.tsgSync) window.tsgSync.pushRound(entry);
 
   showToast('Partie enregistrée ✓ ' + course.name + ' · ' + total);
+  // Instantané de sécurité : une nouvelle partie = une nouvelle sauvegarde
+  if (typeof tsgAutoBackup === 'function') { try { tsgAutoBackup(true); } catch (e) {} }
   if (typeof chCheck === 'function') { try { chCheck(true); } catch (e) {} }
   if (typeof close === 'function') close();
   if (typeof renderHistory === 'function') { try { renderHistory(); } catch (e) {} }

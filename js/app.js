@@ -16,10 +16,21 @@ var selectedProfile = null;
 /* ─── LOCALSTORAGE ─── */
 
 function lsGet(key) {
+  var raw = null;
+  try { raw = localStorage.getItem('tsg_' + key); } catch (e) { return null; }
+  if (!raw) return null;
   try {
-    var val = localStorage.getItem('tsg_' + key);
-    return val ? JSON.parse(val) : null;
-  } catch(e) {
+    return JSON.parse(raw);
+  } catch (e) {
+    // ⚠️ Donnée illisible. On la met de côté AVANT de renvoyer null : sinon l'app
+    // croit qu'il n'y a rien (ex. aucune partie) et la prochaine sauvegarde
+    // écraserait définitivement l'historique.
+    if (!lsGet._saved) lsGet._saved = {};
+    if (!lsGet._saved[key]) {
+      lsGet._saved[key] = true;
+      try { localStorage.setItem('tsg_corrupt_' + key + '_' + Date.now(), raw); } catch (e2) {}
+      if (typeof tsgOnCorruptData === 'function') { try { tsgOnCorruptData(key); } catch (e3) {} }
+    }
     return null;
   }
 }
@@ -28,7 +39,10 @@ function lsSet(key, value) {
   try {
     localStorage.setItem('tsg_' + key, JSON.stringify(value));
     return true;
-  } catch(e) {
+  } catch (e) {
+    // Échec d'écriture (souvent : stockage plein). Avant, il passait sous silence.
+    var quota = !!(e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014));
+    if (typeof tsgOnStorageFailure === 'function') { try { tsgOnStorageFailure(key, quota); } catch (e2) {} }
     return false;
   }
 }
@@ -262,6 +276,16 @@ function doLogin() {
 /* ─── LAUNCH APP ─── */
 
 function launchApp() {
+  try {
+    launchAppCore();
+  } catch (e) {
+    console.error('[TSG] Démarrage impossible :', e);
+    if (typeof tsgShowRecovery === 'function') tsgShowRecovery(e);
+    else throw e;
+  }
+}
+
+function launchAppCore() {
   // 1. Cacher le login
   var loginEl = document.getElementById('login-screen');
   if (loginEl) loginEl.style.display = 'none';
@@ -308,6 +332,9 @@ function launchApp() {
 
   // 10. Bandeau hors-ligne si le réseau est absent
   try { tsgUpdateOnlineState(); } catch (e) {}
+
+  // 11. Instantané automatique des données (si le dernier a plus de 6 h)
+  if (typeof tsgAutoBackup === 'function') { setTimeout(function() { tsgAutoBackup(false); }, 1500); }
 }
 
 /* \u2500\u2500\u2500 ONBOARDING (1er lancement) \u2500\u2500\u2500 */
@@ -590,7 +617,8 @@ function buildPages() {
       }
     } catch(e) {
       console.warn('[TSG] Erreur init page ' + tab.page + ':', e.message);
-      buildComingSoon(page, tab.label);
+      if (typeof tsgPageError === 'function') tsgPageError(page, tab, e);
+      else buildComingSoon(page, tab.label);
     }
 
     content.appendChild(page);
@@ -637,7 +665,7 @@ function showPage(pageId) {
     try {
       while (target.firstChild) target.removeChild(target.firstChild);
       buildDashboard(target);
-    } catch(e) { console.warn('Dashboard rebuild:', e.message); }
+    } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Dashboard rebuild:', e.message); }
   }
   // Si on va sur l'onglet Analyse : initialiser/rafraîchir
   if (pageId === 'analyse' && typeof initAnalysePage === 'function') {
@@ -645,19 +673,19 @@ function showPage(pageId) {
   }
   // Si on va sur l'onglet Parcours : reconstruire pour refléter les ajouts/suppressions
   if (pageId === 'courses' && target && typeof buildCoursesPage === 'function') {
-    try { buildCoursesPage(target); } catch(e) { console.warn('Courses rebuild:', e.message); }
+    try { buildCoursesPage(target); } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Courses rebuild:', e.message); }
   }
   // Si on va sur l'onglet Entraînement : reconstruire (nouveaux exercices, réalisations)
   if (pageId === 'training' && target && typeof buildTrainingPage === 'function') {
-    try { buildTrainingPage(target); } catch(e) { console.warn('Training rebuild:', e.message); }
+    try { buildTrainingPage(target); } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Training rebuild:', e.message); }
   }
   // Si on va sur l'onglet Coach Hub : reconstruire (données joueurs à jour)
   if (pageId === 'coach' && target && typeof buildCoachPage === 'function') {
-    try { buildCoachPage(target); } catch(e) { console.warn('Coach rebuild:', e.message); }
+    try { buildCoachPage(target); } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Coach rebuild:', e.message); }
   }
   // Si on va sur l'onglet Groupes : revenir à la liste + reconstruire
   if (pageId === 'groups' && target && typeof buildGroupsPage === 'function') {
-    try { _grpView = { mode: 'list' }; buildGroupsPage(target); } catch(e) { console.warn('Groups rebuild:', e.message); }
+    try { _grpView = { mode: 'list' }; buildGroupsPage(target); } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Groups rebuild:', e.message); }
   }
   // Si on va sur la Scorecard : afficher la bannière de reprise si une partie est en cours
   if (pageId === 'scorecard' && typeof qsRenderResumeBanner === 'function') {
@@ -665,10 +693,17 @@ function showPage(pageId) {
   }
   // Si on va sur l'onglet Communauté : reconstruire (XP, badges, fil à jour)
   if (pageId === 'community' && target && typeof buildCommunityPage === 'function') {
-    try { buildCommunityPage(target); } catch(e) { console.warn('Community rebuild:', e.message); }
+    try { buildCommunityPage(target); } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Community rebuild:', e.message); }
   }
 }
 
+
+function tsgRebuildFailed(target, pageId, e) {
+  if (typeof tsgPageError !== 'function' || !target) return;
+  var tab = null;
+  for (var i = 0; i < NAV_TABS.length; i++) { if (NAV_TABS[i].page === pageId) { tab = NAV_TABS[i]; break; } }
+  tsgPageError(target, tab || { page: pageId, label: pageId }, e);
+}
 
 /* ─── PAGE COMING SOON ─── */
 
@@ -837,6 +872,10 @@ function openSettingsModal() {
     +       '<div class="settings-hint">Le fichier export\u00e9 contient toutes tes donn\u00e9es au format JSON. Garde-le pr\u00e9cieusement \u2014 il te permet de tout restaurer sur un autre appareil.</div>'
     +     '</div>'
     +     '<div class="settings-section">'
+    +       '<div class="settings-section-title">Sauvegardes</div>'
+    +       '<div id="settings-backups"></div>'
+    +     '</div>'
+    +     '<div class="settings-section">'
     +       '<div class="settings-section-title">Apparence</div>'
     +       '<div class="settings-section-sub">Choisis ton th\u00e8me. « Syst\u00e8me » suit le r\u00e9glage de ton t\u00e9l\u00e9phone.</div>'
     +       '<div class="theme-picker" id="theme-picker">'
@@ -861,6 +900,11 @@ function openSettingsModal() {
   // Listeners
   document.getElementById('settings-close-btn').addEventListener('click', closeSettingsModal);
   modal.addEventListener('click', function(ev) { if (ev.target === modal) closeSettingsModal(); });
+
+  // Liste des sauvegardes automatiques
+  if (typeof tsgRenderBackupSection === 'function') {
+    try { tsgRenderBackupSection(document.getElementById('settings-backups')); } catch (e) {}
+  }
 
   // Sélecteur de thème
   var picker = document.getElementById('theme-picker');

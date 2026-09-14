@@ -776,6 +776,8 @@ function saveRound() {
   showToast('Partie enregistrée ✓  ' + entry.date + ' · ' + entry.course + ' · ' + scoreTotal + ' (+'+(scoreTotal-par)+')');
   // Le brouillon de saisie express n'a plus lieu d'être
   if (typeof qsClearDraft === 'function') { try { qsClearDraft(); qsRenderResumeBanner(); } catch(ex) {} }
+  // Instantané de sécurité : une nouvelle partie = une nouvelle sauvegarde
+  if (typeof tsgAutoBackup === 'function') { try { tsgAutoBackup(true); } catch (e) {} }
   // Défis de la semaine : une partie peut en relever plusieurs
   if (typeof chCheck === 'function') { try { chCheck(true); } catch(ex) {} }
   // Écran de célébration (record, birdies, seuils…)
