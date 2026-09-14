@@ -171,7 +171,8 @@ function prgRenderPanel(host) {
       + '<button class="dash-btn dash-btn-gold prg-start" id="prg-start">Créer mon programme</button>'
       + '</div>';
     host.appendChild(panel);
-    document.getElementById('prg-start').addEventListener('click', function() {
+    // (référence directe : au lancement, la page n'est pas encore dans le document)
+    panel.querySelector('#prg-start').addEventListener('click', function() {
       prgSave(prgGenerate());
       _prgViewWeek = null;
       if (typeof showToast === 'function') showToast('Programme créé — c\'est parti pour la semaine 1 ✓');
