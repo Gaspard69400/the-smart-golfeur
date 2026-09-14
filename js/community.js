@@ -351,7 +351,9 @@ function commRenderFeed() {
           return commFeedCard(prof, r, row.user_id === uid);
         }).join('');
         host.innerHTML = '<div class="comm-feed-list">' + cards + '</div>';
-        commWireKudos(host);
+        // Kudos partagés + commentaires (social.js) ; repli sur les kudos locaux si indisponible
+        if (typeof socEnhance === 'function') socEnhance(host, list.map(function(row) { return row.id; }), byId);
+        else commWireKudos(host);
       }, function(e) {
         host.innerHTML = '<div class="comm-feed-empty">Impossible de charger le fil (' + commEsc(e.message || '') + ').</div>';
       });
@@ -375,14 +377,17 @@ function commFeedCard(prof, r, isMe) {
   var kudos = commKudosCount(r.id);
   var mineKudo = commIHaveKudoed(r.id) ? ' on' : '';
 
-  return '<div class="comm-card">'
+  return '<div class="comm-card" data-rid="' + commEsc('' + r.id) + '" data-owner="' + commEsc(prof.id || '') + '">'
     + '<div class="comm-card-head">' + av
     + '<div class="comm-card-who"><div class="comm-card-name">' + commEsc(prof.name || 'Joueur') + (isMe ? ' <span class="comm-me">toi</span>' : '') + '</div>'
     + '<div class="comm-card-when">' + commEsc(commRelDate(r.date)) + (r.course ? ' · ' + commEsc(r.course) : '') + '</div></div>'
     + (relStr ? '<div class="comm-card-score ' + relCls + '"><div class="comm-card-score-v">' + (r.score != null ? r.score : '—') + '</div><div class="comm-card-score-r">' + relStr + '</div></div>' : '')
     + '</div>'
     + (chips ? '<div class="comm-card-chips">' + chips + '</div>' : '')
-    + '<div class="comm-card-foot"><button class="comm-kudos' + mineKudo + '" data-rid="' + commEsc('' + r.id) + '">👏 <span class="comm-kudos-n">' + kudos + '</span></button></div>'
+    + '<div class="comm-card-foot"><button class="comm-kudos' + mineKudo + '" data-rid="' + commEsc('' + r.id) + '">👏 <span class="comm-kudos-n">' + kudos + '</span></button>'
+    +   '<button class="comm-cmt-btn" type="button" hidden>💬 <span class="comm-cmt-n"></span></button>'
+    +   '<span class="comm-kudos-who"></span></div>'
+    + '<div class="comm-thread" hidden></div>'
     + '</div>';
 }
 

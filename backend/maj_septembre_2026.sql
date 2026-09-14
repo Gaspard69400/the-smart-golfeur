@@ -82,3 +82,57 @@ grant execute on function public.track_page(text) to anon, authenticated;
 -- Pour lire les chiffres (à lancer quand tu veux, dans le SQL Editor) :
 --   select page, sum(views) as vues from public.usage_daily
 --   where day > current_date - 30 group by page order by vues desc;
+
+-- ─────────────────────────────────────────────
+-- S44 — Kudos partagés et commentaires sous les parties
+-- Visibles par ceux qui voient la partie : son auteur et les membres de ses groupes.
+create or replace function public.can_see_round(rid bigint)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.rounds r
+    where r.id = rid and (r.user_id = auth.uid() or public.shares_group_with(r.user_id))
+  );
+$$;
+grant execute on function public.can_see_round(bigint) to authenticated;
+
+create table if not exists public.round_kudos (
+  round_id   bigint not null references public.rounds(id) on delete cascade,
+  user_id    uuid   not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now(),
+  primary key (round_id, user_id)
+);
+alter table public.round_kudos enable row level security;
+
+drop policy if exists "round_kudos_select" on public.round_kudos;
+create policy "round_kudos_select" on public.round_kudos
+  for select using (public.can_see_round(round_id));
+drop policy if exists "round_kudos_insert" on public.round_kudos;
+create policy "round_kudos_insert" on public.round_kudos
+  for insert with check (user_id = auth.uid() and public.can_see_round(round_id));
+drop policy if exists "round_kudos_delete" on public.round_kudos;
+create policy "round_kudos_delete" on public.round_kudos
+  for delete using (user_id = auth.uid());
+
+create table if not exists public.round_comments (
+  id         uuid primary key default gen_random_uuid(),
+  round_id   bigint not null references public.rounds(id) on delete cascade,
+  user_id    uuid   not null references auth.users(id) on delete cascade,
+  body       text   not null check (char_length(body) between 1 and 500),
+  created_at timestamptz default now()
+);
+alter table public.round_comments enable row level security;
+create index if not exists round_comments_round_idx on public.round_comments(round_id);
+
+drop policy if exists "round_comments_select" on public.round_comments;
+create policy "round_comments_select" on public.round_comments
+  for select using (public.can_see_round(round_id));
+drop policy if exists "round_comments_insert" on public.round_comments;
+create policy "round_comments_insert" on public.round_comments
+  for insert with check (user_id = auth.uid() and public.can_see_round(round_id));
+-- Supprimer : son propre commentaire, ou n'importe quel commentaire sous SA partie
+drop policy if exists "round_comments_delete" on public.round_comments;
+create policy "round_comments_delete" on public.round_comments
+  for delete using (
+    user_id = auth.uid()
+    or exists (select 1 from public.rounds r where r.id = round_id and r.user_id = auth.uid())
+  );
