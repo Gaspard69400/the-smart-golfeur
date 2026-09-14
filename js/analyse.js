@@ -217,6 +217,9 @@ function renderOverview() {
   // ── Recommandations actionnables ──
   page.appendChild(renderRecommendations(rounds, sgRows));
 
+  // ── Toi et le vent (weather.js) ──
+  if (typeof wxAnalyseCard === 'function') { try { var wxCard = wxAnalyseCard(rounds); if (wxCard) page.appendChild(wxCard); } catch (e) {} }
+
   // ── Encart progressif ──
   if (rounds.length < 5) {
     var unlock = document.createElement('div');

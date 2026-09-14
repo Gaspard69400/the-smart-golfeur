@@ -942,6 +942,7 @@ function sgmBuildRound(game, players, player) {
     puttsByHole: puttsBy, girByHole: girBy, firByHole: new Array(18).fill(null),
     sg_tee: null, sg_app: null, sg_arg: null, sg_putt: null,
     sharedGameId: game.id, sharedGameCode: game.code,
+    weather: (typeof wxCached === 'function' && game.played_on === new Date().toISOString().slice(0, 10)) ? wxCached(course) : null,
     detailMode: false, proMode: false,
     shots: {}, shotsOnGreen: {}, shotsPutts: {}, shotsFairway: {}, shotsFairwayMissSide: {},
     clubs: [], fairwayPos: [], distRemain: [], clubsApp: [], distFromTarget2: []

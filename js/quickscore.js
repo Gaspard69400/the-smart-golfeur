@@ -190,6 +190,10 @@ function qsRender() {
   if (rel < 0) relStr = '' + rel;
   var totalTxt = cnt + '/18 trous · <strong>' + relStr + '</strong>';
   if (stb) totalTxt = cnt + '/18 · <strong>' + stb.points + ' pts</strong> · ' + relStr;
+  if (typeof wxCached === 'function') {
+    var wxNow = wxCached(course);
+    if (wxNow) totalTxt += '<div class="qs-wx">' + wxChipHtml(Object.assign({}, wxNow, (lsGet('weatherNow') || {})[course.id])) + '</div>';
+  }
 
   /* Boutons rapides */
   var quick = [
@@ -505,6 +509,7 @@ function qtSave(close) {
   var entry = {
     id: Date.now(),
     date: date,
+    weather: (typeof wxCached === 'function' && date === today) ? wxCached(course) : null,
     course: course.name,
     courseId: course.id,
     score: total,

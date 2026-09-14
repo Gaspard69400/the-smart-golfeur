@@ -138,6 +138,14 @@ function selectCourse(c) {
   var btnGp = document.getElementById('btn-gameplan');
   if (btnGp) btnGp.disabled = false;
 
+  // Météo du jour sur ce parcours (weather.js) : pastille + « Conditions » réglées toutes seules
+  var condSel = document.getElementById('f-cond');
+  if (condSel && !condSel._wxWired) {
+    condSel._wxWired = true;
+    condSel.addEventListener('change', function() { condSel._userSet = true; });
+  }
+  if (typeof wxOnCourseSelected === 'function') { try { wxOnCourseSelected(selectedCourse); } catch (e) {} }
+
   // Changement de format : rafraîchir la carte et la saisie en cours
   var fmt = document.getElementById('f-format');
   if (fmt && !fmt._fmtWired) {
@@ -719,6 +727,7 @@ function saveRound() {
     gir: girHit,
     putts: puttsTotal || null,
     cond: document.getElementById('f-cond').value,
+    weather: (typeof wxCached === 'function' && document.getElementById('f-date').value === new Date().toISOString().slice(0, 10)) ? wxCached(selectedCourse) : null,
     format: document.getElementById('f-format').value,
     hcp: parseFloat(document.getElementById('f-hcp').value),
     notes: document.getElementById('f-notes').value,
@@ -901,7 +910,7 @@ function initScorecardPage() {
     '</div>',
 
     '<div class="sc-fr">',
-      '<div class="sc-fg"><div class="sc-fl">Conditions</div><select class="sc-fs" id="f-cond"><option value="calme">Calme</option><option value="vent-mod">Vent modéré</option><option value="vent-fort">Vent fort</option><option value="pluie">Pluie</option></select></div>',
+      '<div class="sc-fg"><div class="sc-fl">Conditions</div><select class="sc-fs" id="f-cond"><option value="calme">Calme</option><option value="vent-mod">Vent modéré</option><option value="vent-fort">Vent fort</option><option value="pluie">Pluie</option></select><div id="wx-host" class="wx-host"></div></div>',
       '<div class="sc-fg"><div class="sc-fl">Handicap joué</div><input class="sc-fi" type="number" id="f-hcp" step="0.1" min="-10" max="54"></div>',
     '</div>',
 

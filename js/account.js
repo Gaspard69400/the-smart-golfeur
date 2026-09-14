@@ -181,7 +181,7 @@ function accOpenPrivacy() {
     + '<p>Toi. Les membres de tes <strong>groupes</strong> voient ton profil et tes parties (classement, fil d\'activité). '
     +   'Un <strong>coach</strong> que tu as rejoint voit tes parties et peut t\'écrire. Un parcours que tu choisis de partager est visible par tous les inscrits.</p>'
     + '<h4>Ce qu\'on ne fait pas</h4>'
-    + '<p>Pas de publicité, pas de revente, pas de pisteur tiers. Les polices de caractères sont chargées depuis Google Fonts.</p>'
+    + '<p>Pas de publicité, pas de revente, pas de pisteur tiers. Les polices de caractères sont chargées depuis Google Fonts. Pour la météo, seule la <strong>ville du parcours</strong> est envoyée à Open-Meteo (jamais ta position).</p>'
     + '<h4>Statistiques d\'usage</h4>'
     + '<p>Pour savoir quels écrans servent, l\'app compte les pages ouvertes <strong>par jour</strong>, sans identifiant, sans adresse, sans lien avec ton compte. '
     +   'Tu peux les désactiver dans les Paramètres.</p>'
