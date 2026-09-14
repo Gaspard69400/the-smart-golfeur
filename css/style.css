@@ -5608,3 +5608,15 @@ body.ld-open { overflow: hidden; }
 .sgm-legend { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 6px; font-size: 11px; color: var(--tx3); margin: -4px 0 12px; }
 .sgm-legend span { width: 14px; height: 4px; border-radius: 2px; margin-left: 6px; }
 .sgm-legend .k0 { background: var(--ok2); } .sgm-legend .k1 { background: #5B8DEF; } .sgm-legend .kh { background: var(--tx4); }
+
+/* ════════════ CARTE PARTAGÉE : validation des cartes (S46) ════════════ */
+.sgm-claim { margin-top: 14px; background: var(--gold-dim); border: 1px solid rgba(201,168,76,.4); border-radius: 14px; padding: 13px 14px; }
+.sgm-claim.done { background: var(--ok-bg); border-color: rgba(45,125,58,.3); }
+.sgm-claim-t { font-size: 15px; font-weight: 800; color: var(--tx); }
+.sgm-claim.done .sgm-claim-t { color: var(--ok); font-size: 13.5px; }
+.sgm-claim-d { font-size: 12.5px; color: var(--tx2); margin: 4px 0 10px; line-height: 1.45; }
+.sgm-claim-b { display: flex; gap: 7px; flex-wrap: wrap; }
+.sgm-claim-b .dash-btn { flex: 1; }
+.sgm-claim .dash-btn { margin-top: 6px; }
+.sgm-claim-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; border: 1px solid rgba(201,168,76,.4); background: var(--gold-dim2); border-radius: 12px; padding: 10px 12px; margin-bottom: 7px; }
+.sgm-claim-row .sgm-claim-b { flex: 0 0 auto; }

@@ -878,3 +878,203 @@ function sgmOnLaunch() {
   }
   if (typeof sgmCheckClaims === 'function') sgmCheckClaims();
 }
+
+/* ═════════════ FIN DE PARTIE : chaque joueur ajoute SA carte à son historique ═════════════
+   Personne n'écrit dans l'historique d'un autre : le marqueur termine la partie,
+   chaque joueur avec un compte valide (ou ignore) sa propre carte. */
+
+/* Le parcours doit exister sur l'appareil du joueur (analyses, game plan, putting) */
+function sgmEnsureCourse(game) {
+  var snap = game.course || {};
+  var all = (typeof getAllCourses === 'function') ? getAllCourses() : [];
+  var local = all.find(function(c) { return c.id === snap.id; })
+    || all.find(function(c) { return (c.name || '').toLowerCase() === (snap.name || '').toLowerCase(); });
+  if (local) return local;
+  var course = {
+    id: snap.id || ('user-' + Date.now()), name: snap.name || 'Parcours', region: snap.region || '', ville: snap.ville || '',
+    par_total: sgmParTotal(game), rating: snap.rating || (game.tee && game.tee.rating) || null, slope: snap.slope || (game.tee && game.tee.slope) || 113,
+    trous: sgmHoles(game).map(function(h) { return { num: h.num, par: h.par, si: h.si, longueur: h.longueur || 0 }; }),
+    departs: game.tee && game.tee.rating && game.tee.slope ? [game.tee] : undefined,
+    importedFrom: 'partie-partagee', shared: false
+  };
+  course.longueur_totale = course.trous.reduce(function(a, h) { return a + (h.longueur || 0); }, 0) || null;
+  if (typeof saveUserCourse === 'function') saveUserCourse(course);
+  return course;
+}
+
+/* Fabrique une partie d'historique à partir d'une ligne de la carte partagée */
+function sgmBuildRound(game, players, player) {
+  var course = sgmEnsureCourse(game);
+  var holes = sgmHoles(game);
+  var tee = game.tee || getCourseTees(course)[0] || {};
+  var scores = holes.map(function(h, i) { var s = player.scores ? player.scores[i] : null; return (s === null || s === undefined) ? null : s; });
+  while (scores.length < 18) scores.push(null);
+  var puttsBy = holes.map(function(h, i) { var p = player.putts ? player.putts[i] : null; return (p === null || p === undefined) ? null : p; });
+  while (puttsBy.length < 18) puttsBy.push(null);
+  var filled = scores.filter(function(s) { return s !== null; });
+  var total = filled.reduce(function(a, b) { return a + b; }, 0);
+  var withPutts = holes.filter(function(h, i) { return scores[i] !== null && puttsBy[i] !== null; }).length;
+  var allPutts = filled.length > 0 && withPutts === filled.length;
+  var girBy = holes.map(function(h, i) {
+    return (scores[i] !== null && puttsBy[i] !== null) ? ((scores[i] - puttsBy[i]) <= (h.par - 2) ? 1 : 0) : null;
+  });
+  while (girBy.length < 18) girBy.push(null);
+  var rating = tee.rating || course.rating, slope = tee.slope || course.slope || 113;
+  var others = players.filter(function(p) { return p.id !== player.id; }).map(function(p) { return p.name.split(' ')[0]; });
+  var match = sgmMatch(game, players);
+  var fmt = game.format === 'match' ? 'match' : game.format;
+
+  var entry = {
+    id: Date.now(),
+    date: game.played_on || new Date().toISOString().slice(0, 10),
+    course: course.name, courseId: course.id,
+    score: total, par: course.par_total || sgmParTotal(game),
+    diff: parseFloat(((total - rating) * 113 / slope).toFixed(1)),
+    teeId: tee.id || null, teeName: tee.name || null, teeRating: rating, teeSlope: slope,
+    fir: null, firTotal: holes.filter(function(h) { return h.par !== 3; }).length,
+    gir: allPutts ? girBy.filter(function(g) { return g === 1; }).length : null,
+    putts: allPutts ? puttsBy.reduce(function(a, p) { return a + (p || 0); }, 0) : null,
+    cond: 'calme', format: fmt,
+    hcp: (player.hcp === null || player.hcp === undefined) ? null : Number(player.hcp),
+    notes: 'Carte partagée' + (others.length ? ' avec ' + others.join(', ') : ''),
+    scores: scores,
+    puttsByHole: puttsBy, girByHole: girBy, firByHole: new Array(18).fill(null),
+    sg_tee: null, sg_app: null, sg_arg: null, sg_putt: null,
+    sharedGameId: game.id, sharedGameCode: game.code,
+    detailMode: false, proMode: false,
+    shots: {}, shotsOnGreen: {}, shotsPutts: {}, shotsFairway: {}, shotsFairwayMissSide: {},
+    clubs: [], fairwayPos: [], distRemain: [], clubsApp: [], distFromTarget2: []
+  };
+  if (match) {
+    var me = players.indexOf(player);
+    entry.matchResult = match.leader === null ? 'égalité' : (match.leader === me ? 'gagné ' : 'perdu ') + (match.result || (match.lead + ' up'));
+    entry.matchOpponent = others[0] || null;
+  }
+  if (fmt === 'stableford' || fmt === 'match') {
+    var stb = stablefordRound(course, scores, entry.hcp, { rating: rating, slope: slope });
+    if (stb && fmt === 'stableford') { entry.points = stb.points; entry.courseHcp = stb.ch; entry.pointsByHole = stb.byHole.map(function(h) { return h ? h.points : null; }); }
+    else if (stb) entry.courseHcp = stb.ch;
+  }
+  if (typeof sgApplyToRound === 'function') { try { sgApplyToRound(entry); } catch (e) {} }
+  return entry;
+}
+
+function sgmClaim(pid, state) {
+  var s = _sgm;
+  if (!s) return;
+  var player = s.players.find(function(p) { return p.id === pid; });
+  if (!player) return;
+  sgmClaimPlayer(s.game, s.players, player, state, function() { if (_sgm === s) sgmRender(); });
+}
+
+function sgmClaimPlayer(game, players, player, state, done) {
+  if (state === 'saved') {
+    var rounds = lsGet('rounds') || [];
+    var already = rounds.some(function(r) { return r.sharedGameId === game.id; });
+    if (!already) {
+      var filled = (player.scores || []).filter(function(x) { return x !== null && x !== undefined; }).length;
+      if (filled < 9) { showToast('Il faut au moins 9 trous marqués pour l\'ajouter à ton historique'); return; }
+      var entry = sgmBuildRound(game, players, player);
+      if (typeof roundHistory !== 'undefined') { roundHistory = lsGet('rounds') || []; roundHistory.unshift(entry); lsSet('rounds', roundHistory); }
+      else { rounds.unshift(entry); lsSet('rounds', rounds); }
+      if (window.tsgSync) { try { window.tsgSync.pushRound(entry); } catch (e) { console.warn('[TSG] sync carte partagée:', e.message); } }
+      if (typeof tsgAutoBackup === 'function') { try { tsgAutoBackup(true); } catch (e) {} }
+      if (typeof chCheck === 'function') { try { chCheck(true); } catch (e) {} }
+      if (typeof renderHistory === 'function') { try { renderHistory(); } catch (e) {} }
+      if (typeof updateNavUI === 'function') { try { updateNavUI(); } catch (e) {} }
+      showToast('Carte ajoutée à ton historique ✓ ' + entry.course + ' · ' + entry.score);
+    }
+  }
+  window.sbClient.rpc('claim_game_card', { p_player: player.id, p_state: state }).then(function(res) {
+    if (state === 'ignored') showToast('Carte ignorée');
+    player.claimed = state;
+    if (done) done();
+  }, function() { if (done) done(); });
+}
+
+/* Barre affichée en bas d'une partie terminée */
+function sgmClaimBarHtml() {
+  if (!_sgm || !currentUser) return '';
+  var mine = _sgm.players.find(function(p) { return p.user_id === currentUser.id; });
+  if (!mine) return '<div class="sgm-claim"><div class="sgm-claim-t">Partie terminée</div><div class="sgm-claim-d">Tu as marqué sans jouer : chaque joueur ajoute sa carte depuis son téléphone.</div></div>';
+  var already = (lsGet('rounds') || []).some(function(r) { return r.sharedGameId === _sgm.game.id; });
+  if (mine.claimed === 'saved' || already) return '<div class="sgm-claim done"><div class="sgm-claim-t">✓ Ta carte est dans ton historique</div></div>';
+  if (mine.claimed === 'ignored') return '<div class="sgm-claim"><div class="sgm-claim-t">Carte ignorée</div>'
+    + '<button class="dash-btn dash-btn-outline" data-sgm="claim" data-pid="' + mine.id + '" data-state="saved">L\'ajouter quand même</button></div>';
+  return '<div class="sgm-claim"><div class="sgm-claim-t">Ta carte : ' + (mine.scores || []).filter(function(x) { return x !== null && x !== undefined; }).reduce(function(a, b) { return a + b; }, 0) + '</div>'
+    + '<div class="sgm-claim-d">Ajoute-la à ton historique : Strokes Gained, index, trophées et défis en tiennent compte.</div>'
+    + '<div class="sgm-claim-b"><button class="dash-btn dash-btn-outline" data-sgm="claim" data-pid="' + mine.id + '" data-state="ignored">Ignorer</button>'
+    + '<button class="dash-btn dash-btn-gold" data-sgm="claim" data-pid="' + mine.id + '" data-state="saved">Ajouter à mon historique</button></div></div>';
+}
+
+function sgmOnFinished() {
+  if (!_sgm) return;
+  _sgm.view = 'board';
+  showToast('La partie est terminée — vérifie le classement et valide ta carte');
+}
+
+/* Au lancement : cartes terminées pas encore validées */
+function sgmCheckClaims() {
+  if (!sgmCloud()) return;
+  var uid = currentUser.id;
+  window.sbClient.from('shared_game_players').select('id, game_id, name, scores, putts, hcp, user_id, claimed')
+    .eq('user_id', uid).is('claimed', null).then(function(res) {
+      if (res.error || !res.data || !res.data.length) return;
+      var ids = res.data.map(function(p) { return p.game_id; });
+      window.sbClient.from('shared_games').select('*').in('id', ids).eq('status', 'done').then(function(gr) {
+        var games = gr.data || [];
+        if (!games.length) return;
+        var rounds = lsGet('rounds') || [];
+        var todo = games.filter(function(g) { return !rounds.some(function(r) { return r.sharedGameId === g.id; }); });
+        if (!todo.length) return;
+        sgmShowClaimsModal(todo);
+      });
+    });
+}
+
+function sgmShowClaimsModal(games) {
+  if (document.getElementById('sgm-overlay')) return;
+  var m = sgmModal('sgm-claims-m', 'Partie partagée', games.length > 1 ? games.length + ' cartes à valider' : 'Une carte à valider',
+    '<p class="inv-text">Ces parties ont été marquées pour toi. Ajoute ta carte à ton historique, ou ignore-la.</p><div id="sgm-claims-list"><div class="ch-loading">…</div></div>');
+  var list = m.querySelector('#sgm-claims-list');
+  window.sbClient.from('shared_game_players').select('*').in('game_id', games.map(function(g) { return g.id; })).then(function(pr) {
+    var byGame = {};
+    (pr.data || []).forEach(function(p) { (byGame[p.game_id] = byGame[p.game_id] || []).push(p); });
+    sgmRenderClaims(list, games, byGame, function() { if (!list.querySelector('.sgm-claim-row')) m.remove(); });
+  });
+}
+
+/* Liste « cartes à valider » (accueil des parties + modale de lancement) */
+function sgmRenderClaims(host, games, byGame, onChange) {
+  if (!host || !currentUser) return;
+  var rounds = lsGet('rounds') || [];
+  var rows = [];
+  games.forEach(function(g) {
+    if (g.status !== 'done') return;
+    var ps = (byGame[g.id] || []).slice().sort(function(a, b) { return (a.position || 0) - (b.position || 0); });
+    var mine = ps.find(function(p) { return p.user_id === currentUser.id; });
+    if (!mine || mine.claimed || rounds.some(function(r) { return r.sharedGameId === g.id; })) return;
+    var total = (mine.scores || []).filter(function(x) { return x !== null && x !== undefined; }).reduce(function(a, b) { return a + b; }, 0);
+    rows.push({ g: g, ps: ps, mine: mine, total: total });
+  });
+  if (!rows.length) { host.innerHTML = ''; if (onChange) onChange(); return; }
+  host.innerHTML = '<div class="sgm-sec-t">Cartes à valider</div>' + rows.map(function(r, i) {
+    return '<div class="sgm-claim-row" data-i="' + i + '"><div><div class="sgm-game-t">' + sgmEsc((r.g.course && r.g.course.name) || 'Parcours') + ' · ' + r.total + '</div>'
+      + '<div class="sgm-game-s">' + SGM_FORMATS[r.g.format].short + ' · ' + sgmEsc(r.g.played_on || '') + ' · avec ' + sgmEsc(r.ps.filter(function(p) { return p !== r.mine; }).map(function(p) { return p.name.split(' ')[0]; }).join(', ') || 'personne') + '</div></div>'
+      + '<div class="sgm-claim-b"><button class="dash-btn dash-btn-outline" type="button" data-act="ignored">Ignorer</button>'
+      + '<button class="dash-btn dash-btn-gold" type="button" data-act="saved">Ajouter</button></div></div>';
+  }).join('');
+  host.querySelectorAll('.sgm-claim-row').forEach(function(el) {
+    var r = rows[parseInt(el.getAttribute('data-i'), 10)];
+    el.querySelectorAll('[data-act]').forEach(function(b) {
+      b.addEventListener('click', function() {
+        el.querySelectorAll('button').forEach(function(x) { x.disabled = true; });
+        sgmClaimPlayer(r.g, r.ps, r.mine, b.getAttribute('data-act'), function() {
+          el.remove();
+          if (!host.querySelector('.sgm-claim-row')) host.innerHTML = '';
+          if (onChange) onChange();
+        });
+      });
+    });
+  });
+}

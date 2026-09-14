@@ -695,8 +695,11 @@ function saveRound() {
   const teeRating = (tee && tee.rating) ? tee.rating : selectedCourse.rating;
   const teeSlope  = (tee && tee.slope)  ? tee.slope  : selectedCourse.slope;
   const diff = ((scoreTotal - teeRating) * 113 / teeSlope).toFixed(1);
-  const firHit = Object.values(firState).filter(v=>v==='hit').length;
-  const girHit = Object.values(girState).filter(v=>v==='hit').length;
+  // Aucun fairway / green renseigné = statistique inconnue (null), pas « 0 touché »
+  const firKnown = Object.values(firState).filter(v=>v==='hit'||v==='miss').length;
+  const girKnown = Object.values(girState).filter(v=>v==='hit'||v==='miss').length;
+  const firHit = firKnown ? Object.values(firState).filter(v=>v==='hit').length : null;
+  const girHit = girKnown ? Object.values(girState).filter(v=>v==='hit').length : null;
   const puttsTotal = putts.reduce((a,p)=>p!==null?a+p:a, 0);
 
   const entry = {
@@ -816,7 +819,7 @@ function renderHistory() {
     const col = vsPar < 0 ? 'var(--ok2)' : vsPar <= 7 ? 'var(--wn2)' : 'var(--ng2)';
     return `<div class="roundHistory-row">
       <div class="hr-date">${e.date}</div>
-      <div class="hr-course" style="font-size:10px">${e.course}</div>
+      <div class="hr-course" style="font-size:10px">${qsEsc(e.course)}${e.matchResult ? ' · <strong>' + qsEsc(e.matchResult) + '</strong>' : ''}</div>
       <div class="hr-score" style="color:${col}">${e.points != null ? e.points + ' pts' : e.score}</div>
       <div class="hr-diff" style="color:${vsPar>=0?'var(--wn2)':'var(--ok2)'}">${vsPar>=0?'+':''}${vsPar}</div>
       <button class="hr-share" data-share="${i}" title="Partager cette partie">📸</button>

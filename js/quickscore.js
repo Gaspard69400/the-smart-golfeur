@@ -495,8 +495,8 @@ function qtSave(close) {
   var teeSlope  = (tee && tee.slope)  ? tee.slope  : course.slope;
 
   var firTotal = course.trous.filter(function(h) { return h.par !== 3; }).length;
-  var gir = isNaN(vGir) ? 0 : vGir;
-  var fir = isNaN(vFir) ? 0 : vFir;
+  var gir = isNaN(vGir) ? null : vGir;   // non renseigné ≠ 0 green touché
+  var fir = isNaN(vFir) ? null : vFir;
   var puttsTotal = isNaN(vPutts) ? null : vPutts;
   var diff = ((total - teeRating) * 113 / teeSlope).toFixed(1);
 

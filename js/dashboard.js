@@ -847,16 +847,18 @@ function openKpiModal(key, label, title) {
   var data20 = rounds.slice(0, 20).reverse();
   var values;
   if (key === 'score') values = data20.map(function(r) { return r.score; });
-  else if (key === 'gir') values = data20.map(function(r) { return Math.round(r.gir / 18 * 100); });
-  else if (key === 'fir') values = data20.map(function(r) { return Math.round(r.fir / (r.firTotal || 14) * 100); });
+  else if (key === 'gir') values = data20.map(function(r) { return (r.gir === null || r.gir === undefined) ? null : Math.round(r.gir / 18 * 100); });
+  else if (key === 'fir') values = data20.map(function(r) { return (r.fir === null || r.fir === undefined) ? null : Math.round(r.fir / (r.firTotal || 14) * 100); });
   else if (key === 'putts') values = data20.map(function(r) { return r.putts; });
   else if (key === 'diff') values = data20.map(function(r) { return r.diff; });
 
   // Calculer trend
-  var first = values[0];
-  var last = values[values.length - 1];
-  var delta = (last - first).toFixed(1);
-  var deltaText = (delta > 0 ? '+' : '') + delta;
+  // Les parties où la stat n'a pas été saisie (null) ne comptent ni en premier ni en dernier
+  var known = values.filter(function(v) { return v !== null && v !== undefined; });
+  var first = known.length ? known[0] : '—';
+  var last = known.length ? known[known.length - 1] : '—';
+  var delta = known.length > 1 ? (last - first).toFixed(1) : 0;
+  var deltaText = known.length > 1 ? (delta > 0 ? '+' : '') + delta : '—';
   var deltaColor = (key === 'score' || key === 'putts' || key === 'diff') ?
     (delta < 0 ? 'var(--ok2)' : 'var(--ng2)') :
     (delta > 0 ? 'var(--ok2)' : 'var(--ng2)');
@@ -875,7 +877,7 @@ function openKpiModal(key, label, title) {
     +   '<div><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Première</div><div style="font-size:18px;font-weight:700;color:var(--tx2)">' + first + '</div></div>'
     +   '<div><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Dernière</div><div style="font-size:18px;font-weight:700;color:var(--tx)">' + last + '</div></div>'
     +   '<div><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Évolution</div><div style="font-size:18px;font-weight:700;color:' + deltaColor + '">' + deltaText + '</div></div>'
-    +   '<div style="margin-left:auto"><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Parties</div><div style="font-size:18px;font-weight:700;color:var(--gold-d)">' + values.length + '</div></div>'
+    +   '<div style="margin-left:auto"><div style="font-size:9px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">Parties</div><div style="font-size:18px;font-weight:700;color:var(--gold-d)">' + known.length + '</div></div>'
     + '</div>'
     + '<div style="height:280px"><canvas id="kpi-modal-chart"></canvas></div>';
 

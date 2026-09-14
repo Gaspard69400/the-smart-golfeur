@@ -139,8 +139,11 @@ function renderOverview() {
   // ── Calculs ──
   var avgScore = (rounds.reduce(function(a,r) { return a + r.score; }, 0) / rounds.length).toFixed(1);
   var avgDiff  = (rounds.reduce(function(a,r) { return a + (r.diff||0); }, 0) / rounds.length).toFixed(1);
-  var avgGir   = Math.round(rounds.reduce(function(a,r) { return a + r.gir; }, 0) / rounds.length / 18 * 100);
-  var avgFir   = Math.round(rounds.reduce(function(a,r) { var t = r.firTotal||14; return a + r.fir/t; }, 0) / rounds.length * 100);
+  // (une stat non saisie vaut null : elle ne compte pas comme 0 dans la moyenne)
+  var girRs = rounds.filter(function(r) { return r.gir !== null && r.gir !== undefined; });
+  var firRs = rounds.filter(function(r) { return r.fir !== null && r.fir !== undefined; });
+  var avgGir   = girRs.length ? Math.round(girRs.reduce(function(a,r) { return a + r.gir; }, 0) / girRs.length / 18 * 100) : 0;
+  var avgFir   = firRs.length ? Math.round(firRs.reduce(function(a,r) { var t = r.firTotal||14; return a + r.fir/t; }, 0) / firRs.length * 100) : 0;
   var sgTee    = (rounds.reduce(function(a,r) { return a + (r.sg_tee||0); }, 0) / rounds.length).toFixed(2);
   var sgApp    = (rounds.reduce(function(a,r) { return a + (r.sg_app||0); }, 0) / rounds.length).toFixed(2);
   var sgArg    = (rounds.reduce(function(a,r) { return a + (r.sg_arg||0); }, 0) / rounds.length).toFixed(2);
@@ -317,8 +320,10 @@ function renderRecommendations(rounds, sgRows) {
   var sorted = sgRows.slice().sort(function(a, b) { return a.val - b.val; });
 
   // Calculs supplémentaires pour les recommandations
-  var avgGir = Math.round(rounds.reduce(function(a,r) { return a + r.gir; }, 0) / rounds.length / 18 * 100);
-  var avgFir = Math.round(rounds.reduce(function(a,r) { var t = r.firTotal||14; return a + r.fir/t; }, 0) / rounds.length * 100);
+  var girRs2 = rounds.filter(function(r) { return r.gir !== null && r.gir !== undefined; });
+  var firRs2 = rounds.filter(function(r) { return r.fir !== null && r.fir !== undefined; });
+  var avgGir = girRs2.length ? Math.round(girRs2.reduce(function(a,r) { return a + r.gir; }, 0) / girRs2.length / 18 * 100) : 0;
+  var avgFir = firRs2.length ? Math.round(firRs2.reduce(function(a,r) { var t = r.firTotal||14; return a + r.fir/t; }, 0) / firRs2.length * 100) : 0;
   var avgPutts = rounds.filter(function(r) { return r.putts; }).reduce(function(a,r) { return a + r.putts; }, 0) / Math.max(1, rounds.filter(function(r) { return r.putts; }).length);
 
   var recos = [];
@@ -420,7 +425,7 @@ function renderPrecision() {
         else if (pos === 'rough-r' || pos === 'bunker-r') rightMiss++;
         else otherMiss++;
       });
-    } else {
+    } else if (r.fir !== null && r.fir !== undefined) {
       firTotal += (r.firTotal || 14);
       firHit += r.fir;
     }
