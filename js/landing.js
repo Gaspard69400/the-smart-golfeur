@@ -34,6 +34,7 @@ function landingShow() {
   if (!el) return;
   el.classList.remove('ld-hidden');
   document.body.classList.add('ld-open');
+  if (typeof accTrackPage === 'function') accTrackPage('landing');
 }
 
 /* Le visiteur veut créer un compte → connexion, onglet « Créer un compte » */

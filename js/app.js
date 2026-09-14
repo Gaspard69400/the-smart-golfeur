@@ -337,6 +337,9 @@ function launchAppCore() {
   // 11. Instantané automatique des données (si le dernier a plus de 6 h)
   if (typeof tsgAutoBackup === 'function') { setTimeout(function() { tsgAutoBackup(false); }, 1500); }
 
+  // 11b. Compteur anonyme d'ouvertures de l'app
+  if (typeof accTrackPage === 'function') accTrackPage('app_open');
+
   // 12. Invitation à un groupe reçue par lien / QR code
   if (typeof invProcessPending === 'function') { setTimeout(function() { try { invProcessPending(); } catch (e) {} }, 700); }
 }
@@ -632,6 +635,7 @@ function buildPages() {
 /* ─── SHOW PAGE ─── */
 
 function showPage(pageId) {
+  if (typeof accTrackPage === 'function') accTrackPage(pageId);
   // Désactiver tous les onglets et pages
   var tabs  = document.querySelectorAll('.nav-tab');
   var pages = document.querySelectorAll('.app-page');
@@ -889,10 +893,14 @@ function openSettingsModal() {
     +       '</div>'
     +     '</div>'
     +     '<div class="settings-section">'
+    +       '<div class="settings-section-title">Compte & confidentialit\u00e9</div>'
+    +       '<div id="settings-account"></div>'
+    +     '</div>'
+    +     '<div class="settings-section">'
     +       '<div class="settings-section-title">\u00c0 propos</div>'
     +       '<div class="settings-about">'
     +         '<div><strong>The Smart Golfer</strong></div>'
-    +         '<div>Version d\u00e9veloppement \u00b7 Session 10</div>'
+    +         '<div>Version test \u00b7 Session 43</div>'
     +         '<div style="margin-top:8px;font-size:11px;color:var(--tx3)">Analyser \u00b7 Structurer \u00b7 Performer</div>'
     +       '</div>'
     +     '</div>'
@@ -908,6 +916,11 @@ function openSettingsModal() {
   // Liste des sauvegardes automatiques
   if (typeof tsgRenderBackupSection === 'function') {
     try { tsgRenderBackupSection(document.getElementById('settings-backups')); } catch (e) {}
+  }
+
+  // Compte, confidentialité, suppression (account.js)
+  if (typeof accRenderSettingsSection === 'function') {
+    try { accRenderSettingsSection(document.getElementById('settings-account')); } catch (e) {}
   }
 
   // Sélecteur de thème
@@ -957,6 +970,18 @@ function exportUserData() {
       var rawUC = localStorage.getItem('tsg_user_courses');
       if (rawUC) data.userCourses = JSON.parse(rawUC) || [];
     } catch(e) {}
+
+    // Export COMPLET (droit à la portabilité) : toutes les données de l'app sur cet
+    // appareil — objectifs, programme, journal d'entraînement, défis, index… —
+    // sauf le jeton de connexion et les copies de données illisibles.
+    data.localData = {};
+    try {
+      Object.keys(localStorage).forEach(function(k) {
+        if (k.indexOf('tsg_') !== 0 || k === 'tsg_sb_auth' || k.indexOf('tsg_corrupt_') === 0) return;
+        var v = localStorage.getItem(k);
+        try { data.localData[k.slice(4)] = JSON.parse(v); } catch (e2) { data.localData[k.slice(4)] = v; }
+      });
+    } catch (e) {}
 
     var json = JSON.stringify(data, null, 2);
     var blob = new Blob([json], { type: 'application/json' });
