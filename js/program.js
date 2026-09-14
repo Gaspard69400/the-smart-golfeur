@@ -249,7 +249,7 @@ function prgRenderPanel(host) {
   panel.querySelectorAll('.prg-open').forEach(function(b) {
     b.addEventListener('click', function() { prgOpenSession(b.getAttribute('data-session'), host); });
   });
-  document.getElementById('prg-reset').addEventListener('click', function() {
+  panel.querySelector('#prg-reset').addEventListener('click', function() {
     if (!confirm('Générer un nouveau programme ? Ta progression sur celui-ci sera remise à zéro (tes résultats d\'exercices, eux, sont conservés).')) return;
     prgSave(prgGenerate());
     _prgViewWeek = null;
