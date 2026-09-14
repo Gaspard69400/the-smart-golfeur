@@ -260,9 +260,12 @@ function syncPullAll(uid) {
     sb.from('training_done').select('*').eq('user_id', uid),
     sb.from('user_courses').select('*').eq('user_id', uid)
   ]).then(function(r) {
-    // Rounds
-    var rounds = (r[0].data || []).map(dbToRound);
-    lsSet('rounds', rounds);
+    // ⚠️ Une requête en erreur (hors-ligne, jeton expiré…) renvoie data = null.
+    // Avant, on écrivait alors une liste VIDE par-dessus les données locales :
+    // lancer l'app sans réseau effaçait l'historique affiché. On ne touche plus
+    // à une donnée locale si sa requête a échoué.
+    if (!r[0].error) lsSet('rounds', syncMergeRounds((r[0].data || []).map(dbToRound)));
+    else console.warn('[TSG] syncPullAll rounds:', r[0].error.message);
     // Objectives
     if (r[1].data) {
       var o = r[1].data;
@@ -271,36 +274,94 @@ function syncPullAll(uid) {
       lsSet('objectives', allObj);
     }
     // Trainings
-    var trainings = (r[2].data || []).map(dbToTraining);
-    lsSet('trainings', trainings);
+    if (!r[2].error) lsSet('trainings', (r[2].data || []).map(dbToTraining));
     // Training done
-    var doneMap = lsGet('training_done') || {};
-    doneMap[uid] = {};
-    (r[3].data || []).forEach(function(d) {
-      doneMap[uid][d.training_id] = { count: d.count, last: d.last_done };
-    });
-    lsSet('training_done', doneMap);
+    if (!r[3].error) {
+      var doneMap = lsGet('training_done') || {};
+      doneMap[uid] = {};
+      (r[3].data || []).forEach(function(d) {
+        doneMap[uid][d.training_id] = { count: d.count, last: d.last_done };
+      });
+      lsSet('training_done', doneMap);
+    }
     // User courses
-    var courses = (r[4].data || []).map(function(row) { return row.data; });
-    localStorage.setItem('tsg_user_courses', JSON.stringify(courses));
+    if (!r[4].error) {
+      var courses = (r[4].data || []).map(function(row) { return row.data; });
+      localStorage.setItem('tsg_user_courses', JSON.stringify(courses));
+    }
   }).catch(function(e) { console.warn('[TSG] syncPullAll:', e.message); });
 }
 
 function num(v) { return (v === null || v === undefined) ? null : Number(v); }
 
+/* Champs d'une partie qui ont leur propre colonne dans la table rounds.
+   Tout le reste (départ joué, points stableford, putts trou par trou, saisie
+   détaillée…) voyage dans la colonne jsonb « extra ». Sans elle, ces données
+   étaient perdues à chaque rechargement de l'app. */
+var ROUND_COLUMNS = ['id', 'date', 'course', 'courseId', 'score', 'par', 'diff', 'fir', 'firTotal',
+  'gir', 'putts', 'cond', 'format', 'hcp', 'notes', 'scores', 'sg_tee', 'sg_app', 'sg_arg', 'sg_putt'];
+var _roundExtraColumn = true;   // passe à false si la colonne n'existe pas encore (SQL pas exécuté)
+
 function dbToRound(row) {
-  return { id: row.id, date: row.played_on, course: row.course, courseId: row.course_id,
+  var r = { id: row.id, date: row.played_on, course: row.course, courseId: row.course_id,
     score: row.score, par: row.par, diff: num(row.diff), fir: row.fir, firTotal: row.fir_total,
     gir: row.gir, putts: row.putts, cond: row.cond, format: row.format, hcp: num(row.hcp),
     notes: row.notes, scores: row.scores, sg_tee: num(row.sg_tee), sg_app: num(row.sg_app),
     sg_arg: num(row.sg_arg), sg_putt: num(row.sg_putt) };
+  if (row.extra && typeof row.extra === 'object') {
+    Object.keys(row.extra).forEach(function(k) { if (ROUND_COLUMNS.indexOf(k) === -1) r[k] = row.extra[k]; });
+  }
+  return r;
 }
 function roundToDb(r, uid) {
-  return { id: r.id, user_id: uid, played_on: r.date || null, course: r.course || null,
+  var extra = {};
+  Object.keys(r).forEach(function(k) { if (ROUND_COLUMNS.indexOf(k) === -1 && r[k] !== undefined) extra[k] = r[k]; });
+  var row = { id: r.id, user_id: uid, played_on: r.date || null, course: r.course || null,
     course_id: r.courseId || null, score: r.score, par: r.par, diff: r.diff, fir: r.fir,
     fir_total: r.firTotal, gir: r.gir, putts: r.putts, cond: r.cond || null, format: r.format || null,
     hcp: r.hcp, notes: r.notes || '', scores: r.scores || null,
     sg_tee: r.sg_tee, sg_app: r.sg_app, sg_arg: r.sg_arg, sg_putt: r.sg_putt };
+  if (_roundExtraColumn) row.extra = extra;
+  return row;
+}
+
+/* ── File d'attente : parties enregistrées mais pas encore confirmées par le serveur ── */
+function syncPendingIds() { return (lsGet('syncPending') || []).map(String); }
+function syncMarkPending(id, on) {
+  var ids = syncPendingIds().filter(function(x) { return x !== String(id); });
+  if (on) ids.push(String(id));
+  lsSet('syncPending', ids);
+}
+
+/* Fusionne la copie cloud avec les parties locales :
+   - une partie connue des deux : la version cloud, complétée des champs que seul le local possède
+     (tant que la colonne extra n'existe pas, c'est ce qui sauve le départ, les points…)
+   - une partie locale jamais arrivée au serveur (réseau coupé) : conservée, et renvoyée */
+function syncMergeRounds(cloud) {
+  var local = lsGet('rounds') || [];
+  var byId = {};
+  local.forEach(function(l) { byId[String(l.id)] = l; });
+  var inCloud = {};
+  var merged = cloud.map(function(c) {
+    inCloud[String(c.id)] = true;
+    var l = byId[String(c.id)];
+    if (l) Object.keys(l).forEach(function(k) { if (c[k] === undefined) c[k] = l[k]; });
+    return c;
+  });
+  var pending = syncPendingIds();
+  local.forEach(function(l) {
+    var id = String(l.id);
+    if (inCloud[id]) { if (pending.indexOf(id) !== -1) syncMarkPending(id, false); return; }
+    if (pending.indexOf(id) === -1) return;          // supprimée depuis un autre appareil
+    merged.push(l);
+    setTimeout(function() { if (window.tsgSync) window.tsgSync.pushRound(l); }, 1500);
+  });
+  merged.sort(function(a, b) {
+    var da = a.date || '', db = b.date || '';
+    if (da !== db) return da < db ? 1 : -1;
+    return Number(b.id) - Number(a.id);
+  });
+  return merged;
 }
 function dbToTraining(row) {
   return { id: row.id, type: row.type, title: row.title, category: row.category, level: row.level,
@@ -312,9 +373,25 @@ function dbToTraining(row) {
 window.tsgSync = {
   pushRound: function(r) {
     if (!cloudActive()) return;
-    window.sbClient.from('rounds').upsert(roundToDb(r, sbUserId())).then(null, logSync('pushRound'));
+    syncMarkPending(r.id, true);
+    var row = roundToDb(r, sbUserId());
+    function done(res) {
+      if (res && res.error) {
+        // Colonne « extra » pas encore créée côté Supabase : on renvoie sans elle
+        if (_roundExtraColumn && /extra/i.test(res.error.message || '')) {
+          _roundExtraColumn = false;
+          delete row.extra;
+          return window.sbClient.from('rounds').upsert(row).then(done, logSync('pushRound'));
+        }
+        console.warn('[TSG] sync pushRound:', res.error.message);   // reste en file d'attente
+        return;
+      }
+      syncMarkPending(r.id, false);
+    }
+    window.sbClient.from('rounds').upsert(row).then(done, logSync('pushRound'));
   },
   deleteRound: function(id) {
+    syncMarkPending(id, false);
     if (!cloudActive()) return;
     window.sbClient.from('rounds').delete().eq('id', id).eq('user_id', sbUserId()).then(null, logSync('deleteRound'));
   },

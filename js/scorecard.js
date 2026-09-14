@@ -720,6 +720,10 @@ function saveRound() {
     hcp: parseFloat(document.getElementById('f-hcp').value),
     notes: document.getElementById('f-notes').value,
     scores: [...scores],
+    // Trou par trou (S42) : putts, fairway, green — avant, seuls les totaux étaient gardés
+    puttsByHole: putts.map(function(p) { return (p === null || p === undefined) ? null : p; }),
+    firByHole: selectedCourse.trous.map(function(h) { return firState[h.num] === 'hit' ? 1 : firState[h.num] === 'miss' ? 0 : null; }),
+    girByHole: selectedCourse.trous.map(function(h) { return girState[h.num] === 'hit' ? 1 : girState[h.num] === 'miss' ? 0 : null; }),
     // Strokes Gained : calculés plus bas par le modèle de référence (strokesgained.js)
     sg_tee: null, sg_app: null, sg_arg: null, sg_putt: null,
     // Données détaillées (si saisie détaillée activée)
@@ -762,8 +766,7 @@ function saveRound() {
   // Strokes Gained réels (modèle de référence par handicap)
   if (typeof sgApplyToRound === 'function') { try { sgApplyToRound(entry); } catch(ex) { console.warn('SG:', ex.message); } }
 
-  roundHistory.unshift(entry);
-  if (roundHistory.length > 50) roundHistory.pop();
+  roundHistory.unshift(entry);   // (plus de limite à 50 : les plus anciennes parties étaient effacées)
   // Save to shared key so dashboard can read it
   lsSet('rounds', roundHistory);
   // Synchro cloud (si connecté)
@@ -1131,8 +1134,8 @@ function initScorecardPage() {
 
     // Load saved rounds
     var saved = lsGet('rounds');
+    roundHistory = saved || [];   // jamais l'historique d'un autre profil chargé avant la connexion
     if (saved && saved.length) {
-      roundHistory = saved;
       var ht = document.getElementById('hist-title');
       var hs = document.getElementById('roundHistory-section');
       if (ht) ht.style.display = 'block';

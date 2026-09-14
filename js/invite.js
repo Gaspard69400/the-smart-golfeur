@@ -12,7 +12,7 @@
  *   3. une fois connecté : confirmation → join_group → page du groupe
  *
  * Dépend de : app.js (lsGet/lsSet/showToast/showPage), qrcode.js, groups.js.
- * RPC facultative group_preview (backend/social.sql) : affiche le nom du
+ * RPC facultative group_preview (backend/maj_septembre_2026.sql) : affiche le nom du
  * groupe avant d'accepter. Sans elle, l'invitation marche quand même.
  * ════════════════════════════════════════════ */
 

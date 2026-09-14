@@ -209,7 +209,11 @@ function qsRender() {
 
   /* Détail optionnel */
   var pt = putts[idx];
-  var puttsStr = (pt === null || pt === undefined) ? '—' : pt;
+  // 1 tap = le nombre de putts (le cas courant) ; « + » au-delà de 4
+  var puttBtns = [0, 1, 2, 3, 4].map(function(n) {
+    return '<button class="qs-opt-b qs-putt' + (pt === n ? ' on' : '') + '" data-putt-set="' + n + '">' + n + '</button>';
+  }).join('') + '<button class="qs-opt-b qs-putt' + (pt > 4 ? ' on' : '') + '" data-putt="1" title="Plus de 4 putts">'
+    + (pt > 4 ? pt : '+') + '</button>';
   var firRow = '';
   if (par !== 3) {
     var fh = (firState[hole.num] === 'hit') ? ' on' : '';
@@ -259,14 +263,14 @@ function qsRender() {
     + ((typeof gpHoleTipHtml === 'function') ? gpHoleTipHtml(course, idx) : '')
 
     /* Détail optionnel */
-    + '<details class="qs-opt"' + (pt !== null && pt !== undefined ? ' open' : '') + '>'
+    + '<details class="qs-opt" id="qs-opt"' + ((pt !== null && pt !== undefined) || lsGet('qsDetailOpen') ? ' open' : '') + '>'
     +   '<summary>Détail (facultatif) · putts, fairway</summary>'
     +   '<div class="qs-opt-body">'
     +     '<div class="qs-opt-row"><span class="qs-opt-l">Putts</span>'
-    +       '<div class="qs-opt-btns"><button class="qs-opt-b" data-putt="-1">−</button>'
-    +       '<span class="qs-opt-v">' + puttsStr + '</span>'
-    +       '<button class="qs-opt-b" data-putt="1">+</button></div></div>'
+    +       '<div class="qs-opt-btns qs-putt-btns">' + puttBtns + '</div></div>'
     +     firRow
+    +     (putts.some(function(x) { return x !== null && x !== undefined; }) ? '' : '<div class="qs-opt-tip">Renseigne les putts <strong>avant</strong> le score : le tap sur le score passe au trou suivant. '
+    +       'Les putts trou par trou débloquent tes 3-putts et tes sauvetages dans Analyse → Putting.</div>')
     +   '</div>'
     + '</details>'
 
@@ -311,13 +315,25 @@ function qsWire() {
     b.addEventListener('click', function() {
       var idx = _qsHole - 1;
       var cur = putts[idx];
-      if (cur === null || cur === undefined) cur = 2;
+      if (cur === null || cur === undefined || cur < 4) cur = 4;
       putts[idx] = Math.max(0, Math.min(10, cur + parseInt(b.getAttribute('data-putt'), 10)));
       qsComputeGir();
       qsSaveDraft();
       qsRender();
     });
   });
+  stage.querySelectorAll('[data-putt-set]').forEach(function(b) {
+    b.addEventListener('click', function() {
+      var idx = _qsHole - 1, n = parseInt(b.getAttribute('data-putt-set'), 10);
+      putts[idx] = (putts[idx] === n) ? null : n;     // re-tap = effacer
+      if (putts[idx] === null) delete girState[selectedCourse.trous[idx].num];
+      qsComputeGir();
+      qsSaveDraft();
+      qsRender();
+    });
+  });
+  var opt = document.getElementById('qs-opt');
+  if (opt) opt.addEventListener('toggle', function() { lsSet('qsDetailOpen', opt.open); });
   stage.querySelectorAll('[data-fir]').forEach(function(b) {
     b.addEventListener('click', function() {
       var num = selectedCourse.trous[_qsHole - 1].num;
@@ -516,7 +532,6 @@ function qtSave(close) {
   if (typeof sgApplyToRound === 'function') { try { sgApplyToRound(entry); } catch(ex) {} }
 
   roundHistory.unshift(entry);
-  if (roundHistory.length > 50) roundHistory.pop();
   lsSet('rounds', roundHistory);
   if (window.tsgSync) window.tsgSync.pushRound(entry);
 

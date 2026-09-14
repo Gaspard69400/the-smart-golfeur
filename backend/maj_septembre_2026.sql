@@ -1,10 +1,12 @@
 -- ════════════════════════════════════════════
--- THE SMART GOLFER — Social : invitations (S41)
--- À coller dans : Supabase → SQL Editor → New query → Run
--- Idempotent. Nécessite groups.sql déjà passé.
+-- THE SMART GOLFER — Mise à jour de septembre 2026 (sessions 41 et suivantes)
+-- À coller EN ENTIER dans : Supabase → SQL Editor → New query → Run
+-- Idempotent (on peut le relancer sans risque). Nécessite schema.sql + groups.sql déjà passés.
+-- L'app fonctionne AVANT son exécution ; ce script débloque les éléments indiqués.
 -- ════════════════════════════════════════════
 
--- Aperçu d'un groupe AVANT de le rejoindre (nom, nb de membres, créateur).
+-- ─────────────────────────────────────────────
+-- S41 — Aperçu d'un groupe AVANT de le rejoindre (nom, nb de membres, créateur).
 -- Les règles RLS cachent un groupe à qui n'en est pas membre : cette fonction
 -- ne révèle que ces 3 informations, et seulement à qui connaît le code.
 create or replace function public.group_preview(p_code text)
@@ -22,3 +24,10 @@ begin
 end; $$;
 
 grant execute on function public.group_preview(text) to authenticated;
+
+-- ─────────────────────────────────────────────
+-- S42 — Données complètes des parties dans le cloud
+-- Départ joué, rating/slope, points stableford, putts trou par trou…
+-- Sans cette colonne, ces informations ne quittent pas le téléphone
+-- (l'app les conserve en local, mais un autre appareil ne les verra pas).
+alter table public.rounds add column if not exists extra jsonb;
