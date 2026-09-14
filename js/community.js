@@ -180,7 +180,8 @@ function commCurrentLevel() {
   var achs = commAchievements(s);
   var tierXp = achs.reduce(function(a, x) { return a + x.bonusXp; }, 0);
   var chXp = ((typeof chTotalXp === 'function') ? chTotalXp() : 0)
-    + ((typeof gchTotalXp === 'function') ? gchTotalXp() : 0);   // défis hebdo + défis gagnés entre amis
+    + ((typeof gchTotalXp === 'function') ? gchTotalXp() : 0)    // défis hebdo + défis gagnés entre amis
+    + ((typeof stkTotalXp === 'function') ? stkTotalXp() : 0);   // paliers de série + trophées du mois
   var xp = s.baseXp + tierXp + chXp;
   return { xp: xp, tierXp: tierXp, chXp: chXp, stats: s, achievements: achs, level: commLevelFromXp(xp) };
 }
@@ -209,7 +210,7 @@ function buildCommunityPage(container) {
     +     '<div class="comm-hero-title">' + commEsc(lv.title) + '</div>'
     +     '<div class="comm-hero-sub">Niveau ' + lv.level + ' · ' + s.xp + ' XP</div>'
     +   '</div>'
-    +   '<div class="comm-hero-streak"><div class="comm-streak-val">' + s.streak + '</div><div class="comm-streak-lbl">🔥 série (sem.)</div></div>'
+    +   '<div class="comm-hero-streak"><div class="comm-streak-val">' + s.streak + '</div><div class="comm-streak-lbl">🔥 sem. de jeu</div></div>'
     + '</div>'
     + '<div class="comm-xp-bar"><div class="comm-xp-fill" style="width:' + pctLevel + '%"></div></div>'
     + '<div class="comm-xp-text">' + lv.into + ' / ' + lv.need + ' XP vers le niveau ' + (lv.level + 1) + '</div>'
@@ -249,6 +250,18 @@ function buildCommunityPage(container) {
       else container.appendChild(slot);
       chRenderPanel(slot, false);
     } catch (e) { console.warn('[TSG] défis:', e.message); }
+  }
+
+  // Trophées du mois, avant les trophées à paliers (streaks.js)
+  if (typeof smRenderPanel === 'function') {
+    try {
+      var pillsEl = container.querySelector('.comm-pills');
+      var smSlot = document.createElement('div');
+      smSlot.className = 'sm-slot';
+      if (pillsEl && pillsEl.parentNode) pillsEl.parentNode.insertBefore(smSlot, pillsEl.nextSibling);
+      else container.appendChild(smSlot);
+      smRenderPanel(smSlot);
+    } catch (e) { console.warn('[TSG] trophées du mois:', e.message); }
   }
 
   commRenderFeed();

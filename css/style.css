@@ -5814,3 +5814,42 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline: 2px solid var(--gold); outline-offset: 2px;
 }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ════════════ SÉRIE DE TRAVAIL + TROPHÉES DU MOIS (S54) ════════════ */
+.stk-card { background: linear-gradient(135deg, #2E2010, #1A1209); color: #F4EEE2; border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; }
+.stk-card.done { background: linear-gradient(135deg, #3D2E1A, #1E3A22); }
+.stk-main { display: flex; align-items: center; gap: 12px; }
+.stk-flame { font-size: 34px; line-height: 1; filter: saturate(1.2); }
+.stk-card:not(.done) .stk-flame { filter: grayscale(.55); }
+.stk-n { font-size: 30px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.stk-n small { font-size: 13px; font-weight: 700; opacity: .75; letter-spacing: 0; }
+.stk-best { font-size: 11.5px; opacity: .7; margin-top: 3px; }
+.stk-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 12px 0 10px; }
+.stk-day { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.stk-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
+.stk-day.on .stk-dot { background: #E8A33D; border-color: #E8A33D; color: #1A1209; }
+.stk-day.rest .stk-dot { background: rgba(255,255,255,.18); color: #F4EEE2; }
+.stk-day.today .stk-dot { border: 2px dashed #E8C96A; }
+.stk-dl { font-size: 10px; opacity: .6; font-weight: 700; }
+.stk-msg { font-size: 12.5px; line-height: 1.45; opacity: .9; }
+.stk-msg strong { color: #E8C96A; }
+.dash-streak-chip { background: rgba(232,163,61,.16); color: #B8741A; border-color: rgba(232,163,61,.4); }
+.sm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sm-card { --medal: var(--bd); background: var(--white); border: 1px solid var(--bd2); border-top: 3px solid var(--medal); border-radius: 13px; padding: 11px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sm-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sm-ico { font-size: 15px; }
+.sm-label { font-size: 12.5px; font-weight: 800; color: var(--tx); }
+.sm-medal { margin-left: auto; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #fff; background: var(--medal); border-radius: 20px; padding: 2px 8px; }
+.sm-medal.none { background: var(--bg3); color: var(--tx3); }
+.sm-val { font-size: 26px; font-weight: 800; color: var(--tx); letter-spacing: -.8px; font-variant-numeric: tabular-nums; }
+.sm-help { font-size: 11px; color: var(--tx3); line-height: 1.35; min-height: 30px; }
+.sm-bar { height: 6px; border-radius: 4px; background: var(--bg3); overflow: hidden; margin-top: 4px; }
+.sm-bar i { display: block; height: 100%; background: var(--medal, var(--gold)); border-radius: 4px; }
+.sm-card:not([style]) .sm-bar i { background: var(--gold); }
+.sm-goal { font-size: 11px; font-weight: 700; color: var(--gold-d); margin-top: 2px; }
+.sm-vitrine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.sm-vit-t { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--tx4); width: 100%; }
+.sm-past { display: inline-flex; align-items: center; gap: 4px; background: var(--bg2); border: 1px solid var(--bd3); border-radius: 20px; padding: 4px 9px 4px 11px; font-size: 11.5px; font-weight: 700; color: var(--tx2); }
+.sm-pm { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+.sm-pm.empty { background: var(--bg3); color: var(--tx4); }
+@media (max-width: 640px) { .sm-grid { grid-template-columns: 1fr; } .sm-help { min-height: 0; } }

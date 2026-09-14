@@ -126,6 +126,14 @@ function buildTrainingPage(container) {
   }
   wrap.appendChild(header);
 
+  /* Série de travail (streaks.js) */
+  if (typeof stkRenderCard === 'function') {
+    var stk = document.createElement('div');
+    stk.id = 'stk-host';
+    wrap.appendChild(stk);
+    try { stkRenderCard(stk); } catch (e) { console.warn('[TSG] série:', e.message); }
+  }
+
   /* Programme de 4 semaines (le plan qui se déroule) */
   var prog = document.createElement('div');
   prog.id = 'trn-program';

@@ -195,6 +195,14 @@ function chCheck(notify) {
   }
   // Objectifs de saison atteints (progress.js) : même moment, même notification
   if (typeof pgsCheckGoals === 'function') { try { pgsCheckGoals(notify); } catch (e) {} }
+  // Série de travail : paliers de jours consécutifs (streaks.js)
+  if (typeof stkCheck === 'function') {
+    try {
+      stkCheck(notify);
+      var stkHost = document.getElementById('stk-host');
+      if (stkHost && typeof stkRenderCard === 'function') stkRenderCard(stkHost);
+    } catch (e) {}
+  }
   return fresh;
 }
 

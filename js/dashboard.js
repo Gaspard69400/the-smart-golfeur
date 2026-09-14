@@ -236,6 +236,16 @@ function buildDashboard(container) {
       chipT.textContent = cl.level.title + ' \u00b7 Niv. ' + cl.level.level;
       chipT.title = cl.xp + ' XP';
       greeting.appendChild(chipT);
+      if (typeof stkCompute === 'function') {
+        var stkNow = stkCompute();
+        if (stkNow.streak >= 2) {
+          var chipS = document.createElement('span');
+          chipS.className = 'dash-title-chip dash-streak-chip';
+          chipS.textContent = '\ud83d\udd25 ' + stkNow.streak + ' j';
+          chipS.title = 'Série de travail : ' + stkNow.streak + ' jours';
+          greeting.appendChild(chipS);
+        }
+      }
     } catch (e) {}
   }
   var meta = document.createElement('div');
