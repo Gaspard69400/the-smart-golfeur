@@ -30,6 +30,9 @@ function accRenderSettingsSection(host) {
         : 'Mode démo : tes parties et tes réglages restent sur cet appareil.') + '</div>'
     + '<div class="acc-row">'
     +   '<button class="settings-btn settings-btn-secondary" id="acc-privacy-btn" type="button">Confidentialité</button>'
+    +   '<button class="settings-btn settings-btn-secondary" type="button" data-gloss="">📖 Les mots du golf</button>'
+    +   '<button class="settings-btn settings-btn-secondary" type="button" id="acc-level-btn">🎯 Mon niveau de départ</button>'
+    +   '<button class="settings-btn settings-btn-secondary" type="button" id="acc-fb-btn">💬 Donner mon avis</button>'
     +   '<label class="acc-toggle"><input type="checkbox" id="acc-usage-toggle"' + (accUsageEnabled() ? ' checked' : '') + '>'
     +     '<span>Statistiques d\'usage anonymes</span></label>'
     + '</div>'
@@ -42,6 +45,10 @@ function accRenderSettingsSection(host) {
     + '</div>';
 
   host.querySelector('#acc-privacy-btn').addEventListener('click', accOpenPrivacy);
+  var lvl = host.querySelector('#acc-level-btn');
+  if (lvl) lvl.addEventListener('click', function() { if (typeof bgnOpenLevel === 'function') bgnOpenLevel(); });
+  var fbb = host.querySelector('#acc-fb-btn');
+  if (fbb) fbb.addEventListener('click', function() { if (typeof fbOpen === 'function') fbOpen(); });
   host.querySelector('#acc-usage-toggle').addEventListener('change', function(e) {
     lsSet('usageOptOut', !e.target.checked);
     showToast(e.target.checked ? 'Statistiques d\'usage activées' : 'Statistiques d\'usage désactivées');

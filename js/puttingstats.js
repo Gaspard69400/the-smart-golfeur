@@ -161,7 +161,7 @@ function ptsRender(page, rounds) {
   var save = document.createElement('div');
   save.className = 'an-card';
   save.innerHTML = ''
-    + '<div class="an-card-header"><div class="an-card-title">Up &amp; down · sauvetages</div>'
+    + '<div class="an-card-header"><div class="an-card-title">Up &amp; down · sauvetages <span class="gloss-link" data-gloss="updown">?</span></div>'
     +   '<div class="an-card-sub">Green manqué en régulation, puis par ou mieux</div></div>'
     + '<div class="an-card-body"><div class="pts-kpis">'
     +   ptsKpi('Sauvetages', ptsPct(st.scrRate), 'Réf. ' + ptsPct(b.scr),

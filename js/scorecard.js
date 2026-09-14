@@ -1144,7 +1144,7 @@ function initScorecardPage() {
     var dateEl = document.getElementById('f-date');
     if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
     var hcpEl = document.getElementById('f-hcp');
-    if (hcpEl) hcpEl.value = (currentUser && currentUser.hcp !== null) ? currentUser.hcp : 14.2;
+    if (hcpEl) hcpEl.value = (typeof bgnDefaultIndex === 'function') ? bgnDefaultIndex() : ((currentUser && currentUser.hcp !== null) ? currentUser.hcp : 36);   // (avant : 14,2 par défaut, faux pour un débutant)
 
     renderCourseList(typeof getAllCourses === 'function' ? getAllCourses() : COURSES);
 

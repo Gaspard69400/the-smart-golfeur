@@ -113,7 +113,7 @@ function slvCompute(rounds) {
 function slvFmtIndex(h) {
   if (h === null || h === undefined) return '—';
   var r = Math.round(h * 10) / 10;
-  if (r >= 40) return '36+';
+  if (r >= 54) return '54';
   if (r < 0) return '+' + String(Math.abs(r)).replace('.', ',');
   return String(r).replace('.', ',');
 }
@@ -169,7 +169,7 @@ function slvRenderPanel(wrap) {
 
   var panel = document.createElement('div');
   panel.className = 'panel slv-panel';
-  panel.innerHTML = '<div class="panel-header"><div class="panel-title">📊 Ton niveau par secteur</div>'
+  panel.innerHTML = '<div class="panel-header"><div class="panel-title">📊 Ton niveau par secteur <span class="gloss-link" data-gloss="index">?</span></div>'
     + '<div class="slv-sub">' + (res.ref !== null ? 'Ton index : ' + slvFmtIndex(res.ref) + ' · ' : '') + 'sur tes ' + Math.min(SLV_WINDOW, res.rounds) + ' dernières parties</div></div>'
     + '<div class="panel-body">' + lead + '<div class="slv-grid">' + cards + '</div>'
     + '<div class="slv-note">« Joue comme un index X » : l\'index dont la moyenne amateur correspond à ta statistique. Repères indicatifs, plus fiables avec de nombreuses cartes.</div></div>';

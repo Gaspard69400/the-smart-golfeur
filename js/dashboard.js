@@ -181,7 +181,7 @@ function buildDashboard(container) {
   var avgGIR    = (avg(data, 'gir') / 18 * 100).toFixed(0);
   var avgFIR    = (avg(data, 'fir') / 14 * 100).toFixed(0);
   var avgPutts  = avg(data, 'putts').toFixed(1);
-  var hcp       = u.hcp !== null && u.hcp !== undefined ? u.hcp : 14.2;
+  var hcp       = (typeof bgnDefaultIndex === 'function') ? bgnDefaultIndex() : (u.hcp !== null && u.hcp !== undefined ? u.hcp : 36);
 
   /* Strokes Gained */
   var sg_tee  = avg(data, 'sg_tee').toFixed(2);
