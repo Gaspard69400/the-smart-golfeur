@@ -47,7 +47,7 @@ function sgmParTotal(game) {
 function sgmCourseHcp(game, player) {
   if (!player || player.hcp === null || player.hcp === undefined || player.hcp === '') return null;
   var tee = game.tee || {}, c = game.course || {};
-  return courseHandicap(Number(player.hcp), tee.slope || c.slope || 113, tee.rating || c.rating, sgmParTotal(game));
+  return courseHandicap(Number(player.hcp), tee.slope || c.slope || 113, tee.rating || c.rating, sgmParTotal(game), sgmHoles(game).length);
 }
 
 /* Match play : le mieux classé rend la DIFFÉRENCE des handicaps de jeu, répartie par index de difficulté */
@@ -941,7 +941,7 @@ function sgmBuildRound(game, players, player) {
     scores: scores,
     puttsByHole: puttsBy, girByHole: girBy, firByHole: new Array(18).fill(null),
     sg_tee: null, sg_app: null, sg_arg: null, sg_putt: null,
-    sharedGameId: game.id, sharedGameCode: game.code,
+    sharedGameId: game.id, sharedGameCode: game.code, courseHoles: holes.length,
     weather: (typeof wxCached === 'function' && game.played_on === new Date().toISOString().slice(0, 10)) ? wxCached(course) : null,
     detailMode: false, proMode: false,
     shots: {}, shotsOnGreen: {}, shotsPutts: {}, shotsFairway: {}, shotsFairwayMissSide: {},

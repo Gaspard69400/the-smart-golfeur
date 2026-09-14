@@ -5882,3 +5882,4 @@ body:not(:has(#app.visible)) .fb-fab { display: none; }
 .fb-mood.on { filter: none; border-color: var(--gold); background: var(--gold-dim); transform: scale(1.06); }
 .fb-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .acc-row .settings-btn { flex: 0 0 auto; }
+.cc-formats { display: flex; gap: 6px; flex-wrap: wrap; } .cc-formats .theme-opt { flex: 1; justify-content: center; min-width: 110px; }

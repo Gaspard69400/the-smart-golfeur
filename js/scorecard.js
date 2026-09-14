@@ -396,7 +396,7 @@ function onScoreInput(num, par, inp) {
     const teeSel = (typeof currentTee === 'function') ? currentTee(selectedCourse) : null;
     const ch = (typeof courseHandicap === 'function')
       ? courseHandicap(currentIndex(), (teeSel && teeSel.slope) || selectedCourse.slope,
-                       (teeSel && teeSel.rating) || selectedCourse.rating, selectedCourse.par_total)
+                       (teeSel && teeSel.rating) || selectedCourse.rating, selectedCourse.par_total, selectedCourse.trous.length)
       : parseFloat(document.getElementById('f-hcp').value);
     const strokes = (typeof strokesOnHole === 'function') ? strokesOnHole(ch, si) : 0;
     const pts = (typeof stablefordPoints === 'function') ? stablefordPoints(v, par, strokes) : 0;
@@ -629,6 +629,8 @@ function startRound() {
 
   buildTable('table-aller', selectedCourse.trous.slice(0,9));
   buildTable('table-retour', selectedCourse.trous.slice(9));
+  var retourPanel = document.getElementById('table-retour') && document.getElementById('table-retour').closest('.sc-panel');
+  if (retourPanel) retourPanel.style.display = selectedCourse.trous.length > 9 ? '' : 'none';
   buildFirGirToggles(selectedCourse);
   buildPuttsInputs(selectedCourse);
 
@@ -732,6 +734,7 @@ function saveRound() {
     hcp: parseFloat(document.getElementById('f-hcp').value),
     notes: document.getElementById('f-notes').value,
     scores: [...scores],
+    courseHoles: selectedCourse.trous.length,
     // Trou par trou (S42) : putts, fairway, green — avant, seuls les totaux étaient gardés
     puttsByHole: putts.map(function(p) { return (p === null || p === undefined) ? null : p; }),
     firByHole: selectedCourse.trous.map(function(h) { return firState[h.num] === 'hit' ? 1 : firState[h.num] === 'miss' ? 0 : null; }),
@@ -1200,6 +1203,19 @@ function openCourseCreator(existingCourse) {
 
   // Initialiser les 18 trous avec un GABARIT réaliste (par 72 standard) plutôt
   // que 18 par-4 à 0 m : le joueur n'ajuste plus que ce qui diffère chez lui.
+  // Format choisi (18 trous, 9 trous, compact) et champs déjà tapés avant de changer de format
+  var ccFormat = (!isEdit && window._ccFormat) || '18';
+  window._ccFormat = null;
+  if (!isEdit && window._ccDraft) { Object.assign(formState, window._ccDraft); formState.trous = []; }
+  window._ccDraft = null;
+  if (!isEdit && ccFormat !== '18') {
+    var par9 = ccFormat === 'compact' ? [3,3,3,3,3,3,3,3,3] : [4,4,3,5,4,4,3,5,4];
+    var si9 = [5,3,9,1,7,2,8,4,6];
+    formState.type = ccFormat === 'compact' ? 'Compact 9 trous' : '9 trous';
+    formState.sss = formState.rating = ccFormat === 'compact' ? 27 : 35.5;
+    formState.slope = ccFormat === 'compact' ? 100 : 118;
+    formState.trous = par9.map(function(p, i) { return { num: i + 1, par: p, longueur: ccFormat === 'compact' ? 95 : ({ 3: 150, 4: 340, 5: 460 })[p], si: si9[i] }; });
+  }
   if (!formState.trous || formState.trous.length === 0) {
     var TPL_PAR = [4,5,4,3,4,4,5,4,3, 4,4,5,3,4,4,3,5,4];   // par 72
     var TPL_LEN = { 3: 155, 4: 365, 5: 480 };
@@ -1252,6 +1268,10 @@ function openCourseCreator(existingCourse) {
     +         '</div>'
     +       '</div>'
     +     '</div>'
+    +     (isEdit ? '' : '<div class="cc-section"><div class="cc-section-title">Format du parcours</div><div class="cc-formats">'
+    +       [['18', '18 trous'], ['9', '9 trous'], ['compact', 'Compact · 9 par 3']].map(function(f) {
+              return '<button type="button" class="theme-opt' + (ccFormat === f[0] ? ' on' : '') + '" data-cc-format="' + f[0] + '">' + f[1] + '</button>';
+            }).join('') + '</div></div>')
     +     '<div class="cc-section">'
     +       '<div class="cc-section-title">Caract\u00e9ristiques techniques</div>'
     +       '<div class="cc-grid-4">'
@@ -1279,7 +1299,7 @@ function openCourseCreator(existingCourse) {
     +         'Chaque d\u00e9part a les siens \u2014 c\'est ce qui rend ton diff\u00e9rentiel et tes Strokes Gained justes. '
     +         'Si tu n\'en coches aucun, les valeurs g\u00e9n\u00e9rales ci-dessus sont utilis\u00e9es.</div>'
     +       '<div class="cc-tees" id="cc-tees"></div>'
-    +       '<div class="cc-section-title">Saisie des 18 trous</div>'
+    +       '<div class="cc-section-title">Saisie des ' + formState.trous.length + ' trous</div>'
     +       '<div class="cc-table-wrap">'
     +         '<table class="cc-table">'
     +           '<thead>'
@@ -1378,6 +1398,16 @@ function openCourseCreator(existingCourse) {
 
   updateTotals();
 
+  // Changer de format : on reconstruit la fenêtre en gardant nom, ville, etc.
+  modal.querySelectorAll('[data-cc-format]').forEach(function(b) {
+    b.addEventListener('click', function() {
+      window._ccFormat = b.getAttribute('data-cc-format');
+      window._ccDraft = { name: formState.name, ville: formState.ville, departement: formState.departement, region: formState.region, cp: formState.cp };
+      modal.remove();
+      openCourseCreator(null);
+    });
+  });
+
   // Fermeture
   function closeCreator() {
     var m = document.getElementById('course-creator-modal');
@@ -1426,8 +1456,8 @@ function openCourseCreator(existingCourse) {
     var sis = formState.trous.map(function(t) { return t.si; });
     var uniqSis = [];
     sis.forEach(function(s) { if (uniqSis.indexOf(s) < 0) uniqSis.push(s); });
-    if (uniqSis.length !== 18) {
-      warnings.push('Attention : les SI (Stroke Index) ne sont pas tous uniques (1-18).');
+    if (uniqSis.length !== formState.trous.length) {
+      warnings.push('Attention : les SI (index de difficulté) ne sont pas tous différents.');
     }
 
     var warnEl = document.getElementById('cc-warnings');

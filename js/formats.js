@@ -15,11 +15,14 @@
  * ════════════════════════════════════════════ */
 
 /* Handicap de jeu sur un départ donné (norme WHS) */
-function courseHandicap(index, slope, rating, par) {
+function courseHandicap(index, slope, rating, par, holes) {
   if (index === null || index === undefined || isNaN(index)) return null;
   var sl = slope || 113;
   var ch = Number(index) * (sl / 113);
-  if (rating && par) ch += (Number(rating) - Number(par));
+  // Parcours 9 trous : SSS et par sont ceux des 9 trous → équivalent 18 trous.
+  // Les coups reçus se répartissent ensuite sur les 9 trous (index de trou impairs 1,3…17).
+  var k = holes === 9 ? 2 : 1;
+  if (rating && par) ch += (Number(rating) - Number(par)) * k;
   return Math.round(ch * 10) / 10;
 }
 
@@ -51,7 +54,7 @@ function stablefordRound(course, scores, index, tee) {
   if (!course || !Array.isArray(scores)) return null;
   var rating = (tee && tee.rating) || course.rating;
   var slope  = (tee && tee.slope)  || course.slope;
-  var ch = courseHandicap(index, slope, rating, course.par_total);
+  var ch = courseHandicap(index, slope, rating, course.par_total, course.trous.length);
   if (ch === null) return null;
 
   var byHole = [], total = 0, holes = 0;

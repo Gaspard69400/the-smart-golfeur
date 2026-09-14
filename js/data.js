@@ -144,6 +144,12 @@ function tsgSanitizeCourse(c) {
     h = h || {};
     return { num: num(h.num) || i + 1, par: num(h.par) || 4, si: num(h.si), longueur: num(h.longueur) };
   }) : [];
+  // Parcours 9 trous : index de trou ramenés à 1,3,5…17 (rang de difficulté × 2 − 1).
+  // Ainsi le calcul des coups reçus sur 18 trous s'applique tel quel.
+  if (out.trous.length === 9) {
+    var order = out.trous.map(function(h, i) { return { i: i, si: h.si || 99 + i }; }).sort(function(a, b) { return a.si - b.si; });
+    order.forEach(function(o, rank) { out.trous[o.i].si = rank * 2 + 1; });
+  }
   if (Array.isArray(c.departs)) {
     out.departs = c.departs.slice(0, 8).map(function(t) {
       t = t || {};

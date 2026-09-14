@@ -17,7 +17,7 @@
 var PGS_NOW_N = 5;
 
 function pgsIs18(r) {
-  if (r.quickEntry) return true;
+  if (r.quickEntry) return (r.courseHoles || 18) === 18;
   return Array.isArray(r.scores) && r.scores.filter(function(x) { return x !== null && x !== undefined; }).length >= 18;
 }
 

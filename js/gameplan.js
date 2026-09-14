@@ -33,7 +33,7 @@ function gpCourseHcp(course) {
   if (!tee) tee = tees[0] || null;
   var rating = (tee && tee.rating) || course.rating;
   var slope  = (tee && tee.slope)  || course.slope;
-  var ch = (typeof courseHandicap === 'function') ? courseHandicap(idx, slope, rating, course.par_total) : idx;
+  var ch = (typeof courseHandicap === 'function') ? courseHandicap(idx, slope, rating, course.par_total, (course.trous || []).length) : idx;
   return { index: idx, ch: ch, tee: tee };
 }
 

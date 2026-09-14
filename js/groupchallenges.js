@@ -60,7 +60,7 @@ function gchDaysLeft(ch) {
 
 function gchIs18(r) {
   var ex = r.extra || {};
-  if (ex.quickEntry) return true;               // saisie du score total : une partie complète
+  if (ex.quickEntry) return (ex.courseHoles || 18) === 18;   // saisie du score total : une partie complète (sauf parcours 9 trous)
   return Array.isArray(r.scores) && r.scores.filter(function(x) { return x !== null && x !== undefined; }).length >= 18;
 }
 

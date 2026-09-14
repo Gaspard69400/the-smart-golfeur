@@ -188,8 +188,9 @@ function qsRender() {
   var relStr = 'PAR';
   if (rel > 0) relStr = '+' + rel;
   if (rel < 0) relStr = '' + rel;
-  var totalTxt = cnt + '/18 trous · <strong>' + relStr + '</strong>';
-  if (stb) totalTxt = cnt + '/18 · <strong>' + stb.points + ' pts</strong> · ' + relStr;
+  var nH = course.trous.length;
+  var totalTxt = cnt + '/' + nH + ' trous · <strong>' + relStr + '</strong>';
+  if (stb) totalTxt = cnt + '/' + nH + ' · <strong>' + stb.points + ' pts</strong> · ' + relStr;
   if (typeof wxCached === 'function') {
     var wxNow = wxCached(course);
     if (wxNow) totalTxt += '<div class="qs-wx">' + wxChipHtml(Object.assign({}, wxNow, (lsGet('weatherNow') || {})[course.id])) + '</div>';
@@ -284,7 +285,7 @@ function qsRender() {
     + '<div class="qs-nav">'
     +   '<button class="qs-nav-b" id="qs-undo"' + undoDisabled + '>↺ Annuler</button>'
     +   '<button class="qs-nav-b" id="qs-prev"' + (_qsHole === 1 ? ' disabled' : '') + '>← Trou ' + (_qsHole - 1) + '</button>'
-    +   '<button class="qs-nav-b" id="qs-next"' + (_qsHole === 18 ? ' disabled' : '') + '>Trou ' + (_qsHole + 1) + ' →</button>'
+    +   '<button class="qs-nav-b" id="qs-next"' + (_qsHole >= course.trous.length ? ' disabled' : '') + '>Trou ' + (_qsHole + 1) + ' →</button>'
     + '</div>';
 
   qsWire();
@@ -355,7 +356,7 @@ function qsWire() {
   var p = document.getElementById('qs-prev');
   if (p) p.addEventListener('click', function() { _qsHole = Math.max(1, _qsHole - 1); qsRender(); });
   var n = document.getElementById('qs-next');
-  if (n) n.addEventListener('click', function() { _qsHole = Math.min(18, _qsHole + 1); qsRender(); });
+  if (n) n.addEventListener('click', function() { _qsHole = Math.min(selectedCourse.trous.length, _qsHole + 1); qsRender(); });
 }
 
 /* ─────────── ACTIONS ─────────── */
@@ -367,7 +368,7 @@ function qsSet(val, advance) {
   if (_qsUndo.length > 30) _qsUndo.shift();
   scores[idx] = val;
   qsComputeGir();
-  if (advance && _qsHole < 18) {
+  if (advance && _qsHole < selectedCourse.trous.length) {
     _qsHole++;
   }
   qsSaveDraft();   // après l'avancement : à la reprise on repart du trou à jouer
@@ -509,6 +510,7 @@ function qtSave(close) {
   var entry = {
     id: Date.now(),
     date: date,
+    courseHoles: course.trous.length,
     weather: (typeof wxCached === 'function' && date === today) ? wxCached(course) : null,
     course: course.name,
     courseId: course.id,

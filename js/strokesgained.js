@@ -96,6 +96,8 @@ function sgComputeRound(round, refHcp) {
   var base   = sgBaseline(refHcp);
   // Le départ joué prime : son rating/slope décrivent la vraie difficulté rencontrée
   var rating = round.teeRating || (course && course.rating) || ((round.par || 72) + 1.5);
+  // Parcours 9 trous : son SSS vaut pour 9 trous → équivalent 18 trous
+  if (round.courseHoles === 9 || (course && course.trous && course.trous.length === 9)) rating = rating * 2;
   var slope  = round.teeSlope  || (course && course.slope)  || 113;
 
   /* Score attendu sur CE parcours pour ce niveau, ramené aux trous joués */

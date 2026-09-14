@@ -119,7 +119,7 @@ function smMonthValues(month) {
   var log = (lsGet('trainingLog') || []).filter(function(e) { var d = new Date(e.date); return !isNaN(d.getTime()) && smMonthKey(d) === month; });
   var perf = null;
   rounds.forEach(function(r) {
-    var full = r.quickEntry || (Array.isArray(r.scores) && r.scores.filter(function(x) { return x !== null && x !== undefined; }).length >= 18);
+    var full = (r.quickEntry && (r.courseHoles || 18) === 18) || (Array.isArray(r.scores) && r.scores.filter(function(x) { return x !== null && x !== undefined; }).length >= 18);
     if (!full || r.diff === null || r.diff === undefined || r.hcp === null || r.hcp === undefined || isNaN(r.hcp)) return;
     var v = Math.round((Number(r.hcp) - Number(r.diff)) * 10) / 10;
     if (perf === null || v > perf) perf = v;

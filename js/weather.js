@@ -135,7 +135,7 @@ function wxAnalyseCard(rounds) {
   rounds.forEach(function(r) {
     if (r.diff === null || r.diff === undefined || isNaN(r.diff)) return;
     var full = Array.isArray(r.scores) && r.scores.filter(function(x) { return x !== null && x !== undefined; }).length >= 18;
-    if (!full && !r.quickEntry) return;
+    if (!full && !(r.quickEntry && (r.courseHoles || 18) === 18)) return;
     var k = r.weather ? wxWindClass(r.weather) : r.cond;
     if (buckets[k]) buckets[k].push(r.diff);
   });
