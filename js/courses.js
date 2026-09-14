@@ -214,6 +214,16 @@ function crsBuildCard(c) {
     actions.appendChild(planBtn);
   }
 
+  if (typeof hnOpenBook === 'function' && c.trous && c.trous.length) {
+    var bookBtn = document.createElement('button');
+    bookBtn.className = 'dash-btn dash-btn-outline crs-plan-btn';
+    var nNotes = hnCount(c.id);
+    bookBtn.innerHTML = '📒 Carnet<span class="crs-notes-n" data-course="' + hnEsc(c.id) + '">' + (nNotes ? ' (' + nNotes + ')' : '') + '</span>';
+    bookBtn.title = 'Tes notes trou par trou sur ce parcours';
+    bookBtn.addEventListener('click', function() { hnOpenBook(c); });
+    actions.appendChild(bookBtn);
+  }
+
   if (isUser) {
     var editBtn = document.createElement('button');
     editBtn.className = 'dash-btn dash-btn-outline crs-icon-btn';

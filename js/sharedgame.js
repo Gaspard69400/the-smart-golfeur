@@ -6,7 +6,7 @@
  * rejoint voit la carte se remplir en direct sur son téléphone, et peut
  * aussi marquer. Formats : stroke play, stableford, match play (à 2).
  *
- * Serveur : backend/parties_partagees.sql. Chaque saisie envoie UNE case
+ * Serveur : backend/maj_parties_carnet.sql. Chaque saisie envoie UNE case
  * (set_game_score) : deux marqueurs ne s'écrasent jamais la carte.
  * Hors réseau : les saisies attendent dans une file (tsg_sgmLocal) et
  * partent dès que la connexion revient — rien n'est perdu.
@@ -380,6 +380,7 @@ function sgmScoreHtml(idx, h) {
 
   return '<div class="qs-hole"><div class="qs-hole-n">Trou ' + (h.num || idx + 1) + '</div>'
     + '<div class="qs-hole-meta">Par ' + h.par + (h.longueur ? ' · ' + h.longueur + ' m' : '') + (h.si ? ' · SI ' + h.si : '') + '</div></div>'
+    + ((typeof hnInlineHtml === 'function') ? hnInlineHtml(g.course, idx) : '')
     + (players.length ? '<div class="sgm-players">' + rows + '</div>' : '<div class="sgm-empty">Aucun joueur dans cette partie.</div>')
     + (live && anyEmpty && players.length > 1 ? '<button class="sgm-allpar" data-sgm="allpar">Par pour les cases vides</button>' : '')
     + '<div class="sgm-hint">+ ou − sur une case vide inscrit d\'abord le par.</div>'

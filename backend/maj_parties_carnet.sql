@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════
--- THE SMART GOLFER — Parties partagées à plusieurs + match play (S45-S46)
+-- THE SMART GOLFER — Parties partagées + match play (S45-S46) + carnet de parcours (S47)
 -- À coller EN ENTIER dans : Supabase → SQL Editor → New query → Run
 -- Idempotent (on peut le relancer sans risque).
 -- Nécessite schema.sql + groups.sql (shares_group_with) déjà passés.
@@ -261,6 +261,24 @@ grant execute on function public.finish_shared_game(uuid) to authenticated;
 grant execute on function public.delete_shared_game(uuid) to authenticated;
 grant execute on function public.claim_game_card(uuid, text) to authenticated;
 
+
+-- ─────────────────────────────────────────────
+-- S47 — Carnet de parcours : notes par trou (privées, chacun les siennes)
+create table if not exists public.hole_notes (
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  course_id  text not null,
+  hole       integer not null check (hole between 1 and 18),
+  body       text not null default '' check (char_length(body) <= 280),
+  club       text check (club is null or char_length(club) <= 20),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, course_id, hole)
+);
+alter table public.hole_notes enable row level security;
+
+drop policy if exists "hole_notes_all_own" on public.hole_notes;
+create policy "hole_notes_all_own" on public.hole_notes
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- ════════════════════════════════════════════
--- FIN Parties partagées
+-- FIN
 -- ════════════════════════════════════════════

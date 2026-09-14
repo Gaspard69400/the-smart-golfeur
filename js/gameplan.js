@@ -169,7 +169,7 @@ function gpOpenCourse(course) {
           : '');
   }
 
-  var cards = stats.map(function(s) {
+  var cards = stats.map(function(s, si) {
     var h = s.hole;
     var adv = gpAdvice(s, weak);
     var statLine = '';
@@ -189,6 +189,7 @@ function gpOpenCourse(course) {
       + statLine + bar
       + (adv.personal ? '<div class="gp-h-personal">' + gpEsc(adv.personal) + '</div>' : '')
       + '<div class="gp-h-strategy">' + gpEsc(adv.strategy) + '</div>'
+      + ((typeof hnSlotHtml === 'function') ? hnSlotHtml(course, si, true) : '')
       + '</div>';
   }).join('');
 

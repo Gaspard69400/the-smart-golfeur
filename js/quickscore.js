@@ -249,6 +249,8 @@ function qsRender() {
     +   '<div class="qs-hole-n">Trou ' + _qsHole + '</div>'
     +   '<div class="qs-hole-meta">Par ' + par + ' · ' + (hole.longueur || '—') + ' m · SI ' + (hole.si || '—') + qsStrokeBadge(stb, hole) + '</div>'
     + '</div>'
+    // Le carnet d'abord : c'est au départ qu'on en a besoin
+    + ((typeof hnInlineHtml === 'function') ? hnInlineHtml(course, idx) : '')
 
     /* Score choisi */
     + '<div class="qs-score ' + scoreCls + '">'

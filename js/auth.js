@@ -284,6 +284,8 @@ function syncPullAll(uid) {
       });
       lsSet('training_done', doneMap);
     }
+    // Carnet de parcours (notes par trou) — fusion en arrière-plan
+    if (typeof hnSyncPull === 'function') { try { hnSyncPull(uid); } catch (e) {} }
     // User courses
     if (!r[4].error) {
       var courses = (r[4].data || []).map(function(row) { return row.data; });
