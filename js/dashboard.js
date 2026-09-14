@@ -452,6 +452,11 @@ function buildDashboard(container) {
     try { slvRenderPanel(wrap); } catch (e) { console.warn('[TSG] niveau par secteur:', e.message); }
   }
 
+  // Ton toi d'il y a 6 mois (progress.js)
+  if (typeof pgsRenderThenNow === 'function') {
+    try { pgsRenderThenNow(wrap); } catch (e) { console.warn('[TSG] avant/après:', e.message); }
+  }
+
   /* ── Plan d'entraînement intelligent (généré depuis les Strokes Gained) ── */
   // Défis de la semaine, version compacte
   if (typeof chRenderPanel === 'function') {
@@ -542,18 +547,22 @@ function buildDashboard(container) {
   var goalsBody = document.createElement('div');
   goalsBody.className = 'panel-body';
 
+  // Valeurs réelles (progress.js) : cartes 18 trous, stats saisies, index WHS
+  var gNow = (hasReal && typeof pgsGoalNow === 'function') ? pgsGoalNow() : null;
+  if (gNow && typeof pgsCheckGoals === 'function') { try { pgsCheckGoals(false); } catch (e) {} }
   var goalsData = [
-    { name: 'Score moyen',  now: parseFloat(avgScore), target: obj.score, lower: true,  suffix: '' },
-    { name: 'Handicap',     now: parseFloat(hcp),      target: obj.hcp,   lower: true,  suffix: '' },
-    { name: 'GIR',          now: parseInt(avgGIR, 10), target: obj.gir,   lower: false, suffix: '%' },
-    { name: 'FIR',          now: parseInt(avgFIR, 10), target: obj.fir,   lower: false, suffix: '%' },
-    { name: 'Putts / tour', now: parseFloat(avgPutts), target: obj.putts, lower: true,  suffix: '' }
+    { key: 'score', name: 'Score moyen',  now: gNow ? gNow.score : parseFloat(avgScore), target: obj.score, lower: true,  suffix: '' },
+    { key: 'hcp',   name: 'Handicap',     now: gNow ? gNow.hcp : parseFloat(hcp),        target: obj.hcp,   lower: true,  suffix: '' },
+    { key: 'gir',   name: 'GIR',          now: gNow ? (gNow.gir === null ? null : Math.round(gNow.gir)) : parseInt(avgGIR, 10), target: obj.gir, lower: false, suffix: '%' },
+    { key: 'fir',   name: 'FIR',          now: gNow ? (gNow.fir === null ? null : Math.round(gNow.fir)) : parseInt(avgFIR, 10), target: obj.fir, lower: false, suffix: '%' },
+    { key: 'putts', name: 'Putts / tour', now: gNow ? gNow.putts : parseFloat(avgPutts), target: obj.putts, lower: true,  suffix: '' }
   ];
 
   goalsData.forEach(function(g) {
-    var now = isNaN(g.now) ? 0 : g.now;
+    var known = !(g.now === null || g.now === undefined || isNaN(g.now));
+    var now = known ? Math.round(g.now * 10) / 10 : 0;
     var target = g.target;
-    var good = g.lower ? (now <= target) : (now >= target);
+    var good = known && (g.lower ? (now <= target) : (now >= target));
     var delta = (now - target);
     var pct;
     if (g.lower) {
@@ -577,7 +586,7 @@ function buildDashboard(container) {
     vals.className = 'goal-vals';
     var nowEl = document.createElement('div');
     nowEl.className = 'goal-now';
-    nowEl.textContent = (g.lower ? now.toFixed(g.name === 'Score moyen' ? 1 : 1) : now) + g.suffix;
+    nowEl.textContent = known ? (g.lower ? now.toFixed(1) : now) + g.suffix : '—';
     var arrow = document.createElement('div');
     arrow.className = 'goal-arrow';
     arrow.textContent = '\u2192';
@@ -604,8 +613,13 @@ function buildDashboard(container) {
     var deltaEl = document.createElement('div');
     deltaEl.className = 'goal-delta';
     deltaEl.style.color = good ? 'var(--ok2)' : 'var(--ng2)';
-    if (good) {
-      deltaEl.textContent = '\u2713 atteint';
+    var reachedOn = (typeof pgsReachedOn === 'function') ? pgsReachedOn(g.key, target) : null;
+    if (!known) {
+      deltaEl.style.color = 'var(--tx4)';
+      deltaEl.textContent = 'pas de donnée';
+      fill.style.width = '3%';
+    } else if (good) {
+      deltaEl.textContent = '\u2713 atteint' + (reachedOn ? ' le ' + reachedOn.slice(8, 10) + '/' + reachedOn.slice(5, 7) : '');
     } else {
       var d = Math.abs(delta);
       deltaEl.textContent = (g.lower ? '+' + (g.suffix === '%' ? Math.round(d) : d.toFixed(1)) : '-' + (g.suffix === '%' ? Math.round(d) : d.toFixed(1))) + g.suffix;

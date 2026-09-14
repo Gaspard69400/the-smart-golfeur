@@ -193,6 +193,8 @@ function chCheck(notify) {
     }
     if (typeof updateNavUI === 'function') { try { updateNavUI(); } catch (e) {} }
   }
+  // Objectifs de saison atteints (progress.js) : même moment, même notification
+  if (typeof pgsCheckGoals === 'function') { try { pgsCheckGoals(notify); } catch (e) {} }
   return fresh;
 }
 
