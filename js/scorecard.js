@@ -776,6 +776,8 @@ function saveRound() {
   showToast('Partie enregistrée ✓  ' + entry.date + ' · ' + entry.course + ' · ' + scoreTotal + ' (+'+(scoreTotal-par)+')');
   // Le brouillon de saisie express n'a plus lieu d'être
   if (typeof qsClearDraft === 'function') { try { qsClearDraft(); qsRenderResumeBanner(); } catch(ex) {} }
+  // Défis de la semaine : une partie peut en relever plusieurs
+  if (typeof chCheck === 'function') { try { chCheck(true); } catch(ex) {} }
   // Écran de célébration (record, birdies, seuils…)
   if (typeof qsCelebrate === 'function') { try { qsCelebrate(entry); } catch(ex) { console.warn('celebrate:', ex.message); } }
   // Rediriger vers le dashboard et rebuild

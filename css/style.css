@@ -5142,3 +5142,38 @@ body.ld-open { overflow: hidden; }
   .whs-course { max-width: 100px; }
   .whs-hero-v { font-size: 42px; }
 }
+
+/* ── Titre de niveau + défis hebdomadaires (Session 37) ── */
+.role-title { background: var(--gold-dim); color: var(--gold-d); border: 1px solid rgba(201,168,76,0.4); }
+.dash-title-chip {
+  display: inline-block; vertical-align: middle; margin-left: 10px;
+  font-size: 11px; font-weight: 800; letter-spacing: .02em;
+  color: var(--gold-d); background: var(--gold-dim);
+  border: 1px solid rgba(201,168,76,0.35); border-radius: 20px; padding: 3px 10px;
+}
+
+.ch-panel { margin-bottom: 18px; }
+.ch-slot .ch-panel { margin-top: 0; }
+.ch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.ch-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--bg2); border: 1px solid var(--bd2); border-radius: 12px; padding: 12px 13px;
+}
+.ch-card.is-done { background: var(--ok-bg2); border-color: rgba(45,125,58,0.35); }
+.ch-ico { font-size: 24px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+.ch-main { flex: 1 1 auto; min-width: 0; }
+.ch-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ch-title { font-size: 13.5px; font-weight: 800; color: var(--tx); }
+.ch-xp { font-size: 11px; font-weight: 800; color: var(--gold-d); white-space: nowrap; }
+.ch-card.is-done .ch-xp { color: var(--ok2); }
+.ch-desc { font-size: 11.5px; color: var(--tx3); line-height: 1.45; margin-top: 2px; }
+.ch-bar { height: 6px; border-radius: 4px; background: var(--bg4); overflow: hidden; margin: 9px 0 4px; }
+.ch-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-l)); transition: width .5s ease; }
+.ch-card.is-done .ch-bar-fill { background: var(--ok2); }
+.ch-count { font-size: 10.5px; font-weight: 700; color: var(--tx4); }
+.ch-card.is-done .ch-count { color: var(--ok2); }
+.ch-compact .ch-desc { display: none; }
+
+@media (max-width: 560px) {
+  .dash-title-chip { margin-left: 0; margin-top: 6px; display: table; }
+}

@@ -172,18 +172,28 @@ function commComputeAch(d) {
   };
 }
 
+/* Niveau courant du joueur : XP des parties + paliers + défis relevés.
+   Utilisé par la page Communauté, la nav et le Dashboard. */
+function commCurrentLevel() {
+  var rounds = (typeof lsGet === 'function' && lsGet('rounds')) || [];
+  var s = commComputeStats(rounds);
+  var achs = commAchievements(s);
+  var tierXp = achs.reduce(function(a, x) { return a + x.bonusXp; }, 0);
+  var chXp = (typeof chTotalXp === 'function') ? chTotalXp() : 0;
+  var xp = s.baseXp + tierXp + chXp;
+  return { xp: xp, tierXp: tierXp, chXp: chXp, stats: s, achievements: achs, level: commLevelFromXp(xp) };
+}
+
 /* ─── PAGE ─── */
 function buildCommunityPage(container) {
   if (!container) return;
   while (container.firstChild) container.removeChild(container.firstChild);
 
-  var rounds = (typeof lsGet === 'function' && lsGet('rounds')) || [];
-  var s = commComputeStats(rounds);
-  var achs = commAchievements(s);
-
-  var tierXp = achs.reduce(function(a, x) { return a + x.bonusXp; }, 0);
-  s.xp = s.baseXp + tierXp;
-  var lv = commLevelFromXp(s.xp);
+  var cl = commCurrentLevel();
+  var s = cl.stats;
+  var achs = cl.achievements;
+  s.xp = cl.xp;
+  var lv = cl.level;
   var pctLevel = Math.round((lv.into / lv.need) * 100);
 
   var paliersDone = achs.reduce(function(a, x) { return a + x.tierIndex; }, 0);
@@ -227,6 +237,18 @@ function buildCommunityPage(container) {
     + '<div class="comm-section-head" style="margin-top:26px"><div class="comm-section-title">📣 Fil d\'activité</div>'
     + '<div class="comm-section-sub">Les dernières parties de ta communauté</div></div>'
     + '<div id="comm-feed"><div class="comm-feed-loading">Chargement…</div></div>';
+
+  // Défis de la semaine, juste sous le héros
+  if (typeof chRenderPanel === 'function') {
+    try {
+      var hero = container.querySelector('.comm-hero');
+      var slot = document.createElement('div');
+      slot.className = 'ch-slot';
+      if (hero && hero.parentNode) hero.parentNode.insertBefore(slot, hero.nextSibling);
+      else container.appendChild(slot);
+      chRenderPanel(slot, false);
+    } catch (e) { console.warn('[TSG] défis:', e.message); }
+  }
 
   commRenderFeed();
 }

@@ -227,6 +227,17 @@ function buildDashboard(container) {
   var greeting = document.createElement('div');
   greeting.className = 'dash-greeting';
   greeting.textContent = 'Bonjour, ' + firstName;
+  // Titre de niveau à côté du prénom (visible aussi sur mobile, où la nav le masque)
+  if (typeof commCurrentLevel === 'function' && (u.role === 'player' || u.role === 'captain' || !u.role)) {
+    try {
+      var cl = commCurrentLevel();
+      var chipT = document.createElement('span');
+      chipT.className = 'dash-title-chip';
+      chipT.textContent = cl.level.title + ' \u00b7 Niv. ' + cl.level.level;
+      chipT.title = cl.xp + ' XP';
+      greeting.appendChild(chipT);
+    } catch (e) {}
+  }
   var meta = document.createElement('div');
   meta.className = 'dash-meta';
   meta.textContent = 'Saison ' + new Date().getFullYear() + ' \u00b7 ' + n + ' parties ' + (hasReal ? 'enregistr\u00e9es' : 'de d\u00e9mo');
@@ -437,6 +448,11 @@ function buildDashboard(container) {
   wrap.appendChild(sgPanel);
 
   /* ── Plan d'entraînement intelligent (généré depuis les Strokes Gained) ── */
+  // Défis de la semaine, version compacte
+  if (typeof chRenderPanel === 'function') {
+    try { chRenderPanel(wrap, true); } catch (e) { console.warn('[TSG] défis:', e.message); }
+  }
+
   try { buildTrainingPlan(wrap, sg_tee, sg_app, sg_arg, sg_putt); }
   catch (ex) { console.warn('[TSG] Plan entraînement:', ex.message); }
 

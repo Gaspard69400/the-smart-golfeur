@@ -520,6 +520,7 @@ function qtSave(close) {
   if (window.tsgSync) window.tsgSync.pushRound(entry);
 
   showToast('Partie enregistrée ✓ ' + course.name + ' · ' + total);
+  if (typeof chCheck === 'function') { try { chCheck(true); } catch (e) {} }
   if (typeof close === 'function') close();
   if (typeof renderHistory === 'function') { try { renderHistory(); } catch (e) {} }
   if (typeof qsCelebrate === 'function') qsCelebrate(entry);

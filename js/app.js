@@ -279,16 +279,17 @@ function launchApp() {
   // 4. Construire la navigation
   buildNavTabs();
 
-  // 5. Construire les pages (chacune protégée)
-  buildPages();
-
-  // 5b. Recalculer les Strokes Gained de tout l'historique avec le modèle courant
+  // 5. Recalculer les Strokes Gained de tout l'historique AVANT de construire les pages :
+  //    le Dashboard et les défis de la semaine (figés 7 jours) lisent ces valeurs.
   try {
     if (typeof sgBackfillRounds === 'function') {
       var nsg = sgBackfillRounds();
       if (nsg) console.log('[TSG] Strokes Gained recalculés sur ' + nsg + ' partie(s)');
     }
   } catch(e) { console.warn('SG backfill:', e.message); }
+
+  // 5b. Construire les pages (chacune protégée)
+  buildPages();
 
   // 6. Initialiser la scorecard
   try { initScorecardPage(); } catch(e) { console.warn('SC:', e.message); }
@@ -405,8 +406,17 @@ function updateNavUI() {
   // Badge rôle
   var rb = document.getElementById('nav-role');
   if (rb) {
-    rb.textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
-    rb.className   = 'nav-role-badge ' + (ROLE_CSS[currentUser.role] || 'role-player');
+    // Les joueurs affichent leur titre de niveau (Amateur, Confirmé…) plutôt que « Joueur »
+    var playing = (currentUser.role === 'player' || currentUser.role === 'captain');
+    var cl = (playing && typeof commCurrentLevel === 'function') ? commCurrentLevel() : null;
+    if (cl && cl.level) {
+      rb.textContent = cl.level.title + ' \u00b7 Niv. ' + cl.level.level;
+      rb.className   = 'nav-role-badge role-title';
+      rb.title       = cl.xp + ' XP \u2014 ' + (ROLE_LABELS[currentUser.role] || currentUser.role);
+    } else {
+      rb.textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
+      rb.className   = 'nav-role-badge ' + (ROLE_CSS[currentUser.role] || 'role-player');
+    }
   }
 
   // Clic sur l'utilisateur = déconnexion

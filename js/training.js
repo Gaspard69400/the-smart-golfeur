@@ -58,6 +58,8 @@ function trnMarkDone(id) {
   map[uid][id] = cur;
   lsSet('training_done', map);
   if (window.tsgSync) window.tsgSync.pushTrainingDone(id, cur);
+  // Journal daté (les défis de la semaine en ont besoin) + vérification
+  if (typeof chLogTraining === 'function') { try { chLogTraining(id); chCheck(true); } catch (e) {} }
 }
 
 function TRAINING_SEED() {
