@@ -342,6 +342,9 @@ function launchAppCore() {
 
   // 12. Invitation à un groupe reçue par lien / QR code
   if (typeof invProcessPending === 'function') { setTimeout(function() { try { invProcessPending(); } catch (e) {} }, 700); }
+
+  // 13. Partie partagée reçue par lien / QR, et cartes à valider
+  if (typeof sgmOnLaunch === 'function') { setTimeout(function() { try { sgmOnLaunch(); } catch (e) {} }, 900); }
 }
 
 /* \u2500\u2500\u2500 ONBOARDING (1er lancement) \u2500\u2500\u2500 */

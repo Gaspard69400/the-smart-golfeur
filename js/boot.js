@@ -10,6 +10,9 @@
   if (typeof invCaptureFromUrl === 'function') {
     try { invCaptureFromUrl(); } catch (e) { console.warn('[TSG] invitation:', e.message); }
   }
+  if (typeof sgmCaptureFromUrl === 'function') {
+    try { sgmCaptureFromUrl(); } catch (e) { console.warn('[TSG] partie partagée:', e.message); }
+  }
 
   // Page d'accueil (1re visite uniquement)
   if (typeof landingInit === 'function') {

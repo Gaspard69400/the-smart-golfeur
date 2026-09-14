@@ -913,6 +913,10 @@ function initScorecardPage() {
       '<span class="btn-express-s">1 tap par trou · reprise automatique</span>',
     '</button>',
 
+    '<button class="btn-quicktotal btn-shared" id="btn-shared" onclick="if(typeof sgmOpenHub===\'function\')sgmOpenHub()">',
+      '👥 Partie à plusieurs · carte partagée',
+    '</button>',
+
     '<button class="btn-immersive" id="btn-immersive" onclick="openImmersiveScoring()" disabled>',
       '⛳ Saisie immersive · trou par trou',
     '</button>',
