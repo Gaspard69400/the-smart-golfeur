@@ -119,9 +119,38 @@ function getAllCourses() {
   } catch(e) {
     console.warn('Lecture parcours utilisateur :', e.message);
   }
-  // Marquer les parcours utilisateur avec un flag
+  // Nettoyer (un parcours importé de la communauté vient de quelqu'un d'autre) + marquer
+  userCourses = userCourses.filter(function(c) { return c && typeof c === 'object'; }).map(tsgSanitizeCourse);
   userCourses.forEach(function(c) { c.userCreated = true; });
   return COURSES.concat(userCourses);
+}
+
+/* ⚠️ Sécurité : un parcours partagé (ou reçu dans une partie partagée) a été saisi
+   par un autre joueur. Ses textes finissent dans des pages : on retire tout ce qui
+   pourrait être interprété comme du code, et on force les nombres à être des nombres. */
+function tsgSanitizeCourse(c) {
+  function txt(v, max) { return (v === null || v === undefined) ? v : String(v).replace(/[<>"`\\]/g, '').slice(0, max || 80); }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function id(v) { return String(v === null || v === undefined ? '' : v).replace(/[^A-Za-z0-9_\-:.]/g, '').slice(0, 60); }
+  var out = {};
+  Object.keys(c).forEach(function(k) {
+    var v = c[k];
+    if (typeof v === 'string') out[k] = txt(v, k === 'notes' ? 400 : 80);
+    else if (typeof v === 'number' || typeof v === 'boolean' || v === null) out[k] = v;
+  });
+  out.id = id(c.id);
+  ['par_total', 'rating', 'sss', 'slope', 'longueur_totale'].forEach(function(k) { if (k in c) out[k] = num(c[k]); });
+  out.trous = Array.isArray(c.trous) ? c.trous.slice(0, 18).map(function(h, i) {
+    h = h || {};
+    return { num: num(h.num) || i + 1, par: num(h.par) || 4, si: num(h.si), longueur: num(h.longueur) };
+  }) : [];
+  if (Array.isArray(c.departs)) {
+    out.departs = c.departs.slice(0, 8).map(function(t) {
+      t = t || {};
+      return { id: id(t.id), name: txt(t.name, 30), rating: num(t.rating), slope: num(t.slope), longueur: num(t.longueur) };
+    });
+  }
+  return out;
 }
 
 function saveUserCourse(course) {

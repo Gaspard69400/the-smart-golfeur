@@ -35,12 +35,12 @@ function renderCourseList(list) {
     div.setAttribute('data-course-id', c.id);
     const lvlClass = (c.niveau || 'Standard').toLowerCase().replace('é','e').replace('è','e').replace('â','a');
     const isUser = !!c.userCreated;
-    div.innerHTML = `<div class="ci-name">${isUser ? '<span class="ci-user-badge" title="Parcours créé par vous">\u2726</span> ' : ''}${c.name}</div>
+    div.innerHTML = `<div class="ci-name">${isUser ? '<span class="ci-user-badge" title="Parcours créé par vous">\u2726</span> ' : ''}${qsEsc(c.name)}</div>
       <div class="ci-meta">
-        <span>${c.ville || ''}</span>
-        <span>Par ${c.par_total}</span>
-        <span>Slope ${c.slope || '—'}</span>
-        <span class="ci-tag ${lvlClass}">${c.niveau || 'Standard'}</span>
+        <span>${qsEsc(c.ville || '')}</span>
+        <span>Par ${qsEsc(c.par_total)}</span>
+        <span>Slope ${qsEsc(c.slope || '—')}</span>
+        <span class="ci-tag ${qsEsc(lvlClass)}">${qsEsc(c.niveau || 'Standard')}</span>
         ${isUser ? '<button class="ci-edit-btn" data-edit-course="' + c.id + '" title="Modifier ce parcours">\u270e</button><button class="ci-delete-btn" data-del-course="' + c.id + '" title="Supprimer ce parcours">\u00d7</button>' : ''}
       </div>`;
     // Click sur la carte = sélection

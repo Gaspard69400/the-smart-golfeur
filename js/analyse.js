@@ -756,7 +756,7 @@ function renderEvolution() {
   if (chrono.length >= 3) {
     var bestRound = chrono.reduce(function(b, r) { return r.score < b.score ? r : b; }, chrono[0]);
     var worstRound = chrono.reduce(function(w, r) { return r.score > w.score ? r : w; }, chrono[0]);
-    insights.push({ icon: '\u2605', color: 'var(--gold-d)', title: 'Meilleure partie analysée', text: 'Score de <strong>' + bestRound.score + '</strong> le ' + (bestRound.date || '—') + (bestRound.course ? ' à ' + bestRound.course : '') + '. À reproduire en analysant ce qui a marché ce jour-là.' });
+    insights.push({ icon: '\u2605', color: 'var(--gold-d)', title: 'Meilleure partie analysée', text: 'Score de <strong>' + bestRound.score + '</strong> le ' + (bestRound.date || '—') + (bestRound.course ? ' à ' + String(bestRound.course).replace(/[<>&"]/g, '') : '') + '. À reproduire en analysant ce qui a marché ce jour-là.' });
   }
 
   // Tendance du putting si données disponibles

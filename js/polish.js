@@ -121,3 +121,48 @@ function tsgCountUp(el, duration) {
     });
   };
 })();
+
+/* ─── Accessibilité ─── */
+
+/* Boutons faits d'un seul symbole : un nom lisible pour les lecteurs d'écran */
+var TSG_ARIA = [
+  ['.trn-modal-close, .qs-x, .gp-close, .settings-close, .qt-close, #sgm-overlay [data-sgm="close"]', 'Fermer'],
+  ['.sgm-b[data-d="-1"], .qs-step[data-adj="-1"]', 'Un coup de moins'],
+  ['.sgm-b[data-d="1"], .qs-step[data-adj="1"]', 'Un coup de plus'],
+  ['.hn-edit', 'Modifier la note'],
+  ['.comm-cmt-del', 'Supprimer le commentaire'],
+  ['.comm-kudos', 'Applaudir cette partie'],
+  ['.nav-settings-btn', 'Paramètres']
+];
+var TSG_DIALOGS = '.trn-modal, .gp-modal, .settings-modal, .qt-modal, .onb-modal, .qs-overlay, .cel-overlay';
+
+function tsgA11yPass(root) {
+  TSG_ARIA.forEach(function(pair) {
+    root.querySelectorAll(pair[0]).forEach(function(el) { if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', pair[1]); });
+  });
+  root.querySelectorAll(TSG_DIALOGS).forEach(function(el) {
+    if (el.getAttribute('role')) return;
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    var title = el.querySelector('.trn-modal-title, .gp-title, .settings-title, .qt-title, .qs-course');
+    if (title) { if (!title.id) title.id = 'tsg-dlg-' + Math.random().toString(36).slice(2, 8); el.setAttribute('aria-labelledby', title.id); }
+  });
+}
+
+(function watchA11y() {
+  var pending = false;
+  function run() { pending = false; try { tsgA11yPass(document); } catch (e) {} }
+  new MutationObserver(function() { if (!pending) { pending = true; setTimeout(run, 60); } })
+    .observe(document.documentElement, { childList: true, subtree: true });
+  run();
+})();
+
+/* Échap ferme la fenêtre du dessus (sans perdre une saisie en cours : on passe par son bouton Fermer) */
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape' || e.defaultPrevented) return;
+  var open = Array.prototype.slice.call(document.querySelectorAll(TSG_DIALOGS));
+  if (!open.length) return;
+  var top = open.sort(function(a, b) { return (parseInt(getComputedStyle(b).zIndex, 10) || 0) - (parseInt(getComputedStyle(a).zIndex, 10) || 0); })[0];
+  var btn = top.querySelector('.trn-modal-close, .gp-close, .settings-close, .qt-close, .qs-x, [data-sgm="close"]');
+  if (btn) { e.preventDefault(); btn.click(); }
+});
