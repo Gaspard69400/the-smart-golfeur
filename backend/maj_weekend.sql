@@ -30,3 +30,76 @@ create policy "feedback_insert" on public.feedback
 -- Pour lire les avis (à lancer quand tu veux) :
 --   select created_at, mood, category, body, page, meta->>'rounds' as parties
 --   from public.feedback order by created_at desc;
+
+-- ─────────────────────────────────────────────
+-- S58 — Classements globaux et profils publics (sur ACCORD du joueur)
+-- Par défaut personne n'apparaît : chacun coche « Apparaître dans les
+-- classements » dans l'app. Les membres d'un même groupe se voyaient déjà.
+alter table public.profiles add column if not exists public_profile boolean not null default false;
+
+-- Une carte compte si elle fait 18 trous (ou saisie du score total sur un 18 trous)
+create or replace function public.is_full_round(p_scores jsonb, p_extra jsonb)
+returns boolean language sql immutable as $$
+  select coalesce((p_extra->>'quickEntry')::boolean, false) and coalesce((p_extra->>'courseHoles')::int, 18) = 18
+      or (select count(*) from jsonb_array_elements(case when jsonb_typeof(p_scores) = 'array' then p_scores else '[]'::jsonb end) s
+          where s <> 'null'::jsonb) = 18;
+$$;
+
+create or replace function public.global_leaderboard(p_metric text, p_days int default 30)
+returns table (user_id uuid, name text, initials text, color text, bg text, hcp numeric, value numeric, rounds int, is_me boolean)
+language sql security definer stable set search_path = public as $$
+  with params as (
+    select greatest(1, least(coalesce(p_days, 30), 400)) as days
+  ), eligible as (
+    select p.id, p.name, p.initials, p.color, p.bg, p.hcp
+    from public.profiles p
+    where p.public_profile or p.id = auth.uid()
+  ), recent as (
+    select r.* from public.rounds r
+    join eligible e on e.id = r.user_id
+    where r.played_on >= current_date - (select days from params)
+  ), agg as (
+    select e.id as user_id,
+      case p_metric
+        when 'net'    then (select max(r.hcp - r.diff) from recent r where r.user_id = e.id and r.hcp is not null and r.diff is not null and public.is_full_round(r.scores, r.extra))
+        when 'gross'  then (select min(r.score)::numeric from recent r where r.user_id = e.id and public.is_full_round(r.scores, r.extra))
+        when 'putts'  then (select case when count(*) >= 3 then avg(r.putts) end from recent r where r.user_id = e.id and r.putts >= 18 and public.is_full_round(r.scores, r.extra))
+        when 'rounds' then (select count(*)::numeric from recent r where r.user_id = e.id)
+        when 'index'  then e.hcp
+      end as value,
+      (select count(*)::int from recent r where r.user_id = e.id) as rounds
+    from eligible e
+  )
+  select a.user_id, e.name, e.initials, e.color, e.bg, e.hcp, round(a.value, 1), a.rounds, a.user_id = auth.uid()
+  from agg a join eligible e on e.id = a.user_id
+  where a.value is not null
+  order by
+    case when p_metric in ('gross', 'putts', 'index') then a.value end asc nulls last,
+    case when p_metric in ('net', 'rounds') then a.value end desc nulls last
+  limit 100;
+$$;
+
+-- Fiche d'un joueur : visible s'il est public, si c'est toi, ou si vous partagez un groupe
+create or replace function public.player_card(p_user uuid)
+returns jsonb language plpgsql security definer stable set search_path = public as $$
+declare p record; v_rounds jsonb; v_count int; v_best int; v_last date;
+begin
+  select id, name, initials, color, bg, hcp, public_profile into p from public.profiles where id = p_user;
+  if p.id is null then return jsonb_build_object('ok', false); end if;
+  if not (p.public_profile or p.id = auth.uid() or public.shares_group_with(p.id)) then
+    return jsonb_build_object('ok', false, 'private', true);
+  end if;
+  select coalesce(jsonb_agg(to_jsonb(x) order by x.played_on desc nulls last), '[]'::jsonb) into v_rounds
+    from (select played_on, course, score, par, diff from public.rounds
+          where user_id = p.id order by played_on desc nulls last limit 8) x;
+  select count(*), max(played_on) into v_count, v_last from public.rounds where user_id = p.id;
+  select min(score) into v_best from public.rounds where user_id = p.id and public.is_full_round(scores, extra);
+  return jsonb_build_object('ok', true, 'id', p.id, 'name', p.name, 'initials', p.initials, 'color', p.color, 'bg', p.bg,
+    'hcp', p.hcp, 'rounds_count', v_count, 'best18', v_best, 'last_played', v_last, 'rounds', v_rounds);
+end; $$;
+
+revoke all on function public.global_leaderboard(text, int) from public, anon;
+revoke all on function public.player_card(uuid) from public, anon;
+grant execute on function public.global_leaderboard(text, int) to authenticated;
+grant execute on function public.player_card(uuid) to authenticated;
+grant execute on function public.is_full_round(jsonb, jsonb) to authenticated;

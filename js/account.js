@@ -192,6 +192,7 @@ function accOpenPrivacy() {
     +   'avec Google, nous ne recevons que ton nom et ton email.</p>'
     + '<h4>Qui le voit</h4>'
     + '<p>Toi. Les membres de tes <strong>groupes</strong> voient ton profil et tes parties (classement, fil d\'activité). '
+    +   'Si tu coches « Apparaître dans les classements », tous les inscrits voient ton nom, ton index et tes dernières parties (tu peux décocher à tout moment). '
     +   'Un <strong>coach</strong> que tu as rejoint voit tes parties et peut t\'écrire. Un parcours que tu choisis de partager est visible par tous les inscrits.</p>'
     + '<h4>Ce qu\'on ne fait pas</h4>'
     + '<p>Pas de publicité, pas de revente, pas de pisteur tiers. Les polices de caractères sont chargées depuis Google Fonts. Pour la météo, seule la <strong>ville du parcours</strong> est envoyée à Open-Meteo (jamais ta position).</p>'

@@ -343,6 +343,9 @@ function launchAppCore() {
   // 12. Invitation à un groupe reçue par lien / QR code
   if (typeof invProcessPending === 'function') { setTimeout(function() { try { invProcessPending(); } catch (e) {} }, 700); }
 
+  // 12a. Index officiel → profil cloud (classements, groupes)
+  if (typeof lbSyncProfileIndex === 'function') { setTimeout(function() { try { lbSyncProfileIndex(); } catch (e) {} }, 2000); }
+
   // 12b. Débutants : niveau de départ, lexique, bouton « Ton avis »
   if (typeof bgnOnLaunch === 'function') { setTimeout(function() { try { bgnOnLaunch(); } catch (e) {} }, 400); }
 
@@ -625,6 +628,8 @@ function buildPages() {
         buildGroupsPage(page);
       } else if (tab.page === 'community') {
         buildCommunityPage(page);
+      } else if (tab.page === 'leaderboard' && typeof buildLeaderboardPage === 'function') {
+        buildLeaderboardPage(page);
       } else {
         buildComingSoon(page, tab.label);
       }
@@ -704,6 +709,10 @@ function showPage(pageId) {
   // Si on va sur la Scorecard : afficher la bannière de reprise si une partie est en cours
   if (pageId === 'scorecard' && typeof qsRenderResumeBanner === 'function') {
     try { qsRenderResumeBanner(); } catch(e) { console.warn('Resume banner:', e.message); }
+  }
+  // Classements : toujours à jour
+  if (pageId === 'leaderboard' && target && typeof buildLeaderboardPage === 'function') {
+    try { buildLeaderboardPage(target); } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Leaderboard rebuild:', e.message); }
   }
   // Si on va sur l'onglet Communauté : reconstruire (XP, badges, fil à jour)
   if (pageId === 'community' && target && typeof buildCommunityPage === 'function') {

@@ -86,7 +86,7 @@ var NAV_TABS = [
   { page: 'groups',      icon: '&#9673;', label: 'Groupes',      short: 'Groupes', primary: false },
   { page: 'courses',     icon: '&#9971;', label: 'Parcours',     short: 'Parcours',primary: false },
   { page: 'articles',    icon: '&#9638;', label: 'Biblioth\u00e8que', short: 'Articles',primary: false, hidden: true },
-  { page: 'leaderboard', icon: '&#8801;', label: 'Classements',  short: 'Classt',  primary: false, hidden: true }
+  { page: 'leaderboard', icon: '&#8801;', label: 'Classements',  short: 'Classt',  primary: false }
 ];
 
 /* ─── LIBELLÉS ET CLASSES CSS DES RÔLES ─── */
