@@ -447,6 +447,11 @@ function buildDashboard(container) {
   sgPanel.appendChild(sgBody);
   wrap.appendChild(sgPanel);
 
+  // Niveau par secteur (« ton putting joue comme un index 6 »)
+  if (typeof slvRenderPanel === 'function') {
+    try { slvRenderPanel(wrap); } catch (e) { console.warn('[TSG] niveau par secteur:', e.message); }
+  }
+
   /* ── Plan d'entraînement intelligent (généré depuis les Strokes Gained) ── */
   // Défis de la semaine, version compacte
   if (typeof chRenderPanel === 'function') {
