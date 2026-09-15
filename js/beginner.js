@@ -149,8 +149,12 @@ function glossOpen(focusId) {
     +   '<div class="gloss-list" id="gloss-list">' + GLOSSARY.map(function(g) {
           return '<div class="gloss-item" id="gloss-' + g.id + '" data-text="' + (g.term + ' ' + g.def).toLowerCase().replace(/"/g, '') + '">'
             + '<div class="gloss-term">' + g.term + '</div><div class="gloss-def">' + g.def + '</div></div>';
-        }).join('') + '</div></div></div>';
+        }).join('') + '</div>'
+    +   (typeof buildArticlesPage === 'function' ? '<button type="button" class="dash-btn dash-btn-outline gloss-art" data-gloss-art>📖 Lire « Par où commencer »</button>' : '')
+    + '</div></div>';
   document.body.appendChild(m);
+  var ga = m.querySelector('[data-gloss-art]');
+  if (ga) ga.addEventListener('click', function() { m.remove(); if (typeof showPage === 'function') { showPage('articles'); window.scrollTo(0, 0); } });
   m.querySelector('.trn-modal-close').addEventListener('click', function() { m.remove(); });
   m.addEventListener('click', function(e) { if (e.target === m) m.remove(); });
   m.querySelector('#gloss-q').addEventListener('input', function(e) {

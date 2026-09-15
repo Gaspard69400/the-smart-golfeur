@@ -630,6 +630,8 @@ function buildPages() {
         buildCommunityPage(page);
       } else if (tab.page === 'leaderboard' && typeof buildLeaderboardPage === 'function') {
         buildLeaderboardPage(page);
+      } else if (tab.page === 'articles') {
+        // Construite à l'ouverture de l'onglet (contenu chargé à la demande)
       } else {
         buildComingSoon(page, tab.label);
       }
@@ -713,6 +715,10 @@ function showPage(pageId) {
   // Classements : toujours à jour
   if (pageId === 'leaderboard' && target && typeof buildLeaderboardPage === 'function') {
     try { buildLeaderboardPage(target); } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Leaderboard rebuild:', e.message); }
+  }
+  // Articles : pastilles « Lu » et parcours débutant à jour
+  if (pageId === 'articles' && target && typeof buildArticlesPage === 'function') {
+    try { buildArticlesPage(target); } catch(e) { tsgRebuildFailed(target, pageId, e); console.warn('Articles rebuild:', e.message); }
   }
   // Si on va sur l'onglet Communauté : reconstruire (XP, badges, fil à jour)
   if (pageId === 'community' && target && typeof buildCommunityPage === 'function') {

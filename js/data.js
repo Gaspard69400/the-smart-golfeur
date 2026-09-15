@@ -85,7 +85,7 @@ var NAV_TABS = [
   { page: 'analyse',     icon: '&#9672;', label: 'Analyse',      short: 'Analyse', primary: false },
   { page: 'groups',      icon: '&#9673;', label: 'Groupes',      short: 'Groupes', primary: false },
   { page: 'courses',     icon: '&#9971;', label: 'Parcours',     short: 'Parcours',primary: false },
-  { page: 'articles',    icon: '&#9638;', label: 'Biblioth\u00e8que', short: 'Articles',primary: false, hidden: true },
+  { page: 'articles',    icon: '\ud83d\udcd6', label: 'Articles',     short: 'Articles',primary: false },
   { page: 'leaderboard', icon: '&#8801;', label: 'Classements',  short: 'Classt',  primary: false }
 ];
 
