@@ -133,6 +133,8 @@ var GLOSSARY = [
   { id: 'match', term: 'Match play', def: 'Duel trou par trou : le plus petit score (net) gagne le trou. « 2 UP » = 2 trous d\'avance. Le match s\'arrête quand l\'écart dépasse les trous restants (« 3&2 »).' },
   { id: 'net', term: 'Score net / brut', def: 'Brut = les coups réellement joués. Net = brut moins tes coups reçus : c\'est ce qui permet à tous les niveaux de jouer ensemble.' },
   { id: 'tee', term: 'Départ (tee)', def: 'La zone d\'où l\'on joue le premier coup, repérée par une couleur (blanc, jaune, bleu, rouge). Plus le départ est reculé, plus le parcours est long.' },
+  { id: 'scramble', term: 'Scramble', def: 'Format par équipe : tout le monde joue, on choisit la meilleure balle, et tout le monde rejoue de là. Le format le plus convivial pour débuter.' },
+  { id: 'greensome', term: 'Greensome et foursome', def: 'Par équipes de 2. Greensome : les deux jouent le départ, on garde le meilleur, puis coups alternés. Foursome : une seule balle du départ au trou, chacun son tour.' },
   { id: 'dispersion', term: 'Dispersion', def: 'L\'écart de tes balles autour de la cible. Moins de dispersion = plus de régularité, souvent plus utile que la distance.' }
 ];
 

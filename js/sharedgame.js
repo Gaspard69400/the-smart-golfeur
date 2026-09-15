@@ -4,7 +4,11 @@
  *
  * Un joueur marque pour la partie (jusqu'à 4) ; chaque joueur qui a
  * rejoint voit la carte se remplir en direct sur son téléphone, et peut
- * aussi marquer. Formats : stroke play, stableford, match play (à 2).
+ * aussi marquer. Formats : stroke play, stableford, match play (à 2),
+ * et par équipe (S62, backend/maj_equipes.sql) : scramble, greensome,
+ * foursome. En équipe, une « unité » par équipe (sgmUnits) dont la carte est
+ * la ligne de son 1er joueur ; handicap d'équipe = % WHS (SGM_TEAM_ALLOW) ;
+ * pas d'ajout à l'historique individuel (ne compte pas pour l'index).
  *
  * Serveur : backend/maj_parties_carnet.sql. Chaque saisie envoie UNE case
  * (set_game_score) : deux marqueurs ne s'écrasent jamais la carte.
@@ -20,10 +24,21 @@
 var SGM_POLL_MS = 4000;
 var SGM_MAX_PLAYERS = 4;
 var SGM_FORMATS = {
-  stroke:     { label: 'Stroke play', short: 'Stroke' },
-  stableford: { label: 'Stableford',  short: 'Stableford' },
-  match:      { label: 'Match play',  short: 'Match' }
+  stroke:     { label: 'Stroke play', short: 'Stroke',     help: 'Chacun compte tous ses coups.' },
+  stableford: { label: 'Stableford',  short: 'Stableford', help: 'Des points à chaque trou selon ton handicap : un trou raté ne ruine pas la carte.' },
+  match:      { label: 'Match play',  short: 'Match',      help: 'Duel à 2, trou par trou.' },
+  scramble:   { label: 'Scramble',    short: 'Scramble',   team: true, help: 'Par équipe : tout le monde joue, on garde la meilleure balle à chaque coup. Idéal pour débuter.' },
+  greensome:  { label: 'Greensome',   short: 'Greensome',  team: true, help: 'Équipes de 2 : les deux jouent le départ, on garde le meilleur, puis on joue à tour de rôle.' },
+  foursome:   { label: 'Foursome',    short: 'Foursome',   team: true, help: 'Équipes de 2 : une seule balle, chacun joue à son tour (départs alternés).' }
 };
+
+/* Handicap d'équipe (recommandations WHS, appliquées aux handicaps de jeu du plus bas au plus haut) */
+var SGM_TEAM_ALLOW = {
+  scramble:  { 2: [0.35, 0.15], 3: [0.30, 0.20, 0.10], 4: [0.25, 0.20, 0.15, 0.10] },
+  greensome: { 2: [0.60, 0.40] },
+  foursome:  { 2: [0.50, 0.50] }
+};
+var SGM_TEAM_NAMES = { 1: 'Équipe A', 2: 'Équipe B' };
 
 var _sgm = null;   // partie ouverte : { game, players, hole, view, pending, timer, busy, offline, lastSync }
 
@@ -43,8 +58,39 @@ function sgmParTotal(game) {
   return c.par_total || sgmHoles(game).reduce(function(a, h) { return a + (h.par || 0); }, 0);
 }
 
+function sgmIsTeam(game) { return !!(game && SGM_FORMATS[game.format] && SGM_FORMATS[game.format].team); }
+
+/* Handicap de jeu d'une équipe : % des handicaps de jeu des membres (du plus bas au plus haut), arrondi.
+   null si un membre n'a pas d'index (on ne fabrique pas de chiffre). */
+function sgmTeamHcp(game, members) {
+  var pct = (SGM_TEAM_ALLOW[game.format] || {})[members.length];
+  if (!pct) return null;
+  var chs = members.map(function(m) { return sgmCourseHcp(game, m); });
+  if (chs.some(function(c) { return c === null; })) return null;
+  chs = chs.map(function(c) { return Math.round(c); });   // WHS : le pourcentage s'applique au handicap de jeu arrondi
+  chs.sort(function(a, b) { return a - b; });
+  return Math.round(chs.reduce(function(sum, c, i) { return sum + c * pct[i]; }, 0));
+}
+
+/* Ce qu'on note : les joueurs, ou en équipe une « unité » par équipe (carte = ligne du 1er joueur) */
+function sgmUnits(game, players) {
+  if (!sgmIsTeam(game)) return players;
+  var units = [];
+  [1, 2].forEach(function(t) {
+    var members = players.filter(function(p) { return Number(p.team) === t; })
+      .sort(function(a, b) { return (a.position || 0) - (b.position || 0); });
+    if (!members.length) return;
+    var cap = members[0];
+    units.push({ id: cap.id, name: SGM_TEAM_NAMES[t], team: t, initials: t === 1 ? 'A' : 'B', color: cap.color,
+      scores: cap.scores, putts: cap.putts, position: cap.position, user_id: null,
+      members: members, teamCh: sgmTeamHcp(game, members) });
+  });
+  return units;
+}
+
 /* Handicap de jeu d'un joueur sur le départ de la partie */
 function sgmCourseHcp(game, player) {
+  if (player && player.members) return player.teamCh;
   if (!player || player.hcp === null || player.hcp === undefined || player.hcp === '') return null;
   var tee = game.tee || {}, c = game.course || {};
   return courseHandicap(Number(player.hcp), tee.slope || c.slope || 113, tee.rating || c.rating, sgmParTotal(game), sgmHoles(game).length);
@@ -83,9 +129,11 @@ function sgmBoard(game, players) {
     });
     return { player: p, index: pi, thru: thru, gross: gross, toPar: toPar, netToPar: net, points: points, ch: sgmCourseHcp(game, p) };
   });
+  var teamNet = sgmIsTeam(game) && rows.every(function(r) { return r.ch !== null; });
   rows.sort(function(a, b) {
     if (!a.thru !== !b.thru) return a.thru ? -1 : 1;
     if (game.format === 'stableford') return b.points - a.points || a.index - b.index;
+    if (teamNet) return a.netToPar - b.netToPar || a.toPar - b.toPar || a.index - b.index;
     return a.toPar - b.toPar || a.index - b.index;
   });
   return rows;
@@ -289,7 +337,7 @@ function sgmOpenGame(gameId) {
 function sgmFirstOpenHole() {
   var holes = sgmHoles(_sgm.game);
   for (var i = 0; i < holes.length; i++) {
-    var open = _sgm.players.some(function(p) { return !p.scores || p.scores[i] === null || p.scores[i] === undefined; });
+    var open = sgmUnits(_sgm.game, _sgm.players).some(function(p) { return !p.scores || p.scores[i] === null || p.scores[i] === undefined; });
     if (open) return i + 1;
   }
   return Math.max(1, holes.length);
@@ -308,7 +356,7 @@ function sgmIsOwner() { return _sgm && currentUser && _sgm.game.created_by === c
 function sgmRender() {
   var st = document.getElementById('sgm-stage');
   if (!st || !_sgm || !_sgm.loaded) return;
-  var g = _sgm.game, players = _sgm.players, holes = sgmHoles(g);
+  var g = _sgm.game, players = sgmUnits(_sgm.game, _sgm.players), holes = sgmHoles(g);
   var idx = Math.min(Math.max(_sgm.hole, 1), holes.length) - 1;
   var h = holes[idx] || { num: idx + 1, par: 4 };
   var live = g.status === 'live';
@@ -343,7 +391,7 @@ function sgmRender() {
 }
 
 function sgmScoreHtml(idx, h) {
-  var g = _sgm.game, players = _sgm.players, live = g.status === 'live';
+  var g = _sgm.game, players = sgmUnits(_sgm.game, _sgm.players), live = g.status === 'live', team = sgmIsTeam(g);
   var rows = players.map(function(p, pi) {
     var sc = p.scores ? p.scores[idx] : null;
     var has = sc !== null && sc !== undefined;
@@ -354,13 +402,15 @@ function sgmScoreHtml(idx, h) {
     if (full.thru) {
       sub.push(g.format === 'stableford' ? full.points + ' pts' : sgmRel(full.toPar));
       sub.push(full.thru + ' trou' + (full.thru > 1 ? 's' : ''));
-    } else sub.push(p.hcp !== null && p.hcp !== undefined ? 'index ' + Number(p.hcp).toFixed(1).replace('.', ',') : 'sans index');
+    } else if (team) sub.push(p.teamCh !== null ? 'HJ équipe ' + p.teamCh : 'sans handicap d\'équipe');
+    else sub.push(p.hcp !== null && p.hcp !== undefined ? 'index ' + Number(p.hcp).toFixed(1).replace('.', ',') : 'sans index');
+    if (team) sub.unshift(p.members.map(function(m) { return sgmEsc(m.name.split(' ')[0]); }).join(' & '));
     if (has && g.format === 'stableford') sub.push('<strong>' + stablefordPoints(sc, h.par, strokes) + ' pt' + (stablefordPoints(sc, h.par, strokes) > 1 ? 's' : '') + ' ici</strong>');
     var cls = has ? qsRelClass(sc - h.par) : '';
-    var mine = p.user_id && currentUser && p.user_id === currentUser.id;
+    var mine = currentUser && (team ? p.members.some(function(m) { return m.user_id === currentUser.id; }) : (p.user_id && p.user_id === currentUser.id));
     return '<div class="sgm-p' + (mine ? ' me' : '') + '">'
       + '<div class="sgm-av" style="' + (p.color ? 'color:' + sgmEsc(p.color) + ';' : '') + '">' + sgmEsc(p.initials || (p.name || '?').slice(0, 2).toUpperCase()) + '</div>'
-      + '<div class="sgm-pinfo"><div class="sgm-pname">' + sgmEsc(p.name) + (mine ? ' <span class="comm-me">toi</span>' : '') + '</div>'
+      + '<div class="sgm-pinfo"><div class="sgm-pname">' + sgmEsc(p.name) + (mine ? ' <span class="comm-me">' + (team ? 'ton équipe' : 'toi') + '</span>' : '') + '</div>'
       +   '<div class="sgm-psub">' + sub.join(' · ') + '</div></div>'
       + '<div class="sgm-step">'
       +   '<button class="sgm-b" data-sgm="adj" data-pid="' + p.id + '" data-d="-1"' + (live ? '' : ' disabled') + '>−</button>'
@@ -383,23 +433,25 @@ function sgmScoreHtml(idx, h) {
     + ((typeof hnInlineHtml === 'function') ? hnInlineHtml(g.course, idx) : '')
     + (players.length ? '<div class="sgm-players">' + rows + '</div>' : '<div class="sgm-empty">Aucun joueur dans cette partie.</div>')
     + (live && anyEmpty && players.length > 1 ? '<button class="sgm-allpar" data-sgm="allpar">Par pour les cases vides</button>' : '')
-    + '<div class="sgm-hint">+ ou − sur une case vide inscrit d\'abord le par.</div>'
+    + '<div class="sgm-hint">+ ou − sur une case vide inscrit d\'abord le par.' + (team ? ' Un seul score par équipe.' : '') + '</div>'
     + (players.length ? '<details class="qs-opt sgm-putts"' + (lsGet('sgmPuttsOpen') ? ' open' : '') + '><summary>Putts (facultatif)</summary><div class="qs-opt-body">' + putts + '</div></details>' : '');
 }
 
 function sgmBoardHtml() {
-  var g = _sgm.game, players = _sgm.players, holes = sgmHoles(g);
+  var g = _sgm.game, players = sgmUnits(_sgm.game, _sgm.players), holes = sgmHoles(g), team = sgmIsTeam(g);
   var rows = sgmBoard(g, players);
+  var teamNet = team && rows.every(function(r) { return r.ch !== null; });
   var match = sgmMatch(g, players);
   var head = '<div class="sgm-board-row sgm-board-head"><span>#</span><span>Joueur</span><span>Trous</span><span>Brut</span>'
-    + '<span>' + (g.format === 'stableford' ? 'Points' : (g.format === 'match' ? 'Net' : 'Score')) + '</span></div>';
+    + '<span>' + (g.format === 'stableford' ? 'Points' : (g.format === 'match' || teamNet ? 'Net' : 'Score')) + '</span></div>';
   var pos = 0, prevKey = null;
   var list = rows.map(function(r, i) {
-    var key = g.format === 'stableford' ? r.points : r.toPar;
+    var key = g.format === 'stableford' ? r.points : (teamNet ? r.netToPar : r.toPar);
     if (key !== prevKey) { pos = i + 1; prevKey = key; }
-    var main = !r.thru ? '–' : (g.format === 'stableford' ? r.points : (g.format === 'match' ? sgmRel(r.netToPar) : sgmRel(r.toPar)));
+    var main = !r.thru ? '–' : (g.format === 'stableford' ? r.points : (g.format === 'match' || teamNet ? sgmRel(r.netToPar) : sgmRel(r.toPar)));
     return '<div class="sgm-board-row"><span class="sgm-pos">' + (r.thru ? pos : '–') + '</span>'
-      + '<span class="sgm-bname">' + sgmEsc(r.player.name) + (r.ch !== null ? ' <em>HJ ' + Math.round(r.ch) + '</em>' : '') + '</span>'
+      + '<span class="sgm-bname">' + sgmEsc(r.player.name) + (r.ch !== null ? ' <em>HJ ' + Math.round(r.ch) + '</em>' : '')
+      +   (team ? '<em class="sgm-bteam">' + r.player.members.map(function(m) { return sgmEsc(m.name.split(' ')[0]); }).join(' & ') + '</em>' : '') + '</span>'
       + '<span>' + r.thru + '</span><span>' + (r.thru ? r.gross : '–') + '</span><span class="sgm-bmain">' + main + '</span></div>';
   }).join('');
 
@@ -409,7 +461,7 @@ function sgmBoardHtml() {
     + '<tr class="sgm-par"><th>Par</th>' + holes.map(function(h) { return '<td>' + h.par + '</td>'; }).join('') + '<td>' + sgmParTotal(g) + '</td></tr></thead><tbody>'
     + players.map(function(p) {
         var tot = 0;
-        return '<tr><th>' + sgmEsc(p.name.split(' ')[0]) + '</th>' + holes.map(function(h, i) {
+        return '<tr><th>' + sgmEsc(team ? p.name.replace('Équipe ', 'Éq. ') : p.name.split(' ')[0]) + '</th>' + holes.map(function(h, i) {
           var s = p.scores ? p.scores[i] : null;
           if (s === null || s === undefined) return '<td></td>';
           tot += s;
@@ -424,6 +476,13 @@ function sgmBoardHtml() {
     allowance = '<div class="sgm-note">' + (al && al.receiver !== null
       ? sgmEsc(players[al.receiver].name.split(' ')[0]) + ' reçoit ' + al.strokes + ' coup' + (al.strokes > 1 ? 's' : '') + ' (différence des handicaps de jeu), sur les trous d\'index 1 à ' + Math.min(18, al.strokes) + (al.strokes > 18 ? ' puis en boucle' : '') + '.'
       : 'Aucun coup rendu : handicaps de jeu identiques (ou non renseignés).') + '</div>';
+  } else if (team) {
+    var pcts = SGM_TEAM_ALLOW[g.format] || {};
+    var how = g.format === 'scramble' ? 'à 2 : 35 % du meilleur handicap de jeu + 15 % de l\'autre ; à 3 : 30/20/10 % ; à 4 : 25/20/15/10 %'
+      : (g.format === 'greensome' ? '60 % du meilleur handicap de jeu + 40 % de l\'autre' : '50 % de la somme des deux handicaps de jeu');
+    allowance = '<div class="sgm-note">HJ équipe = ' + how + ' (recommandations du WHS). '
+      + (teamNet ? 'Le classement se fait en net : brut moins les coups reçus trou par trou.' : 'Il manque un index dans une équipe : classement en brut.')
+      + ' Les parties en équipe ne comptent pas pour l\'index et ne vont pas dans l\'historique individuel.</div>';
   } else {
     allowance = '<div class="sgm-note">HJ = handicap de jeu sur le départ joué' + (g.tee && g.tee.name ? ' (' + sgmEsc(g.tee.name) + ')' : '') + '. '
       + (g.format === 'stableford' ? 'Points calculés avec les coups reçus par index de difficulté.' : 'Score = brut par rapport au par des trous joués.') + '</div>';
@@ -441,7 +500,7 @@ function sgmFooterHtml(idx, n) {
   var actions = '';
   if (g.status === 'live') {
     actions = '<div class="sgm-actions">'
-      + (_sgm.players.length < SGM_MAX_PLAYERS && !(g.format === 'match' && _sgm.players.length >= 2) ? '<button class="dash-btn dash-btn-outline" data-sgm="guest">+ Joueur invité</button>' : '')
+      + (_sgm.players.length < SGM_MAX_PLAYERS && !sgmIsTeam(g) && !(g.format === 'match' && _sgm.players.length >= 2) ? '<button class="dash-btn dash-btn-outline" data-sgm="guest">+ Joueur invité</button>' : '')
       + (owner ? '<button class="dash-btn dash-btn-gold" data-sgm="finish">Terminer la partie</button>' : '')
       + '</div>';
   } else if (typeof sgmClaimBarHtml === 'function') {
@@ -482,7 +541,7 @@ function sgmOnClick(e) {
     sgmRender(); return;
   }
   if (a === 'allpar') {
-    _sgm.players.forEach(function(p) {
+    sgmUnits(_sgm.game, _sgm.players).forEach(function(p) {
       if (!p.scores || p.scores[idx] === null || p.scores[idx] === undefined) sgmQueue(p.id, idx, { score: holes[idx].par });
     });
     sgmRender(); return;
@@ -516,7 +575,7 @@ function sgmAddGuest() {
 function sgmFinish() {
   var holes = sgmHoles(_sgm.game);
   var missing = 0;
-  _sgm.players.forEach(function(p) { holes.forEach(function(h, i) { if (!p.scores || p.scores[i] === null || p.scores[i] === undefined) missing++; }); });
+  sgmUnits(_sgm.game, _sgm.players).forEach(function(p) { holes.forEach(function(h, i) { if (!p.scores || p.scores[i] === null || p.scores[i] === undefined) missing++; }); });
   if (_sgm.pending.length) { showToast('Attends que les dernières saisies soient envoyées'); sgmFlush(); return; }
   if (!confirm(missing ? 'Il reste ' + missing + ' case(s) vide(s). Terminer quand même ?' : 'Terminer la partie ? Les scores ne pourront plus être modifiés.')) return;
   window.sbClient.rpc('finish_shared_game', { p_game: _sgm.game.id }).then(function(res) {
@@ -588,7 +647,7 @@ function sgmOpenHub() {
     return;
   }
   var m = sgmModal('sgm-hub', 'Partie à plusieurs', 'Carte partagée',
-    '<p class="inv-text">Un joueur marque pour le groupe, chacun voit la carte se remplir sur son téléphone. Stroke play, stableford ou match play.</p>'
+    '<p class="inv-text">Un joueur marque pour le groupe, chacun voit la carte se remplir sur son téléphone. Stroke play, stableford, match play, ou en équipe : scramble, greensome, foursome.</p>'
     + '<button class="btn-express sgm-new" type="button" id="sgm-new"><span class="btn-express-t">+ Nouvelle partie</span><span class="btn-express-s">jusqu\'à 4 joueurs · avec ou sans compte</span></button>'
     + '<div class="ch-join-row sgm-join"><input class="ch-join-input" id="sgm-code" placeholder="Code ou lien reçu" maxlength="200" autocomplete="off">'
     +   '<button class="dash-btn dash-btn-outline" type="button" id="sgm-join-btn">Rejoindre</button></div>'
@@ -654,6 +713,17 @@ function sgmMyIndex() {
   return (v === null || v === undefined || isNaN(v)) ? null : Math.round(v * 10) / 10;
 }
 
+/* Composition des équipes valide ? (mêmes règles que create_shared_game) */
+function sgmTeamCheck(format, players) {
+  var a = players.filter(function(p) { return p.team === 1; }).length, b = players.filter(function(p) { return p.team === 2; }).length;
+  if (format === 'scramble') {
+    if ((a && a < 2) || (b && b < 2) || a + b < 2) return { ok: false, hint: 'Scramble : au moins 2 joueurs par équipe (une équipe de 2 à 4, ou deux équipes de 2).' };
+    return { ok: true, hint: a && b ? '2 équipes : classement entre elles.' : 'Une seule équipe : vous jouez contre le par.' };
+  }
+  if ((a && a !== 2) || (b && b !== 2) || a + b < 2) return { ok: false, hint: SGM_FORMATS[format].label + ' : équipes de 2 exactement.' };
+  return { ok: true, hint: a && b ? '2 équipes de 2 : classement entre elles.' : 'Une équipe de 2 : vous jouez contre le par.' };
+}
+
 function sgmOpenCreate() {
   var courses = (typeof getAllCourses === 'function') ? getAllCourses() : [];
   if (!courses.length) { showToast('Ajoute d\'abord un parcours'); return; }
@@ -669,6 +739,7 @@ function sgmOpenCreate() {
     + '<div class="qt-l">Format</div><div class="sgm-formats" id="sgm-formats">'
     +   Object.keys(SGM_FORMATS).map(function(k, i) { return '<button type="button" class="theme-opt' + (i === 0 ? ' on' : '') + '" data-f="' + k + '">' + SGM_FORMATS[k].label + '</button>'; }).join('')
     + '</div>'
+    + '<div class="sgm-fhelp" id="sgm-fhelp">' + SGM_FORMATS.stroke.help + '</div>'
     + '<div class="sgm-sec-t">Joueurs <span id="sgm-count"></span></div>'
     + '<div id="sgm-players"></div>'
     + '<div id="sgm-mates"><div class="ch-loading">Membres de tes groupes…</div></div>'
@@ -694,22 +765,41 @@ function sgmOpenCreate() {
   courseSel.addEventListener('change', fillTees);
   m.querySelectorAll('#sgm-formats [data-f]').forEach(function(b) {
     b.addEventListener('click', function() {
+      var wasTeam = !!SGM_FORMATS[format].team;
       format = b.getAttribute('data-f');
       m.querySelectorAll('#sgm-formats [data-f]').forEach(function(x) { x.classList.toggle('on', x === b); });
+      m.querySelector('#sgm-fhelp').textContent = SGM_FORMATS[format].help;
+      if (SGM_FORMATS[format].team && !wasTeam) autoTeams();
       renderPlayers();
     });
   });
 
+  /* Équipes par défaut : 4 joueurs → A B A B ; sinon tout le monde en A */
+  function autoTeams() {
+    state.players.forEach(function(p, i) { p.team = state.players.length === 4 ? (i % 2 ? 2 : 1) : 1; });
+  }
+  function nextTeam() {
+    var a = state.players.filter(function(p) { return p.team === 1; }).length;
+    return a < 2 || state.players.length === 2 ? 1 : 2;
+  }
   function renderPlayers() {
     var max = format === 'match' ? 2 : SGM_MAX_PLAYERS;
+    var team = !!SGM_FORMATS[format].team;
+    if (team) state.players.forEach(function(p) { if (p.team !== 1 && p.team !== 2) p.team = nextTeam(); });
     m.querySelector('#sgm-count').textContent = state.players.length + '/' + max;
     m.querySelector('#sgm-players').innerHTML = state.players.map(function(p, i) {
-      return '<div class="sgm-chip">' + sgmEsc(p.name) + (p.me ? ' (toi)' : (p.user_id ? '' : ' · invité'))
+      return '<div class="sgm-chip' + (team ? ' sgm-chip-t' + p.team : '') + '">'
+        + (team ? '<button type="button" class="sgm-tbtn" data-team="' + i + '" title="Changer d\'équipe">' + (p.team === 1 ? 'A' : 'B') + '</button>' : '')
+        + sgmEsc(p.name) + (p.me ? ' (toi)' : (p.user_id ? '' : ' · invité'))
         + (p.hcp !== null && p.hcp !== undefined ? ' <em>' + String(p.hcp).replace('.', ',') + '</em>' : '')
         + '<button type="button" data-rm="' + i + '" title="Retirer">×</button></div>';
     }).join('') || '<div class="ch-empty-inline">Ajoute au moins un joueur.</div>';
+    if (team) m.querySelector('#sgm-players').insertAdjacentHTML('beforeend', '<div class="sgm-team-hint">Touche A / B pour changer un joueur d\'équipe. ' + sgmTeamCheck(format, state.players).hint + '</div>');
     m.querySelectorAll('#sgm-players [data-rm]').forEach(function(b) {
       b.addEventListener('click', function() { state.players.splice(parseInt(b.getAttribute('data-rm'), 10), 1); renderPlayers(); renderMates(); });
+    });
+    m.querySelectorAll('#sgm-players [data-team]').forEach(function(b) {
+      b.addEventListener('click', function() { var p = state.players[parseInt(b.getAttribute('data-team'), 10)]; p.team = p.team === 1 ? 2 : 1; renderPlayers(); });
     });
   }
   function renderMates() {
@@ -771,6 +861,10 @@ function sgmOpenCreate() {
     var c = course(), tee = findTee(c, teeSel.value);
     if (!state.players.length) { err.style.display = 'block'; err.textContent = 'Ajoute au moins un joueur.'; return; }
     if (format === 'match' && state.players.length !== 2) { err.style.display = 'block'; err.textContent = 'Le match play se joue à 2 joueurs.'; return; }
+    if (SGM_FORMATS[format].team) {
+      var tc = sgmTeamCheck(format, state.players);
+      if (!tc.ok) { err.style.display = 'block'; err.textContent = tc.hint; return; }
+    }
     err.style.display = 'none'; go.disabled = true; go.textContent = 'Création…';
     teeRemember(c.id, tee ? tee.id : null);
     var snapshot = { id: c.id, name: c.name, par_total: c.par_total, rating: c.rating, slope: c.slope,
@@ -780,7 +874,7 @@ function sgmOpenCreate() {
       p_course: snapshot,
       p_tee: tee ? { id: tee.id, name: tee.name, rating: tee.rating, slope: tee.slope } : null,
       p_format: format,
-      p_players: state.players.map(function(p) { return { user_id: p.user_id, name: p.name, initials: p.initials || null, color: p.color || null, hcp: p.hcp }; })
+      p_players: state.players.map(function(p) { return { user_id: p.user_id, name: p.name, initials: p.initials || null, color: p.color || null, hcp: p.hcp, team: SGM_FORMATS[format].team ? p.team : null }; })
     }).then(function(res) {
       go.disabled = false; go.textContent = 'Lancer la partie';
       var d = res.data;
@@ -788,6 +882,8 @@ function sgmOpenCreate() {
         err.style.display = 'block';
         err.textContent = (res.error && /create_shared_game|schema cache/i.test(res.error.message))
           ? 'Les parties partagées ne sont pas encore activées sur le serveur.'
+          : (SGM_FORMATS[format].team && d && /format inconnu/i.test(d.error || ''))
+          ? 'Les formats par équipe ne sont pas encore activés sur le serveur : joue en stroke play en attendant.'
           : ((d && d.error) || (res.error && res.error.message) || 'Création impossible');
         return;
       }
@@ -817,9 +913,10 @@ function sgmAskJoin(code) {
       + '<div class="sgm-sec-t">Qui es-tu ?</div>'
       + (free.length ? free.map(function(p) {
           return '<button class="sgm-slot" type="button" data-pid="' + p.id + '">C\'est moi : <strong>' + sgmEsc(p.name) + '</strong>'
+            + (p.team ? ' <em>' + SGM_TEAM_NAMES[p.team] + '</em>' : '')
             + (p.hcp !== null && p.hcp !== undefined ? ' <em>index ' + String(p.hcp).replace('.', ',') + '</em>' : '') + '</button>';
         }).join('') : '')
-      + (!full && d.status === 'live' ? '<button class="sgm-slot sgm-slot-new" type="button" data-pid="">+ Je ne suis pas dans la liste : m\'ajouter</button>' : '')
+      + (!full && d.status === 'live' && !(SGM_FORMATS[d.format] && SGM_FORMATS[d.format].team) ? '<button class="sgm-slot sgm-slot-new" type="button" data-pid="">+ Je ne suis pas dans la liste : m\'ajouter</button>' : '')
       + (!free.length && (full || d.status !== 'live') ? '<p class="inv-text">Plus de place libre dans cette partie.</p>' : '')
       + '<div class="ch-join-error" id="sgm-jerr" style="display:none"></div>';
     body.querySelectorAll('.sgm-slot').forEach(function(b) {
@@ -997,6 +1094,8 @@ function sgmClaimPlayer(game, players, player, state, done) {
 /* Barre affichée en bas d'une partie terminée */
 function sgmClaimBarHtml() {
   if (!_sgm || !currentUser) return '';
+  if (sgmIsTeam(_sgm.game)) return '<div class="sgm-claim"><div class="sgm-claim-t">Partie en équipe terminée</div>'
+    + '<div class="sgm-claim-d">Les formats par équipe ne comptent pas pour l\'index : la carte reste ici, sans aller dans ton historique individuel.</div></div>';
   var mine = _sgm.players.find(function(p) { return p.user_id === currentUser.id; });
   if (!mine) return '<div class="sgm-claim"><div class="sgm-claim-t">Partie terminée</div><div class="sgm-claim-d">Tu as marqué sans jouer : chaque joueur ajoute sa carte depuis son téléphone.</div></div>';
   var already = (lsGet('rounds') || []).some(function(r) { return r.sharedGameId === _sgm.game.id; });
@@ -1027,7 +1126,7 @@ function sgmCheckClaims() {
         var games = gr.data || [];
         if (!games.length) return;
         var rounds = lsGet('rounds') || [];
-        var todo = games.filter(function(g) { return !rounds.some(function(r) { return r.sharedGameId === g.id; }); });
+        var todo = games.filter(function(g) { return !sgmIsTeam(g) && !rounds.some(function(r) { return r.sharedGameId === g.id; }); });
         if (!todo.length) return;
         sgmShowClaimsModal(todo);
       });
@@ -1052,7 +1151,7 @@ function sgmRenderClaims(host, games, byGame, onChange) {
   var rounds = lsGet('rounds') || [];
   var rows = [];
   games.forEach(function(g) {
-    if (g.status !== 'done') return;
+    if (g.status !== 'done' || sgmIsTeam(g)) return;
     var ps = (byGame[g.id] || []).slice().sort(function(a, b) { return (a.position || 0) - (b.position || 0); });
     var mine = ps.find(function(p) { return p.user_id === currentUser.id; });
     if (!mine || mine.claimed || rounds.some(function(r) { return r.sharedGameId === g.id; })) return;
