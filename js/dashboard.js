@@ -756,8 +756,8 @@ function buildDashboard(container) {
   container.appendChild(wrap);
 
   /* ── 8. GRAPHIQUES Chart.js (après rendu DOM) ── */
-  setTimeout(function() {
-    if (typeof Chart === 'undefined') return;
+  setTimeout(function tsgDrawCharts1() {
+    if (typeof Chart === 'undefined') { if (typeof tsgLoadChart === 'function') tsgLoadChart(tsgDrawCharts1); return; }
 
     var chartOpts = {
       responsive: true,
@@ -921,8 +921,8 @@ function openKpiModal(key, label, title) {
   });
 
   // Créer le graphique
-  setTimeout(function() {
-    if (typeof Chart === 'undefined') return;
+  setTimeout(function tsgDrawCharts2() {
+    if (typeof Chart === 'undefined') { if (typeof tsgLoadChart === 'function') tsgLoadChart(tsgDrawCharts2); return; }
     var canvas = document.getElementById('kpi-modal-chart');
     if (!canvas) return;
     var existing = Chart.getChart ? Chart.getChart(canvas) : null;

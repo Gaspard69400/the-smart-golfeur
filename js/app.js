@@ -12,6 +12,28 @@
 var currentUser     = null;
 var selectedProfile = null;
 
+/* ─── CHART.JS À LA DEMANDE ───
+   ≈ 200 ko de script qui ne sert qu'aux graphiques : chargé au premier besoin
+   (précaché par le service worker, donc disponible hors-ligne). */
+var _tsgChartQueue = null;
+function tsgLoadChart(cb) {
+  if (typeof Chart !== 'undefined') { cb(); return; }
+  if (_tsgChartQueue) { _tsgChartQueue.push(cb); return; }
+  _tsgChartQueue = [cb];
+  var v = '';
+  var me = document.querySelector('script[src*="js/app.js"]');
+  if (me) { var m = me.getAttribute('src').match(/\?v=(\w+)/); if (m) v = '?v=' + m[1]; }
+  var s = document.createElement('script');
+  s.src = 'vendor/chart.umd.min.js' + v;
+  s.onload = function() {
+    var q = _tsgChartQueue; _tsgChartQueue = null;
+    if (typeof Chart === 'undefined') return;
+    q.forEach(function(f) { try { f(); } catch (e) { console.warn('[TSG] graphique:', e.message); } });
+  };
+  s.onerror = function() { _tsgChartQueue = null; s.remove(); };
+  document.head.appendChild(s);
+}
+
 
 /* ─── LOCALSTORAGE ─── */
 

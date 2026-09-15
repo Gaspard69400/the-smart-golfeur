@@ -732,8 +732,8 @@ function renderEvolution() {
   }
 
   // ── Tracer les graphiques après que le DOM soit en place ──
-  setTimeout(function() {
-    if (typeof Chart === 'undefined') return;
+  setTimeout(function tsgDrawCharts1() {
+    if (typeof Chart === 'undefined') { if (typeof tsgLoadChart === 'function') tsgLoadChart(tsgDrawCharts1); return; }
 
     var labels = chrono.map(function(r, i) { return 'P' + (i + 1); });
     var sharedOpts = {
