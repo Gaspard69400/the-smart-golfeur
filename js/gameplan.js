@@ -37,9 +37,10 @@ function gpCourseHcp(course) {
   return { index: idx, ch: ch, tee: tee };
 }
 
-/* Statistiques de chaque trou, depuis les parties jouées sur ce parcours */
-function gpCourseStats(course) {
-  var rounds = (lsGet('rounds') || []).filter(function(r) {
+/* Statistiques de chaque trou, depuis les parties jouées sur ce parcours
+   (toutes, ou seulement `onlyRounds` : la carte de chaleur suit la période d'Analyse) */
+function gpCourseStats(course, onlyRounds) {
+  var rounds = (onlyRounds || lsGet('rounds') || []).filter(function(r) {
     return r.courseId === course.id && Array.isArray(r.scores);
   });
   var hc = gpCourseHcp(course);

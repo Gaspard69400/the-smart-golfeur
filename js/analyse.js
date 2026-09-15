@@ -211,8 +211,9 @@ function renderOverview() {
     + '</div>';
   page.appendChild(sgCard);
 
-  // ── Heatmap Stableford ──
-  page.appendChild(renderHeatmap(rounds));
+  // ── Carte de chaleur des trous + simulateur « et si » (insights.js) ──
+  if (typeof hhRenderCard === 'function') { try { page.appendChild(hhRenderCard(rounds)); } catch (e) { console.warn('[TSG] chaleur:', e.message); } }
+  if (typeof wifRenderCard === 'function') { try { page.appendChild(wifRenderCard()); } catch (e) { console.warn('[TSG] et si:', e.message); } }
 
   // ── Recommandations actionnables ──
   page.appendChild(renderRecommendations(rounds, sgRows));
@@ -229,87 +230,6 @@ function renderOverview() {
       + '<div class="an-unlock-text">Avec <strong>' + (5 - rounds.length) + ' partie' + (5-rounds.length>1?'s':'') + ' supplémentaire' + (5-rounds.length>1?'s':'') + '</strong>, tu débloqueras la détection de tendances et des recommandations plus précises.</div>';
     page.appendChild(unlock);
   }
-}
-
-/* ────────────────────────────────────────
-   Heatmap Stableford
-──────────────────────────────────────── */
-function renderHeatmap(rounds) {
-  var card = document.createElement('div');
-  card.className = 'an-card';
-
-  // Construire la matrice : pour chaque (partie, trou) → score relatif au par
-  // Si pas de données détaillées scores[], afficher juste les moyennes par trou
-  var heatmapCells = '';
-
-  // Calculer le score moyen par trou
-  var avgByHole = new Array(18).fill(null);
-  var courseRef = null;
-  rounds.forEach(function(r) {
-    if (r.scores && r.scores.length === 18) {
-      r.scores.forEach(function(s, i) {
-        if (s !== null) {
-          if (avgByHole[i] === null) avgByHole[i] = { sum: 0, count: 0 };
-          avgByHole[i].sum += s;
-          avgByHole[i].count += 1;
-        }
-      });
-    }
-    // Récupérer le par du parcours le plus récent
-    if (!courseRef) {
-      var crs = (typeof COURSES !== 'undefined') ? COURSES.find(function(c) { return c.id === r.courseId; }) : null;
-      if (crs) courseRef = crs;
-    }
-  });
-
-  // Header
-  heatmapCells += '<div class="an-heat-label"></div>';
-  for (var i = 1; i <= 18; i++) {
-    heatmapCells += '<div class="an-heat-header">' + i + '</div>';
-  }
-
-  // Ligne PAR
-  heatmapCells += '<div class="an-heat-label">Par</div>';
-  for (var j = 0; j < 18; j++) {
-    var p = courseRef && courseRef.trous && courseRef.trous[j] ? courseRef.trous[j].par : '-';
-    heatmapCells += '<div class="an-heat-cell" style="background:var(--bg2);color:var(--tx2)">' + p + '</div>';
-  }
-
-  // Ligne MOY
-  heatmapCells += '<div class="an-heat-label">Moy</div>';
-  for (var k = 0; k < 18; k++) {
-    var avg = avgByHole[k];
-    if (!avg || !courseRef) {
-      heatmapCells += '<div class="an-heat-cell h-empty">-</div>';
-      continue;
-    }
-    var avgScore = avg.sum / avg.count;
-    var par = courseRef.trous[k] ? courseRef.trous[k].par : 4;
-    var rel = avgScore - par;
-    var cls = 'h-par';
-    if (rel <= -1.5) cls = 'h-eagle';
-    else if (rel <= -0.5) cls = 'h-birdie';
-    else if (rel < 0.5) cls = 'h-par';
-    else if (rel < 1.5) cls = 'h-bogey';
-    else cls = 'h-double';
-    heatmapCells += '<div class="an-heat-cell ' + cls + '" title="Trou ' + (k+1) + ' · Moyenne ' + avgScore.toFixed(1) + ' (par ' + par + ')">' + avgScore.toFixed(1) + '</div>';
-  }
-
-  card.innerHTML = ''
-    + '<div class="an-card-header">'
-    +   '<div class="an-card-title">Carte de chaleur par trou <span class="info-tip" title="Visualise tes performances trou par trou. Vert = sous le par (birdie/eagle). Or pâle = au par. Orange/rouge = au-dessus du par. Te montre où tu marques et où tu perds.">?</span></div>'
-    +   '<div class="an-card-sub">Score moyen vs par par trou</div>'
-    + '</div>'
-    + '<div class="an-card-body">'
-    +   '<div class="an-heatmap">' + heatmapCells + '</div>'
-    +   '<div style="display:flex;gap:14px;margin-top:14px;font-size:10px;color:var(--tx3);font-weight:500;flex-wrap:wrap">'
-    +     '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(45,125,58,0.25);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Birdie+</span>'
-    +     '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(168,133,30,0.10);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Par</span>'
-    +     '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(196,94,10,0.18);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Bogey</span>'
-    +     '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(192,57,43,0.22);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Double+</span>'
-    +   '</div>'
-    + '</div>';
-  return card;
 }
 
 /* ────────────────────────────────────────
