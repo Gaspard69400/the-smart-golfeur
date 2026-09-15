@@ -62,6 +62,7 @@ function ptsHolePutts(round, i, holeNum) {
 
 function ptsCompute(rounds) {
   var courses = (typeof getAllCourses === 'function') ? getAllCourses() : [];
+  var perRound = [];                                  // une ligne par partie (historique)
   var st = {
     rounds: 0, roundsDetailed: 0, roundsTotalOnly: 0,
     holes: 0, putts: 0, dist: [0, 0, 0, 0, 0],       // 0, 1, 2, 3, 4+
@@ -75,24 +76,32 @@ function ptsCompute(rounds) {
     var filled = Array.isArray(r.scores) ? r.scores.filter(function(x) { return x !== null && x !== undefined; }).length : 0;
     if (typeof r.putts === 'number' && r.putts >= 18 && filled >= 18) st.totals.push(r.putts);
 
-    var course = courses.find(function(c) { return c.id === r.courseId; });
-    var n = 0;
-    if (course && course.trous && Array.isArray(r.scores)) {
-      course.trous.forEach(function(h, i) {
-        var sc = r.scores[i], p = ptsHolePutts(r, i, h.num);
+    // ⚠️ Les pars viennent de la partie (ou de son parcours, par id puis par nom) :
+    // avant, un parcours absent de l'appareil rendait toute l'analyse vide.
+    var pars = (typeof tsgRoundHolePars === 'function') ? tsgRoundHolePars(r, courses) : null;
+    var n = 0, three = 0, one = 0, sum = 0;
+    if (pars && Array.isArray(r.scores)) {
+      pars.forEach(function(par, i) {
+        var sc = r.scores[i], p = ptsHolePutts(r, i, i + 1);
         if (sc === null || sc === undefined || p === null || p > sc) return;
-        n++;
+        n++; sum += p;
+        if (p >= 3) three++;
+        if (p === 1) one++;
         st.holes++; st.putts += p;
         st.dist[Math.min(4, p)]++;
-        if (st.byPar[h.par]) { st.byPar[h.par].s += p; st.byPar[h.par].n++; }
-        var gir = (sc - p) <= (h.par - 2);
+        if (st.byPar[par]) { st.byPar[par].s += p; st.byPar[par].n++; }
+        var gir = (sc - p) <= (par - 2);
         if (gir) { st.girHoles++; st.girPutts += p; }
-        else { st.missHoles++; if (sc <= h.par) st.saves++; }
+        else { st.missHoles++; if (sc <= par) st.saves++; }
       });
     }
     if (n >= 9) st.roundsDetailed++;
     else if (typeof r.putts === 'number') st.roundsTotalOnly++;
+    if (n || typeof r.putts === 'number') {
+      perRound.push({ round: r, holes: n || filled || null, putts: n ? sum : r.putts, detailed: n > 0, three: n ? three : null, one: n ? one : null });
+    }
   });
+  st.perRoundList = perRound;
   st.perHole    = st.holes ? st.putts / st.holes : null;
   st.threeRate  = st.holes ? (st.dist[3] + st.dist[4]) / st.holes : null;
   st.oneRate    = st.holes ? st.dist[1] / st.holes : null;
@@ -119,7 +128,7 @@ function ptsRender(page, rounds) {
   var b = ptsBench(ref);
   var st = ptsCompute(rounds);
   var refLbl = (typeof sgReferenceLabel === 'function') ? sgReferenceLabel(ref) : 'ton index';
-  var MIN_HOLES = 18;
+  var MIN_HOLES = 9;
 
   /* ── Carte 1 : synthèse ── */
   var synth = document.createElement('div');
@@ -138,6 +147,7 @@ function ptsRender(page, rounds) {
                st.holes >= MIN_HOLES ? ptsVerdict(st.oneRate, b.one, false, 0.03) : '', st.holes + (st.holes > 1 ? ' trous analysés' : ' trou analysé'))
     + '</div></div>';
   page.appendChild(synth);
+  var hist = ptsHistoryCard(st, ref);
 
   /* ── Pas encore de putts trou par trou : expliquer comment débloquer ── */
   if (st.holes < MIN_HOLES) {
@@ -154,6 +164,7 @@ function ptsRender(page, rounds) {
     page.appendChild(unlock);
     var go = unlock.querySelector('#pts-go-score');
     if (go) go.addEventListener('click', function() { if (typeof showPage === 'function') showPage('scorecard'); });
+    if (hist) page.appendChild(hist);
     return;
   }
 
@@ -229,6 +240,34 @@ function ptsRender(page, rounds) {
       }).join('')
     + '</div>';
   page.appendChild(reco);
+  if (hist) page.appendChild(hist);
+}
+
+/* Historique : putts de chaque carte (les plus récentes d'abord), comparés à la référence */
+function ptsHistoryCard(st, ref) {
+  var list = (st.perRoundList || []).slice(0, 12);
+  if (!list.length) return null;
+  var base = (typeof sgBaseline === 'function') ? sgBaseline(ref).putts / 18 : null;
+  var card = document.createElement('div');
+  card.className = 'an-card';
+  card.innerHTML = '<div class="an-card-header"><div class="an-card-title">Tes dernières cartes</div>'
+    + '<div class="an-card-sub">Putts par partie' + (base !== null ? ' · repère au prorata des trous joués' : '') + '</div></div>'
+    + '<div class="an-card-body"><div class="pts-hist">'
+    + '<div class="pts-hist-row pts-hist-head"><span>Date</span><span>Parcours</span><span>Putts</span><span>3-putts</span><span>1-putt</span></div>'
+    + list.map(function(x) {
+        var r = x.round, holes = x.holes || 18;
+        var refP = base !== null ? base * holes : null;
+        var cls = (refP === null || x.putts === null || x.putts === undefined) ? '' : (x.putts <= refP - 0.5 ? 'good' : (x.putts >= refP + 1.5 ? 'bad' : ''));
+        var d = r.date ? String(r.date).slice(8, 10) + '/' + String(r.date).slice(5, 7) : '—';
+        var name = String(r.course || '—').replace(/[<>&"]/g, '');
+        return '<div class="pts-hist-row"><span>' + d + '</span><span class="pts-hist-c">' + name + (holes && holes < 18 ? ' <em>' + holes + ' tr.</em>' : '') + '</span>'
+          + '<span class="pts-hist-p ' + cls + '">' + (x.putts === null || x.putts === undefined ? '—' : x.putts) + (refP !== null ? '<em>réf. ' + ptsNum(refP, 0) + '</em>' : '') + '</span>'
+          + '<span>' + (x.detailed ? x.three : '<em>—</em>') + '</span><span>' + (x.detailed ? x.one : '<em>—</em>') + '</span></div>';
+      }).join('')
+    + '</div>'
+    + (list.some(function(x) { return !x.detailed; }) ? '<div class="pts-note">« — » : seul le total de putts a été saisi sur cette carte.</div>' : '')
+    + '</div>';
+  return card;
 }
 
 function ptsKpi(label, value, ref, verdict, foot) {

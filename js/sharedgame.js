@@ -989,7 +989,9 @@ function sgmEnsureCourse(game) {
     || all.find(function(c) { return (c.name || '').toLowerCase() === (snap.name || '').toLowerCase(); });
   if (local) return local;
   var course = {
-    id: snap.id || ('user-' + Date.now()), name: snap.name || 'Parcours', region: snap.region || '', ville: snap.ville || '',
+    // ⚠️ Nouvel id : garder celui du créateur faisait échouer l'envoi au cloud (id déjà pris
+    // par SON parcours), et la synchro suivante effaçait ce parcours de l'appareil.
+    id: 'user-' + Date.now(), name: snap.name || 'Parcours', region: snap.region || '', ville: snap.ville || '',
     par_total: sgmParTotal(game), rating: snap.rating || (game.tee && game.tee.rating) || null, slope: snap.slope || (game.tee && game.tee.slope) || 113,
     trous: sgmHoles(game).map(function(h) { return { num: h.num, par: h.par, si: h.si, longueur: h.longueur || 0 }; }),
     departs: game.tee && game.tee.rating && game.tee.slope ? [game.tee] : undefined,
@@ -1026,6 +1028,7 @@ function sgmBuildRound(game, players, player) {
     id: Date.now(),
     date: game.played_on || new Date().toISOString().slice(0, 10),
     course: course.name, courseId: course.id,
+    holePars: holes.map(function(h) { return h.par; }),
     score: total, par: course.par_total || sgmParTotal(game),
     diff: parseFloat(((total - rating) * 113 / slope).toFixed(1)),
     teeId: tee.id || null, teeName: tee.name || null, teeRating: rating, teeSlope: slope,

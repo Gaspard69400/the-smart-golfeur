@@ -287,9 +287,20 @@ function syncPullAll(uid) {
     // Carnet de parcours (notes par trou) — fusion en arrière-plan
     if (typeof hnSyncPull === 'function') { try { hnSyncPull(uid); } catch (e) {} }
     // User courses
+    // ⚠️ Avant : la liste du cloud REMPLAÇAIT les parcours de l'appareil. Un parcours dont l'envoi
+    // avait échoué (hors-ligne, id déjà pris) disparaissait, et ses parties perdaient leurs pars
+    // (trophées birdies/pars à 0, plan de jeu vide). On fusionne et on renvoie ce qui manque.
     if (!r[4].error) {
-      var courses = (r[4].data || []).map(function(row) { return row.data; });
-      localStorage.setItem('tsg_user_courses', JSON.stringify(courses));
+      var cloudCourses = (r[4].data || []).map(function(row) { return row.data; }).filter(Boolean);
+      var known = {};
+      cloudCourses.forEach(function(c) { known[String(c.id)] = true; });
+      var localCourses = [];
+      try { localCourses = JSON.parse(localStorage.getItem('tsg_user_courses') || '[]') || []; } catch (e) {}
+      var missing = localCourses.filter(function(c) { return c && c.id && !known[String(c.id)]; });
+      localStorage.setItem('tsg_user_courses', JSON.stringify(cloudCourses.concat(missing)));
+      if (missing.length) setTimeout(function() {
+        missing.forEach(function(c) { if (window.tsgSync) window.tsgSync.pushUserCourse(c); });
+      }, 1500);
     }
   }).catch(function(e) { console.warn('[TSG] syncPullAll:', e.message); });
 }

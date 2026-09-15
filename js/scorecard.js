@@ -717,6 +717,7 @@ function saveRound() {
     date: document.getElementById('f-date').value,
     course: selectedCourse.name,
     courseId: selectedCourse.id,
+    holePars: (selectedCourse.trous || []).map(function(h) { return h.par; }),
     score: scoreTotal,
     par: par,
     diff: parseFloat(diff),

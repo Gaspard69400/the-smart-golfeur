@@ -148,7 +148,18 @@ function buildProfiles() {
 
   var profiles = lsGet('profiles') || DEFAULT_PROFILES;
 
+  if (!profiles.length) {
+    var empty = document.createElement('div');
+    empty.className = 'profiles-empty';
+    empty.textContent = 'Aucun profil sur cet appareil : crée le tien juste en dessous.';
+    container.appendChild(empty);
+  }
+
   profiles.forEach(function(p) {
+    // Ligne : bouton de sélection + bouton supprimer (deux boutons frères, jamais imbriqués)
+    var row = document.createElement('div');
+    row.className = 'profile-row';
+
     // Créer le bouton principal
     var btn = document.createElement('button');
     btn.className = 'profile-btn';
@@ -190,7 +201,19 @@ function buildProfiles() {
       return function() { selectProfile(pid); };
     })(p.id));
 
-    container.appendChild(btn);
+    var del = document.createElement('button');
+    del.className = 'profile-del';
+    del.setAttribute('type', 'button');
+    del.setAttribute('aria-label', 'Supprimer le profil ' + p.name);
+    del.title = 'Supprimer ce profil';
+    del.textContent = '\u00d7';
+    del.addEventListener('click', (function(prof) {
+      return function(e) { e.stopPropagation(); deleteProfile(prof); };
+    })(p));
+
+    row.appendChild(btn);
+    row.appendChild(del);
+    container.appendChild(row);
   });
 
   // Auto-sélectionner le dernier profil ou le premier
@@ -209,6 +232,23 @@ function buildProfiles() {
   }
 
   if (autoId) selectProfile(autoId);
+}
+
+/* Supprimer un profil local de l'écran d'entrée.
+   Les parties enregistrées sur l'appareil ne sont pas touchées (elles ne sont pas rangées par profil). */
+function deleteProfile(profile) {
+  if (!profile) return;
+  if (!confirm('Supprimer le profil « ' + profile.name + ' » de cet appareil ?')) return;
+  var profiles = (lsGet('profiles') || DEFAULT_PROFILES).filter(function(p) { return p.id !== profile.id; });
+  lsSet('profiles', profiles);
+  if (lsGet('lastUser') === profile.id) { try { localStorage.removeItem('tsg_lastUser'); } catch (e) {} }
+  ['objectives', 'training_done'].forEach(function(k) {
+    var m = lsGet(k);
+    if (m && typeof m === 'object' && !Array.isArray(m) && m[profile.id]) { delete m[profile.id]; lsSet(k, m); }
+  });
+  if (selectedProfile && selectedProfile.id === profile.id) selectedProfile = null;
+  buildProfiles();
+  if (typeof showToast === 'function') showToast('Profil supprimé');
 }
 
 function selectProfile(id) {
@@ -283,7 +323,12 @@ function doLogin() {
   // Fallback : utiliser le profil sélectionné, ou le premier par défaut
   if (!selectedProfile) {
     var allProfiles = lsGet('profiles') || DEFAULT_PROFILES;
-    selectedProfile = allProfiles[0] || DEFAULT_PROFILES[0];
+    selectedProfile = allProfiles[0] || null;
+  }
+  if (!selectedProfile) {
+    showToast('Crée d\'abord ton profil : indique ton prénom et ton nom');
+    if (nameEl) nameEl.focus();
+    return;
   }
 
   // Sauvegarder le dernier utilisateur
@@ -325,6 +370,9 @@ function launchAppCore() {
 
   // 4. Construire la navigation
   buildNavTabs();
+
+  // 4b. Pars trou par trou inscrits sur les parties (trophées indépendants du parcours)
+  try { if (typeof tsgStampHolePars === 'function') tsgStampHolePars(); } catch(e) { console.warn('holePars:', e.message); }
 
   // 5. Recalculer les Strokes Gained de tout l'historique AVANT de construire les pages :
   //    le Dashboard et les défis de la semaine (figés 7 jours) lisent ces valeurs.

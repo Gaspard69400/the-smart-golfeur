@@ -111,6 +111,33 @@ var ROLE_CSS = {
    sous la clé 'tsg_user_courses'. La fonction getAllCourses() retourne
    la fusion : COURSES (système) + parcours utilisateur. */
 
+/* Pars trou par trou d'une partie : ceux enregistrés sur la partie (S63), sinon ceux de son
+   parcours (même id, puis même nom). Les trophées (birdies, pars…) n'en dépendent plus d'un
+   parcours encore présent sur l'appareil. */
+function tsgRoundHolePars(round, courses) {
+  if (!round) return null;
+  if (Array.isArray(round.holePars) && round.holePars.length) return round.holePars;
+  courses = courses || getAllCourses();
+  var c = null, i;
+  for (i = 0; i < courses.length && !c; i++) if (round.courseId && courses[i].id === round.courseId) c = courses[i];
+  var name = String(round.course || '').trim().toLowerCase();
+  for (i = 0; i < courses.length && !c && name; i++) if (String(courses[i].name || '').trim().toLowerCase() === name) c = courses[i];
+  return (c && Array.isArray(c.trous) && c.trous.length) ? c.trous.map(function(h) { return h.par; }) : null;
+}
+
+/* Au lancement : inscrit les pars sur les anciennes parties dont le parcours est connu */
+function tsgStampHolePars() {
+  var rounds = lsGet('rounds') || [];
+  var courses = getAllCourses(), n = 0;
+  rounds.forEach(function(r) {
+    if (Array.isArray(r.holePars) || !Array.isArray(r.scores)) return;
+    var pars = tsgRoundHolePars(r, courses);
+    if (pars) { r.holePars = pars; n++; }
+  });
+  if (n) lsSet('rounds', rounds);
+  return n;
+}
+
 function getAllCourses() {
   var userCourses = [];
   try {

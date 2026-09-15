@@ -50,14 +50,7 @@ function commClamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
 
 /* Pars par trou d'une partie (via son parcours), ou null si introuvable */
 function commCoursePars(round) {
-  if (!round || !round.courseId) return null;
-  var courses = (typeof getAllCourses === 'function') ? getAllCourses() : [];
-  for (var i = 0; i < courses.length; i++) {
-    if (courses[i].id === round.courseId && courses[i].trous) {
-      return courses[i].trous.map(function(t) { return t.par; });
-    }
-  }
-  return null;
+  return (typeof tsgRoundHolePars === 'function') ? tsgRoundHolePars(round) : null;
 }
 
 /* Clé ISO année-semaine d'une date (ex: "2026-W35") */

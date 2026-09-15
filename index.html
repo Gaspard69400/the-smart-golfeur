@@ -12,12 +12,13 @@
   <meta property="og:site_name" content="The Smart Golfer">
   <meta name="twitter:card" content="summary">
   <title>The Smart Golfer</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23C9A84C'/%3E%3Ctext x='50' y='68' font-family='Plus Jakarta Sans, sans-serif' font-size='56' font-weight='700' fill='%231A1209' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="icons/logo.svg?v=77">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=77">
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json?v=75">
+  <link rel="manifest" href="manifest.json?v=77">
   <meta name="theme-color" content="#C9A84C">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=75">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=77">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -32,7 +33,7 @@
 
 
   <!-- Styles -->
-  <link rel="stylesheet" href="css/style.css?v=75">
+  <link rel="stylesheet" href="css/style.css?v=77">
 </head>
 <body>
 
@@ -48,7 +49,7 @@
   <!-- Hero -->
   <section class="ld-hero">
     <div class="ld-inner">
-      <div class="ld-brand">The Smart <span>Golfer</span></div>
+      <div class="ld-brand"><img class="brand-logo ld-logo" src="icons/logo.svg?v=77" alt="" width="40" height="40">The Smart <span>Golfer</span></div>
       <div class="ld-tagline">Analyser &nbsp;&middot;&nbsp; Structurer &nbsp;&middot;&nbsp; Performer</div>
 
       <h1 class="ld-h1">Progresse par la donn&eacute;e,<br>pas par le swing.</h1>
@@ -143,6 +144,7 @@
      LOGIN SCREEN
 ══════════════════════════════════ -->
 <div id="login-screen">
+  <img class="brand-logo login-logo" src="icons/logo.svg?v=77" alt="" width="64" height="64">
   <div class="login-brand">The Smart <span>Golfer</span></div>
   <div class="login-tagline">Analyser &nbsp;&middot;&nbsp; Structurer &nbsp;&middot;&nbsp; Performer</div>
 
@@ -238,7 +240,7 @@
 
   <nav class="topnav">
     <div class="nav-brand">
-      <div class="nav-emblem">&#9672;</div>
+      <img class="nav-emblem nav-emblem-img" src="icons/logo.svg?v=77" alt="" width="30" height="30">
       <div class="nav-title">Smart <span>Golfer</span></div>
     </div>
     <div class="nav-tabs" id="nav-tabs"></div>
@@ -275,66 +277,66 @@
 
 <!-- Librairies servies en local : l'app fonctionne hors-ligne et sans CDN tiers.
      Chart.js (≈ 70 ko) n'est plus chargé au démarrage : tsgLoadChart() le charge au premier graphique. -->
-<script src="vendor/supabase.min.js?v=75"></script>
+<script src="vendor/supabase.min.js?v=77"></script>
 
 
   <!-- Scripts dans l'ordre de dépendance -->
-  <script src="js/config.js?v=75"></script>
-  <script src="js/supabaseClient.js?v=75"></script>
-  <script src="js/data.js?v=75"></script>
-  <script src="js/traininglib.js?v=75"></script>
-  <script src="js/app.js?v=75"></script>
-  <script src="js/safety.js?v=75"></script>
-  <script src="js/polish.js?v=75"></script>
-  <script src="js/install.js?v=75"></script>
-  <script src="js/strokesgained.js?v=75"></script>
-  <script src="js/beginner.js?v=75"></script>
-  <script src="js/dashboard.js?v=75"></script>
-  <script src="js/sectorlevels.js?v=75"></script>
-  <script src="js/progress.js?v=75"></script>
-  <script src="js/weather.js?v=75"></script>
-  <script src="js/tees.js?v=75"></script>
-  <script src="js/formats.js?v=75"></script>
-  <script src="js/whs.js?v=75"></script>
-  <script src="js/holenotes.js?v=75"></script>
-  <script src="js/gameplan.js?v=75"></script>
-  <script src="js/scorecard.js?v=75"></script>
-  <script src="js/proscore.js?v=75"></script>
-  <script src="js/quickscore.js?v=75"></script>
-  <script src="js/celebrate.js?v=75"></script>
-  <script src="js/sharecard.js?v=75"></script>
-  <script src="js/radar.js?v=75"></script>
-  <script src="js/puttingstats.js?v=75"></script>
-  <script src="js/analyse.js?v=75"></script>
-  <script src="js/insights.js?v=75"></script>
-  <script src="js/sharedcourses.js?v=75"></script>
-  <script src="js/courses.js?v=75"></script>
-  <script src="js/training.js?v=75"></script>
-  <script src="js/program.js?v=75"></script>
-  <script src="js/coach.js?v=75"></script>
-  <script src="js/groups.js?v=75"></script>
-  <script src="js/groupchallenges.js?v=75"></script>
-  <script src="js/leaderboard.js?v=75"></script>
-  <script src="js/articles.js?v=75"></script>
-  <script src="js/qrcode.js?v=75"></script>
-  <script src="js/invite.js?v=75"></script>
-  <script src="js/sharedgame.js?v=75"></script>
-  <script src="js/community.js?v=75"></script>
-  <script src="js/social.js?v=75"></script>
-  <script src="js/challenges.js?v=75"></script>
-  <script src="js/streaks.js?v=75"></script>
-  <script src="js/calendar.js?v=75"></script>
-  <script src="js/chat.js?v=75"></script>
-  <script src="js/auth.js?v=75"></script>
-  <script src="js/account.js?v=75"></script>
-  <script src="js/landing.js?v=75"></script>
-  <script src="js/boot.js?v=75"></script>
+  <script src="js/config.js?v=77"></script>
+  <script src="js/supabaseClient.js?v=77"></script>
+  <script src="js/data.js?v=77"></script>
+  <script src="js/traininglib.js?v=77"></script>
+  <script src="js/app.js?v=77"></script>
+  <script src="js/safety.js?v=77"></script>
+  <script src="js/polish.js?v=77"></script>
+  <script src="js/install.js?v=77"></script>
+  <script src="js/strokesgained.js?v=77"></script>
+  <script src="js/beginner.js?v=77"></script>
+  <script src="js/dashboard.js?v=77"></script>
+  <script src="js/sectorlevels.js?v=77"></script>
+  <script src="js/progress.js?v=77"></script>
+  <script src="js/weather.js?v=77"></script>
+  <script src="js/tees.js?v=77"></script>
+  <script src="js/formats.js?v=77"></script>
+  <script src="js/whs.js?v=77"></script>
+  <script src="js/holenotes.js?v=77"></script>
+  <script src="js/gameplan.js?v=77"></script>
+  <script src="js/scorecard.js?v=77"></script>
+  <script src="js/proscore.js?v=77"></script>
+  <script src="js/quickscore.js?v=77"></script>
+  <script src="js/celebrate.js?v=77"></script>
+  <script src="js/sharecard.js?v=77"></script>
+  <script src="js/radar.js?v=77"></script>
+  <script src="js/puttingstats.js?v=77"></script>
+  <script src="js/analyse.js?v=77"></script>
+  <script src="js/insights.js?v=77"></script>
+  <script src="js/sharedcourses.js?v=77"></script>
+  <script src="js/courses.js?v=77"></script>
+  <script src="js/training.js?v=77"></script>
+  <script src="js/program.js?v=77"></script>
+  <script src="js/coach.js?v=77"></script>
+  <script src="js/groups.js?v=77"></script>
+  <script src="js/groupchallenges.js?v=77"></script>
+  <script src="js/leaderboard.js?v=77"></script>
+  <script src="js/articles.js?v=77"></script>
+  <script src="js/qrcode.js?v=77"></script>
+  <script src="js/invite.js?v=77"></script>
+  <script src="js/sharedgame.js?v=77"></script>
+  <script src="js/community.js?v=77"></script>
+  <script src="js/social.js?v=77"></script>
+  <script src="js/challenges.js?v=77"></script>
+  <script src="js/streaks.js?v=77"></script>
+  <script src="js/calendar.js?v=77"></script>
+  <script src="js/chat.js?v=77"></script>
+  <script src="js/auth.js?v=77"></script>
+  <script src="js/account.js?v=77"></script>
+  <script src="js/landing.js?v=77"></script>
+  <script src="js/boot.js?v=77"></script>
 
   <!-- Enregistrement du Service Worker (PWA installable + hors-ligne) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js?v=75').catch(function (e) {
+        navigator.serviceWorker.register('sw.js?v=77').catch(function (e) {
           console.warn('[TSG] SW non enregistré:', e && e.message);
         });
       });
