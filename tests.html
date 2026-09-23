@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>The Smart Golfer — Tests de calcul</title>
+<style>
+  body { font-family: -apple-system, 'Plus Jakarta Sans', Segoe UI, sans-serif; background: #FAF8F2; color: #1A1209; margin: 0; padding: 24px 16px 60px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #6A5030; font-size: 13px; margin-bottom: 20px; }
+  #summary { font-size: 17px; font-weight: 700; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; }
+  #summary.ok   { background: #EEF7EE; color: #1E6B2A; border: 1px solid #bfe3c0; }
+  #summary.fail { background: #FEF2F0; color: #9B2020; border: 1px solid #f3c6be; }
+  .group { margin-bottom: 22px; }
+  .group h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #8A6840; border-bottom: 1px solid #EDE8DC; padding-bottom: 6px; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 7px 10px; border-bottom: 1px solid #F0EBDE; vertical-align: top; }
+  tr.pass td:first-child { color: #1E6B2A; }
+  tr.fail { background: #FEF2F0; }
+  tr.fail td:first-child { color: #9B2020; font-weight: 700; }
+  .lbl { width: 46%; }
+  .val { font-variant-numeric: tabular-nums; white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #2E1E08; }
+  .status { width: 60px; font-weight: 700; }
+  #boot-error { background: #FEF2F0; border: 1px solid #f3c6be; color: #9B2020; padding: 14px 18px; border-radius: 12px; white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>The Smart Golfer — Tests de calcul</h1>
+<div class="sub">
+  Vérifie les fonctions de calcul critiques (index WHS, stableford, match play, handicap d'équipe, Strokes Gained)
+  avec des cas calculés à la main. Ouvre ce fichier dans un navigateur — aucun serveur, aucune installation.
+  Avant de terminer une session qui touche un calcul : relancer ce fichier, tout doit rester vert.
+</div>
+<div id="summary">Chargement…</div>
+<div id="results"></div>
+
+<!-- Les mêmes fichiers que l'app, dans le même ordre de dépendance. Rien d'autre : ce sont des fonctions
+     pures (pas de DOM), donc pas besoin de charger l'app entière ni ses écrans. -->
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/formats.js"></script>
+<script src="js/whs.js"></script>
+<script src="js/strokesgained.js"></script>
+<script src="js/sharedgame.js"></script>
+
+<script>
+/* ── Environnement propre : un historique WHS ou un parcours perso laissés par
+   une précédente session fausserait les résultats attendus ci-dessous. ── */
+try { localStorage.removeItem('tsg_whsHistory'); localStorage.removeItem('tsg_user_courses'); } catch (e) {}
+
+/* ── Mini-framework de test (aucune dépendance externe) ── */
+var GROUP = '';
+var results = [];   // { group, label, pass, detail }
+
+function group(name) { GROUP = name; }
+
+function check(label, pass, detail) {
+  results.push({ group: GROUP, label: label, pass: !!pass, detail: detail || '' });
+}
+
+/* Égalité numérique à une tolérance près (les calculs passent par des flottants) */
+function eq(actual, expected, label, tol) {
+  tol = (tol === undefined) ? 0.01 : tol;
+  var pass = typeof actual === 'number' && typeof expected === 'number'
+    ? Math.abs(actual - expected) <= tol
+    : actual === expected;
+  check(label, pass, 'attendu ' + JSON.stringify(expected) + ' — obtenu ' + JSON.stringify(actual));
+}
+
+function ok(label, pass, detail) { check(label, pass, detail); }
+
+/* ════════════════════════════════════════════
+   1) DIFFÉRENTIEL & INDEX WHS
+   ════════════════════════════════════════════ */
+group('Différentiel & index WHS');
+
+// Cas de l'énoncé : score ajusté 90, SSS 71,2, slope 130 → 16,3
+// (parcours inconnu de l'app ⇒ whsAdjustedGross utilise le score tel quel, sans plafond :
+//  c'est le chemin réel emprunté par toute partie dont le parcours n'est plus sur l'appareil.)
+(function () {
+  var round = { score: 90, teeRating: 71.2, teeSlope: 130, scores: new Array(18).fill(4) };
+  var d = whsDifferential(round, 18);
+  eq(d && d.diff, 16.3, 'Différentiel : 90 / SSS 71,2 / slope 130 → 16,3');
+})();
+
+// Net double bogey : un 9 sur un par 4 avec 1 coup reçu est ramené à 7 avant le calcul
+(function () {
+  // Parcours réel (Lyon Salvagny) : trou n°8 = par 4, SI 1 (le plus difficile).
+  // teeRating=72=par du parcours et teeSlope=113 ⇒ handicap de jeu = index tel quel (ici 1),
+  // donc exactement 1 coup rendu, uniquement sur le trou SI 1.
+  var scores = [4,5,4,3,4,5,4,9,3,4,4,4,3,5,4,3,5,4];   // le 9 est au trou n°8 (index 7)
+  var round = { courseId: 'golf-lyon-salvagny', teeRating: 72, teeSlope: 113, score: null, scores: scores };
+  var adj = whsAdjustedGross(round, 1);
+  eq(adj.capped, 1, 'Net double bogey : exactement 1 trou plafonné');
+  eq(adj.asg, 75, 'Net double bogey : 9 → 7 sur le trou SI 1 (score ajusté 75, au lieu de 77)');
+
+  round.score = 77;
+  var d = whsDifferential(round, 1);
+  eq(d.diff, 3.0, 'Différentiel calculé sur le score AJUSTÉ (75), pas le score brut (77)');
+})();
+
+// Index complet sur 3 cartes (minimum WHS) : 1 seul différentiel retenu, ajustement −2,0
+(function () {
+  function r(score, date) { return { score: score, teeRating: 72, teeSlope: 113, date: date, scores: new Array(18).fill(4) }; }
+  var rounds = [r(85, '2026-09-01'), r(80, '2026-09-03'), r(90, '2026-09-05')];
+  // Différentiels (parcours inconnu ⇒ asg = score) : 13,0 / 8,0 / 18,0 → meilleur = 8,0 ; −2,0 ⇒ index 6,0
+  var res = whsCompute(rounds, 18);
+  eq(res.index, 6.0, 'Index sur 3 cartes (85/80/90, même parcours fictif) → 6,0');
+  eq(res.take, 1, 'Table officielle : 3 cartes ⇒ 1 différentiel retenu');
+  eq(res.adj, -2.0, 'Table officielle : 3 cartes ⇒ ajustement −2,0');
+})();
+
+/* ════════════════════════════════════════════
+   2) STABLEFORD
+   ════════════════════════════════════════════ */
+group('Stableford');
+
+(function () {
+  // Par 4, 1 coup reçu, score brut 5 → net 4 → par net → 2 points
+  eq(stablefordPoints(5, 4, 1), 2, 'Par 4, 1 coup reçu, brut 5 → 2 points (par net)');
+  // même trou, brut 7 → net 6 → double bogey net → 0 point
+  eq(stablefordPoints(7, 4, 1), 0, 'Par 4, 1 coup reçu, brut 7 → 0 point (double bogey net)');
+  // birdie net (3 points), bogey net (1 point) — au passage, pour couvrir tout le barème
+  eq(stablefordPoints(4, 4, 1), 3, 'Par 4, 1 coup reçu, brut 4 → 3 points (birdie net)');
+  eq(stablefordPoints(6, 4, 1), 1, 'Par 4, 1 coup reçu, brut 6 → 1 point (bogey net)');
+})();
+
+(function () {
+  // Cas de référence historique (S35) : handicap de jeu 18, bogey partout → 36 points
+  var course = { par_total: 72, trous: [] };
+  for (var i = 1; i <= 18; i++) course.trous.push({ num: i, par: 4, si: i });
+  var scores = new Array(18).fill(5);   // bogey sur un par 4 partout
+  var res = stablefordRound(course, scores, 18, { rating: 72, slope: 113 });
+  eq(res.ch, 18, 'Handicap de jeu 18 sur un parcours slope 113 / rating = par');
+  eq(res.points, 36, 'HJ 18, bogey partout → 36 points (référence WHS)');
+
+  var scoresPar = new Array(18).fill(4);
+  var resPar = stablefordRound(course, scoresPar, 18, { rating: 72, slope: 113 });
+  eq(resPar.points, 54, 'HJ 18, par partout → 54 points');
+})();
+
+/* ════════════════════════════════════════════
+   3) MATCH PLAY
+   ════════════════════════════════════════════ */
+group('Match play');
+
+function matchGame() {
+  var trous = [];
+  for (var i = 1; i <= 18; i++) trous.push({ num: i, par: 4, si: i });
+  return { format: 'match', course: { par_total: 72, trous: trous }, tee: { rating: 72, slope: 113 } };
+}
+function matchPlayers(hcpA, hcpB) {
+  return [{ name: 'Alex Un', hcp: hcpA, scores: new Array(18).fill(null) },
+          { name: 'Blaise Deux', hcp: hcpB, scores: new Array(18).fill(null) }];
+}
+
+(function () {
+  // Handicaps égaux (0 coup rendu) : A gagne les 3 premiers trous, puis tout est partagé
+  // jusqu'au trou 16 → mené 3, il ne reste que 2 trous à jouer (3 > 2) ⇒ le match s'arrête : "3&2"
+  var game = matchGame(), players = matchPlayers(10, 10);
+  var s = players[0].scores, t = players[1].scores;
+  for (var i = 0; i < 16; i++) { s[i] = (i < 3) ? 4 : 4; t[i] = (i < 3) ? 5 : 4; }
+  var m = sgmMatch(game, players);
+  eq(m.result, '3&2', 'Match play : gagne "3&2"');
+  ok('Match play : le bon joueur est désigné vainqueur', m.leader === 0, m.text);
+})();
+
+(function () {
+  // Même début (3 trous gagnés), mais seulement 15 trous joués (3 restants) : 3 = 3 restants ⇒ dormie
+  var game = matchGame(), players = matchPlayers(10, 10);
+  var s = players[0].scores, t = players[1].scores;
+  for (var i = 0; i < 15; i++) { s[i] = 4; t[i] = (i < 3) ? 5 : 4; }
+  var m = sgmMatch(game, players);
+  ok('Match play : dormie (3 UP, 3 à jouer)', /dormie/.test(m.text), m.text);
+  ok('Match play : dormie n\'est PAS un match déjà clos (l\'écart égale les trous restants, sans les dépasser)', m.closed === false, 'closed=' + m.closed);
+})();
+
+(function () {
+  // 18 trous joués, A gagne exactement 1 trou net, le reste est partagé → "1 up"
+  var game = matchGame(), players = matchPlayers(10, 10);
+  var s = players[0].scores, t = players[1].scores;
+  for (var i = 0; i < 18; i++) { s[i] = 4; t[i] = (i === 0) ? 5 : 4; }
+  var m = sgmMatch(game, players);
+  eq(m.result, '1 up', 'Match play : partie complète, "1 up"');
+})();
+
+(function () {
+  // 18 trous joués, tout est partagé → égalité
+  var game = matchGame(), players = matchPlayers(10, 10);
+  var s = players[0].scores, t = players[1].scores;
+  for (var i = 0; i < 18; i++) { s[i] = 4; t[i] = 4; }
+  var m = sgmMatch(game, players);
+  ok('Match play : match nul (égalité)', /nul|égalité/.test(m.text), m.text);
+  eq(m.lead, 0, 'Match play : nul → 0 trou d\'écart');
+})();
+
+(function () {
+  // Handicaps différents : le moins bon reçoit la DIFFÉRENCE des handicaps de jeu
+  var game = matchGame(), players = matchPlayers(8, 20);   // écart de 12
+  var al = sgmMatchAllowance(game, players);
+  eq(al.strokes, 12, 'Coups rendus en match play = différence des 2 handicaps de jeu (20 − 8)');
+  eq(al.receiver, 1, 'Le joueur le plus faible (Blaise) reçoit les coups');
+})();
+
+/* ════════════════════════════════════════════
+   4) HANDICAP D'ÉQUIPE (scramble / greensome / foursome)
+   ════════════════════════════════════════════ */
+group('Handicap d\'équipe');
+
+(function () {
+  // slope 113 / rating = par ⇒ le handicap de jeu de chaque joueur = son index tel quel
+  var game = { format: 'scramble', course: { par_total: 72, trous: new Array(18).fill({ par: 4 }) }, tee: { rating: 72, slope: 113 } };
+  var members2 = [{ hcp: 10 }, { hcp: 20 }];   // triés 10 puis 20 ⇒ 35 % + 15 %
+  eq(sgmTeamHcp(game, members2), 7, 'Scramble à 2 (10 & 20) : 10×0,35 + 20×0,15 = 6,5 → 7');
+
+  var members4 = [{ hcp: 25 }, { hcp: 5 }, { hcp: 15 }, { hcp: 10 }];   // triés 5,10,15,25
+  eq(sgmTeamHcp(game, members4), 8, 'Scramble à 4 (5/10/15/25) : 5×.25+10×.2+15×.15+25×.1 = 8');
+
+  var gameG = { format: 'greensome', course: game.course, tee: game.tee };
+  eq(sgmTeamHcp(gameG, members2), 14, 'Greensome à 2 (10 & 20) : 10×0,60 + 20×0,40 = 14');
+
+  var gameF = { format: 'foursome', course: game.course, tee: game.tee };
+  eq(sgmTeamHcp(gameF, members2), 15, 'Foursome à 2 (10 & 20) : (10 + 20) / 2 = 15');
+
+  var membersMissing = [{ hcp: 10 }, { hcp: null }];
+  ok('Handicap d\'équipe : null si un membre n\'a pas d\'index (pas de chiffre inventé)',
+     sgmTeamHcp(game, membersMissing) === null);
+})();
+
+/* ════════════════════════════════════════════
+   5) STROKES GAINED
+   ════════════════════════════════════════════ */
+group('Strokes Gained');
+
+(function () {
+  // Index 15 exactement (barème officiel, pas d'interpolation) : score 88, fir .47, gir .29, putts 32.4
+  // Parcours neutre (rating=par, slope=113) ⇒ handicap de jeu = 15 ⇒ score attendu = 72+15+3 = 90
+  var round = { score: 85, teeRating: 72, teeSlope: 113, firTotal: 14, fir: 7, gir: 9, putts: 28 };
+  var sg = sgComputeRound(round, 15);
+  eq(sg.expected, 90, 'Strokes Gained : score attendu = rating + handicap de jeu + 3');
+  eq(sg.sg_total, 5, 'Strokes Gained total = score attendu (90) − score réel (85) = 5');
+  eq(sg.sg_tee, 0.12, 'Strokes Gained départ : (7/14 − 0,47) × 14 × 0,28');
+  eq(sg.sg_app, 2.08, 'Strokes Gained approche : (9/18 − 0,29) × 18 × 0,55');
+  eq(sg.sg_putt, 4.4, 'Strokes Gained putting : 32,4 − 28 putts');
+  eq(sg.sg_arg, -1.6, 'Strokes Gained petit jeu = résidu (total − les 3 autres)');
+  var sum = Math.round((sg.sg_tee + sg.sg_app + sg.sg_arg + sg.sg_putt) * 100) / 100;
+  eq(sum, sg.sg_total, 'Les 4 composantes SG somment EXACTEMENT au total (modèle bouclé)');
+})();
+
+/* ════════════════════════════════════════════
+   6) CAS LIMITES
+   ════════════════════════════════════════════ */
+group('Cas limites');
+
+(function () {
+  // Partie de 9 trous : le rating et le par comptent double (équivalent 18 trous)
+  eq(courseHandicap(18, 113, 33, 34, 9), 16.0, '9 trous : HJ = 18 + (33−34)×2 = 16,0');
+  eq(courseHandicap(18, 113, 33, 34, 18), 17.0, 'Le même départ compté en 18 trous donnerait 17,0 (contrôle)');
+})();
+
+(function () {
+  // Joueur sans index : les fonctions renvoient null (pas de chiffre inventé), jamais de crash
+  ok('courseHandicap(null) → null, pas de crash', courseHandicap(null, 113, 72, 72) === null);
+  var course = { par_total: 72, trous: [{ num: 1, par: 4, si: 1 }] };
+  ok('stablefordRound sans index → null, pas de crash', stablefordRound(course, [4], null, {}) === null);
+  // sgComputeRound sans index doit se comporter EXACTEMENT comme avec l'index par défaut (18)
+  var round = { score: 90, teeRating: 72, teeSlope: 113, firTotal: 14, fir: 7, gir: 8, putts: 32 };
+  var withNull = sgComputeRound(round, null);
+  var withDefault = sgComputeRound(round, 18);
+  eq(withNull.sg_total, withDefault.sg_total, 'Sans index, Strokes Gained se rabat sur la référence par défaut (18)');
+})();
+
+(function () {
+  // Index très élevé (débutant) : pas de crash, coups rendus bornés et cohérents
+  ok('strokesOnHole avec un index élevé (54) ne plante pas', typeof strokesOnHole(54, 1) === 'number');
+  eq(strokesOnHole(54, 1), 3, 'Index 54 (54 = 3×18) : exactement 3 coups sur chaque trou');
+  eq(strokesOnHole(54, 18), 3, 'Index 54 : 3 coups aussi sur le trou le plus facile (SI 18)');
+  // sgBaseline ne doit jamais extrapoler au-delà de sa dernière ligne, quel que soit l'index demandé
+  var top = SG_BENCHMARKS[SG_BENCHMARKS.length - 1];
+  var far = sgBaseline(top.hcp + 500);
+  eq(far.score, top.score, 'sgBaseline très au-delà du barème = la dernière ligne, jamais extrapolée');
+})();
+
+(function () {
+  // Trou non saisi au milieu d'une partie : ni crash, ni chiffre inventé sur ce trou
+  var course = { par_total: 72, trous: [] };
+  for (var i = 1; i <= 18; i++) course.trous.push({ num: i, par: 4, si: i });
+  var scores = new Array(18).fill(4);
+  scores[9] = null;   // le 10e trou n'a pas été saisi
+  var res = stablefordRound(course, scores, 18, { rating: 72, slope: 113 });
+  eq(res.holes, 17, 'Trou non saisi : exclu du décompte (17 trous comptés sur 18)');
+  ok('Trou non saisi : sa case reste null (pas de point inventé)', res.byHole[9] === null);
+
+  var round18 = { scores: scores.slice() };
+  round18.scores[9] = 4;   // on complète : 18 vrais scores
+  ok('whsIs18 : une carte de 18 trous vraiment complète est reconnue', whsIs18(round18) === true);
+  var round17 = { scores: scores };   // 17 saisis + 1 trou vide
+  ok('whsIs18 : une carte à 17 trous saisis n\'est PAS comptée comme 18 (index protégé)', whsIs18(round17) === false);
+})();
+
+/* ════════════════════════════════════════════
+   AFFICHAGE
+   ════════════════════════════════════════════ */
+function render() {
+  var byGroup = {};
+  var order = [];
+  results.forEach(function (r) {
+    if (!byGroup[r.group]) { byGroup[r.group] = []; order.push(r.group); }
+    byGroup[r.group].push(r);
+  });
+  var host = document.getElementById('results');
+  host.innerHTML = order.map(function (g) {
+    var rows = byGroup[g].map(function (r) {
+      return '<tr class="' + (r.pass ? 'pass' : 'fail') + '">'
+        + '<td class="status">' + (r.pass ? '✓ OK' : '✗ ÉCHEC') + '</td>'
+        + '<td class="lbl">' + r.label + '</td>'
+        + '<td class="val">' + (r.pass ? '' : r.detail) + '</td>'
+        + '</tr>';
+    }).join('');
+    return '<div class="group"><h2>' + g + '</h2><table>' + rows + '</table></div>';
+  }).join('');
+
+  var total = results.length, passed = results.filter(function (r) { return r.pass; }).length;
+  var summary = document.getElementById('summary');
+  summary.className = (passed === total) ? 'ok' : 'fail';
+  summary.textContent = (passed === total)
+    ? '✓ ' + total + ' / ' + total + ' tests passent'
+    : '✗ ' + (total - passed) + ' test(s) en échec sur ' + total;
+}
+render();
+</script>
+</body>
+</html>
