@@ -250,7 +250,7 @@ function buildDashboard(container) {
   }
   var meta = document.createElement('div');
   meta.className = 'dash-meta';
-  meta.textContent = 'Saison ' + new Date().getFullYear() + ' \u00b7 ' + n + ' parties ' + (hasReal ? 'enregistr\u00e9es' : 'de d\u00e9mo');
+  meta.textContent = 'Saison ' + new Date().getFullYear() + ' \u00b7 ' + n + (n > 1 ? ' parties ' : ' partie ') + (hasReal ? (n > 1 ? 'enregistr\u00e9es' : 'enregistr\u00e9e') : 'de d\u00e9mo');
   headerLeft.appendChild(greeting);
   headerLeft.appendChild(meta);
 

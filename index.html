@@ -12,20 +12,20 @@
   <meta property="og:site_name" content="The Smart Golfer">
   <!-- Image de l'aperçu quand on partage le lien (doit être une adresse absolue).
        ⚠️ À changer le jour où l'app aura son propre nom de domaine. -->
-  <meta property="og:image" content="https://gaspard69400.github.io/the-smart-golfeur/icons/icon-512.png?v=78">
+  <meta property="og:image" content="https://gaspard69400.github.io/the-smart-golfeur/icons/icon-512.png?v=79">
   <meta property="og:image:alt" content="Logo The Smart Golfer">
   <meta property="og:url" content="https://gaspard69400.github.io/the-smart-golfeur/">
   <meta property="og:locale" content="fr_FR">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:image" content="https://gaspard69400.github.io/the-smart-golfeur/icons/icon-512.png?v=78">
+  <meta name="twitter:image" content="https://gaspard69400.github.io/the-smart-golfeur/icons/icon-512.png?v=79">
   <title>The Smart Golfer</title>
-  <link rel="icon" type="image/svg+xml" href="icons/logo.svg?v=78">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=78">
+  <link rel="icon" type="image/svg+xml" href="icons/logo.svg?v=79">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=79">
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json?v=78">
+  <link rel="manifest" href="manifest.json?v=79">
   <meta name="theme-color" content="#C9A84C">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=78">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=79">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -40,7 +40,7 @@
 
 
   <!-- Styles -->
-  <link rel="stylesheet" href="css/style.css?v=78">
+  <link rel="stylesheet" href="css/style.css?v=79">
 </head>
 <body>
 
@@ -56,7 +56,7 @@
   <!-- Hero -->
   <section class="ld-hero">
     <div class="ld-inner">
-      <div class="ld-brand"><img class="brand-logo ld-logo" src="icons/logo.svg?v=78" alt="" width="40" height="40">The Smart <span>Golfer</span></div>
+      <div class="ld-brand"><img class="brand-logo ld-logo" src="icons/logo.svg?v=79" alt="" width="40" height="40">The Smart <span>Golfer</span></div>
       <div class="ld-tagline">Analyser &nbsp;&middot;&nbsp; Structurer &nbsp;&middot;&nbsp; Performer</div>
 
       <h1 class="ld-h1">Progresse par la donn&eacute;e,<br>pas par le swing.</h1>
@@ -151,7 +151,7 @@
      LOGIN SCREEN
 ══════════════════════════════════ -->
 <div id="login-screen">
-  <img class="brand-logo login-logo" src="icons/logo.svg?v=78" alt="" width="64" height="64">
+  <img class="brand-logo login-logo" src="icons/logo.svg?v=79" alt="" width="64" height="64">
   <div class="login-brand">The Smart <span>Golfer</span></div>
   <div class="login-tagline">Analyser &nbsp;&middot;&nbsp; Structurer &nbsp;&middot;&nbsp; Performer</div>
 
@@ -181,21 +181,27 @@
         <label class="form-label" for="auth-name">Pr&eacute;nom &amp; Nom</label>
         <input class="form-input" id="auth-name" type="text" placeholder="Ex: Pierre Martin" autocomplete="name">
       </div>
-      <div class="form-row auth-signup-only" style="display:none">
-        <div class="form-group">
-          <label class="form-label" for="auth-hcp">Handicap</label>
-          <input class="form-input" id="auth-hcp" type="number" placeholder="14.2" step="0.1" min="0" max="54">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="auth-role">R&ocirc;le</label>
-          <select class="form-select" id="auth-role">
-            <option value="player">Joueur</option>
-            <option value="head">Head Coach</option>
-            <option value="coach">Coach Assistant</option>
-            <option value="captain">Capitaine</option>
-          </select>
-        </div>
-      </div>
+      <!-- Handicap et R&ocirc;le repli&eacute;s : l'app redemande le niveau apr&egrave;s coup, de fa&ccedil;on plus
+           simple (score habituel) ; le r&ocirc;le par d&eacute;faut est "Joueur", et l'afficher en clair
+           ("Head Coach" etc.) intrigue/pi&egrave;ge un d&eacute;butant qui teste l'app pour la 1re fois. -->
+      <details class="qs-opt auth-signup-only" style="display:none">
+        <summary>Options avanc&eacute;es (handicap, r&ocirc;le)</summary>
+        <div class="qs-opt-body"><div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="auth-hcp">Handicap</label>
+            <input class="form-input" id="auth-hcp" type="number" placeholder="14.2" step="0.1" min="0" max="54">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="auth-role">R&ocirc;le</label>
+            <select class="form-select" id="auth-role">
+              <option value="player">Joueur</option>
+              <option value="head">Head Coach</option>
+              <option value="coach">Coach Assistant</option>
+              <option value="captain">Capitaine</option>
+            </select>
+          </div>
+        </div></div>
+      </details>
 
       <div class="form-group">
         <label class="form-label" for="auth-email">Email</label>
@@ -216,25 +222,28 @@
       <div class="login-card-sub">Choisissez un profil de d&eacute;mo ou cr&eacute;ez-en un local</div>
       <div id="profiles-list"></div>
       <div class="login-divider">ou cr&eacute;ez votre profil</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="inp-name">Pr&eacute;nom &amp; Nom</label>
-          <input class="form-input" id="inp-name" type="text" placeholder="Ex: Pierre Martin" autocomplete="off">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="inp-hcp">Handicap</label>
-          <input class="form-input" id="inp-hcp" type="number" placeholder="14.2" step="0.1" min="0" max="54">
-        </div>
-      </div>
       <div class="form-group">
-        <label class="form-label" for="inp-role">R&ocirc;le</label>
-        <select class="form-select" id="inp-role">
-          <option value="player">Joueur</option>
-          <option value="head">Head Coach</option>
-          <option value="coach">Coach Assistant</option>
-          <option value="captain">Capitaine</option>
-        </select>
+        <label class="form-label" for="inp-name">Pr&eacute;nom &amp; Nom</label>
+        <input class="form-input" id="inp-name" type="text" placeholder="Ex: Pierre Martin" autocomplete="off">
       </div>
+      <details class="qs-opt">
+        <summary>Options avanc&eacute;es (handicap, r&ocirc;le)</summary>
+        <div class="qs-opt-body"><div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="inp-hcp">Handicap</label>
+            <input class="form-input" id="inp-hcp" type="number" placeholder="14.2" step="0.1" min="0" max="54">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inp-role">R&ocirc;le</label>
+            <select class="form-select" id="inp-role">
+              <option value="player">Joueur</option>
+              <option value="head">Head Coach</option>
+              <option value="coach">Coach Assistant</option>
+              <option value="captain">Capitaine</option>
+            </select>
+          </div>
+        </div></div>
+      </details>
       <button class="btn-login" id="btn-enter">Entrer en mode d&eacute;mo &rarr;</button>
     </div>
   </div>
@@ -247,7 +256,7 @@
 
   <nav class="topnav">
     <div class="nav-brand">
-      <img class="nav-emblem nav-emblem-img" src="icons/logo.svg?v=78" alt="" width="30" height="30">
+      <img class="nav-emblem nav-emblem-img" src="icons/logo.svg?v=79" alt="" width="30" height="30">
       <div class="nav-title">Smart <span>Golfer</span></div>
     </div>
     <div class="nav-tabs" id="nav-tabs"></div>
@@ -284,66 +293,66 @@
 
 <!-- Librairies servies en local : l'app fonctionne hors-ligne et sans CDN tiers.
      Chart.js (≈ 70 ko) n'est plus chargé au démarrage : tsgLoadChart() le charge au premier graphique. -->
-<script src="vendor/supabase.min.js?v=78"></script>
+<script src="vendor/supabase.min.js?v=79"></script>
 
 
   <!-- Scripts dans l'ordre de dépendance -->
-  <script src="js/config.js?v=78"></script>
-  <script src="js/supabaseClient.js?v=78"></script>
-  <script src="js/data.js?v=78"></script>
-  <script src="js/traininglib.js?v=78"></script>
-  <script src="js/app.js?v=78"></script>
-  <script src="js/safety.js?v=78"></script>
-  <script src="js/polish.js?v=78"></script>
-  <script src="js/install.js?v=78"></script>
-  <script src="js/strokesgained.js?v=78"></script>
-  <script src="js/beginner.js?v=78"></script>
-  <script src="js/dashboard.js?v=78"></script>
-  <script src="js/sectorlevels.js?v=78"></script>
-  <script src="js/progress.js?v=78"></script>
-  <script src="js/weather.js?v=78"></script>
-  <script src="js/tees.js?v=78"></script>
-  <script src="js/formats.js?v=78"></script>
-  <script src="js/whs.js?v=78"></script>
-  <script src="js/holenotes.js?v=78"></script>
-  <script src="js/gameplan.js?v=78"></script>
-  <script src="js/scorecard.js?v=78"></script>
-  <script src="js/proscore.js?v=78"></script>
-  <script src="js/quickscore.js?v=78"></script>
-  <script src="js/celebrate.js?v=78"></script>
-  <script src="js/sharecard.js?v=78"></script>
-  <script src="js/radar.js?v=78"></script>
-  <script src="js/puttingstats.js?v=78"></script>
-  <script src="js/analyse.js?v=78"></script>
-  <script src="js/insights.js?v=78"></script>
-  <script src="js/sharedcourses.js?v=78"></script>
-  <script src="js/courses.js?v=78"></script>
-  <script src="js/training.js?v=78"></script>
-  <script src="js/program.js?v=78"></script>
-  <script src="js/coach.js?v=78"></script>
-  <script src="js/groups.js?v=78"></script>
-  <script src="js/groupchallenges.js?v=78"></script>
-  <script src="js/leaderboard.js?v=78"></script>
-  <script src="js/articles.js?v=78"></script>
-  <script src="js/qrcode.js?v=78"></script>
-  <script src="js/invite.js?v=78"></script>
-  <script src="js/sharedgame.js?v=78"></script>
-  <script src="js/community.js?v=78"></script>
-  <script src="js/social.js?v=78"></script>
-  <script src="js/challenges.js?v=78"></script>
-  <script src="js/streaks.js?v=78"></script>
-  <script src="js/calendar.js?v=78"></script>
-  <script src="js/chat.js?v=78"></script>
-  <script src="js/auth.js?v=78"></script>
-  <script src="js/account.js?v=78"></script>
-  <script src="js/landing.js?v=78"></script>
-  <script src="js/boot.js?v=78"></script>
+  <script src="js/config.js?v=79"></script>
+  <script src="js/supabaseClient.js?v=79"></script>
+  <script src="js/data.js?v=79"></script>
+  <script src="js/traininglib.js?v=79"></script>
+  <script src="js/app.js?v=79"></script>
+  <script src="js/safety.js?v=79"></script>
+  <script src="js/polish.js?v=79"></script>
+  <script src="js/install.js?v=79"></script>
+  <script src="js/strokesgained.js?v=79"></script>
+  <script src="js/beginner.js?v=79"></script>
+  <script src="js/dashboard.js?v=79"></script>
+  <script src="js/sectorlevels.js?v=79"></script>
+  <script src="js/progress.js?v=79"></script>
+  <script src="js/weather.js?v=79"></script>
+  <script src="js/tees.js?v=79"></script>
+  <script src="js/formats.js?v=79"></script>
+  <script src="js/whs.js?v=79"></script>
+  <script src="js/holenotes.js?v=79"></script>
+  <script src="js/gameplan.js?v=79"></script>
+  <script src="js/scorecard.js?v=79"></script>
+  <script src="js/proscore.js?v=79"></script>
+  <script src="js/quickscore.js?v=79"></script>
+  <script src="js/celebrate.js?v=79"></script>
+  <script src="js/sharecard.js?v=79"></script>
+  <script src="js/radar.js?v=79"></script>
+  <script src="js/puttingstats.js?v=79"></script>
+  <script src="js/analyse.js?v=79"></script>
+  <script src="js/insights.js?v=79"></script>
+  <script src="js/sharedcourses.js?v=79"></script>
+  <script src="js/courses.js?v=79"></script>
+  <script src="js/training.js?v=79"></script>
+  <script src="js/program.js?v=79"></script>
+  <script src="js/coach.js?v=79"></script>
+  <script src="js/groups.js?v=79"></script>
+  <script src="js/groupchallenges.js?v=79"></script>
+  <script src="js/leaderboard.js?v=79"></script>
+  <script src="js/articles.js?v=79"></script>
+  <script src="js/qrcode.js?v=79"></script>
+  <script src="js/invite.js?v=79"></script>
+  <script src="js/sharedgame.js?v=79"></script>
+  <script src="js/community.js?v=79"></script>
+  <script src="js/social.js?v=79"></script>
+  <script src="js/challenges.js?v=79"></script>
+  <script src="js/streaks.js?v=79"></script>
+  <script src="js/calendar.js?v=79"></script>
+  <script src="js/chat.js?v=79"></script>
+  <script src="js/auth.js?v=79"></script>
+  <script src="js/account.js?v=79"></script>
+  <script src="js/landing.js?v=79"></script>
+  <script src="js/boot.js?v=79"></script>
 
   <!-- Enregistrement du Service Worker (PWA installable + hors-ligne) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js?v=78').catch(function (e) {
+        navigator.serviceWorker.register('sw.js?v=79').catch(function (e) {
           console.warn('[TSG] SW non enregistré:', e && e.message);
         });
       });

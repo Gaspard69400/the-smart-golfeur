@@ -138,6 +138,15 @@ function selectCourse(c) {
   var btnGp = document.getElementById('btn-gameplan');
   if (btnGp) btnGp.disabled = false;
 
+  // Le message d'accueil de la zone principale ne doit plus dire « choisis un
+  // parcours » une fois que c'est fait : ça peut laisser croire que le clic
+  // n'a rien fait (⚠️ trouvé lors de l'audit pré-test du 3 octobre).
+  var scEmpty = document.getElementById('sc-empty');
+  if (scEmpty) {
+    var scEmptyP = scEmpty.querySelector('p');
+    if (scEmptyP) scEmptyP.textContent = 'Touche « ⚡ Saisie express » pour commencer ta carte sur ' + c.name + '.';
+  }
+
   // Météo du jour sur ce parcours (weather.js) : pastille + « Conditions » réglées toutes seules
   var condSel = document.getElementById('f-cond');
   if (condSel && !condSel._wxWired) {
@@ -1002,9 +1011,12 @@ function initScorecardPage() {
           '</div>',
         '</div>',
       '</div>',
-      // Toggle mode de saisie (rapide / pro)
+      // Toggle mode de saisie (tableau / pro). ⚠️ Ne PAS l'appeler « Saisie rapide » ou
+      // « Saisie express » : le bouton ⚡ Saisie express (overlay 1 tap/trou) existe déjà dans
+      // la barre latérale et porte un nom trop proche — deux testeurs débutants s'y sont
+      // perdus (audit pré-test du 3 octobre).
       '<div class="sc-mode-toggle" style="max-width:440px;margin:0 0 8px">',
-        '<button class="sc-mode-btn active" data-mode="quick">⚡ Saisie rapide</button>',
+        '<button class="sc-mode-btn active" data-mode="quick">▦ Tableau complet</button>',
         '<button class="sc-mode-btn" data-mode="pro">◆ Mode Pro · coup par coup</button>',
       '</div>',
       '<div id="sc-header-info" class="sc-round-stats" style="margin-top:6px"></div>',
