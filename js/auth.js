@@ -229,7 +229,8 @@ function loadCloudProfile(uid) {
       var p = res.data;
       return { id: p.id, name: p.name || 'Golfeur', hcp: (p.hcp !== null ? Number(p.hcp) : null),
         role: p.role || 'player', color: p.color || '#C9A84C',
-        bg: p.bg || 'rgba(201,168,76,0.2)', initials: p.initials || (p.name ? p.name.slice(0,2).toUpperCase() : 'G') };
+        bg: p.bg || 'rgba(201,168,76,0.2)', initials: p.initials || (p.name ? p.name.slice(0,2).toUpperCase() : 'G'),
+        is_admin: !!p.is_admin };   // écran « Pilotage » des Paramètres (admin.js), réservé à ce compte
     });
 }
 

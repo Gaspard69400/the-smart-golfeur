@@ -987,6 +987,10 @@ function openSettingsModal() {
     +       '<div class="settings-section-title">Compte & confidentialit\u00e9</div>'
     +       '<div id="settings-account"></div>'
     +     '</div>'
+    +     '<div class="settings-section" id="settings-admin-wrap" style="display:none">'
+    +       '<div class="settings-section-title">\ud83e\udded Pilotage <span class="settings-admin-tag">toi seul</span></div>'
+    +       '<div id="settings-admin"></div>'
+    +     '</div>'
     +     '<div class="settings-section">'
     +       '<div class="settings-section-title">\u00c0 propos</div>'
     +       '<div class="settings-about">'
@@ -1012,6 +1016,11 @@ function openSettingsModal() {
   // Compte, confidentialité, suppression (account.js)
   if (typeof accRenderSettingsSection === 'function') {
     try { accRenderSettingsSection(document.getElementById('settings-account')); } catch (e) {}
+  }
+
+  // Pilotage — réservé au compte admin (admin.js) ; reste invisible pour tout le monde d'autre
+  if (typeof admRenderSettingsSection === 'function') {
+    try { admRenderSettingsSection(document.getElementById('settings-admin')); } catch (e) {}
   }
 
   // Sélecteur de thème
