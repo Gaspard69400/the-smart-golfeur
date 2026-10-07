@@ -6022,3 +6022,72 @@ body.art-open { overflow: hidden; }
   .adm-row { grid-template-columns: 56px repeat(4, 1fr); gap: 3px; padding: 8px 6px; font-size: 11px; }
 }
 .settings-admin-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 20px; background: var(--gold-dim); color: var(--gold-d); font-size: 9.5px; letter-spacing: .04em; text-transform: none; font-weight: 700; vertical-align: 1px; }
+
+/* ════════════ AMIS & PROFILS (S68) ════════════ */
+.frd-slot { margin: 4px 0 18px; }
+.frd-panel { background: var(--white); border: 1px solid var(--bd-card); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow-sm); }
+.frd-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.frd-title { font-size: 15px; font-weight: 800; color: var(--tx); letter-spacing: -.2px; }
+.frd-count { display: inline-block; min-width: 20px; padding: 1px 7px; border-radius: 20px; background: var(--gold-dim); color: var(--gold-d); font-size: 12px; text-align: center; margin-left: 4px; }
+.frd-head-btns { display: flex; gap: 6px; }
+.frd-sec-t { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--tx4); margin: 12px 0 6px; }
+.frd-av { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; flex-shrink: 0; letter-spacing: -.3px; }
+.frd-list { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.frd-list::-webkit-scrollbar { display: none; }
+.frd-friend { flex: 0 0 auto; width: 84px; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 4px 2px; font-family: inherit; cursor: pointer; border-radius: 12px; }
+.frd-friend:hover { background: var(--bg2); }
+.frd-friend-n { font-size: 12.5px; font-weight: 700; color: var(--tx); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frd-friend-s { font-size: 10px; color: var(--tx3); text-align: center; line-height: 1.25; }
+.frd-req, .frd-res { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--bd3); flex-wrap: wrap; }
+.frd-req:first-of-type { border-top: none; }
+.frd-req-who { display: flex; align-items: center; gap: 10px; background: none; border: none; padding: 0; font-family: inherit; cursor: pointer; text-align: left; min-width: 0; }
+.frd-req-who span { display: flex; flex-direction: column; min-width: 0; }
+.frd-req-who strong { font-size: 13.5px; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frd-req-who em { font-style: normal; font-size: 11.5px; color: var(--tx3); }
+.frd-req-btns { display: flex; gap: 6px; }
+.frd-out { display: flex; gap: 6px; flex-wrap: wrap; }
+.frd-out-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 20px; background: var(--bg3); font-size: 12px; font-weight: 600; color: var(--tx2); }
+.frd-out-chip button { border: none; background: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; color: var(--tx3); font-size: 15px; line-height: 1; }
+.frd-out-chip button:hover { background: var(--white); color: var(--ng2); }
+.frd-empty-t { font-size: 13px; color: var(--tx2); line-height: 1.5; }
+.frd-empty-s { font-size: 12px; color: var(--tx3); line-height: 1.5; margin-top: 4px; }
+.frd-state { font-size: 12.5px; font-weight: 700; color: var(--tx3); }
+.frd-state-ok { color: var(--ok); }
+.frd-link-btn { border: none; background: none; font-family: inherit; font-size: 12.5px; color: var(--tx3); text-decoration: underline; cursor: pointer; padding: 4px; }
+.frd-link-btn:hover { color: var(--ng2); }
+/* Ajouter un ami */
+.frd-add-sec { padding: 12px 0; border-top: 1px solid var(--bd3); }
+.frd-add-sec:first-child { border-top: none; padding-top: 0; }
+.frd-add-t { font-size: 13.5px; font-weight: 800; color: var(--tx); margin-bottom: 4px; }
+.frd-add-d { font-size: 12px; color: var(--tx3); line-height: 1.5; margin: 4px 0 8px; }
+.frd-qr svg { max-width: 170px; }
+.frd-search { width: 100%; box-sizing: border-box; border: 1px solid var(--bd); }
+.frd-results { margin: 6px 0; }
+/* Profil */
+.frd-p-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.frd-p-id { min-width: 0; }
+.frd-p-name { font-size: 20px; font-weight: 800; color: var(--tx); letter-spacing: -.4px; line-height: 1.2; }
+.frd-p-sub { font-size: 12.5px; color: var(--tx3); margin-top: 3px; }
+.frd-p-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.frd-p-add { width: 100%; }
+.frd-p-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+.frd-p-kpis div { background: var(--bg2); border-radius: 12px; padding: 10px 6px; text-align: center; display: flex; flex-direction: column; gap: 3px; }
+.frd-p-kpis strong { font-size: 20px; color: var(--tx); letter-spacing: -.5px; }
+.frd-p-kpis span { font-size: 10px; color: var(--tx3); text-transform: uppercase; letter-spacing: .05em; font-weight: 700; line-height: 1.25; }
+.frd-p-rounds { display: flex; flex-direction: column; }
+.frd-p-round { display: grid; grid-template-columns: 58px 1fr auto 40px; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--bd3); font-size: 13px; color: var(--tx3); }
+.frd-p-round:first-child { border-top: none; }
+.frd-p-rc { color: var(--tx2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frd-p-round strong { color: var(--tx); font-size: 14px; }
+.frd-p-round em { font-style: normal; text-align: right; font-weight: 700; color: var(--tx3); }
+.frd-p-round em.good { color: var(--ok); }
+.frd-p-lock { display: flex; gap: 12px; align-items: flex-start; background: var(--bg2); border-radius: 12px; padding: 14px; font-size: 13px; color: var(--tx2); line-height: 1.5; }
+.frd-p-lock-i { font-size: 20px; }
+.frd-p-note { font-size: 11.5px; color: var(--tx4); line-height: 1.5; margin-top: 12px; }
+.frd-modal { z-index: 10025; }
+.comm-card-name[data-frd-open] { cursor: pointer; }
+.comm-card-name[data-frd-open]:hover { text-decoration: underline; }
+@media (max-width: 420px) {
+  .frd-head-btns .dash-btn { padding: 7px 11px; font-size: 12px; }
+  .frd-p-name { font-size: 18px; }
+}

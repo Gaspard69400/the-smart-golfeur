@@ -413,6 +413,9 @@ function launchAppCore() {
   // 12. Invitation à un groupe reçue par lien / QR code
   if (typeof invProcessPending === 'function') { setTimeout(function() { try { invProcessPending(); } catch (e) {} }, 700); }
 
+  // 12-bis. Amis : lien d'ami en attente, demandes reçues (friends.js)
+  if (typeof frdOnLaunch === 'function') { setTimeout(function() { try { frdOnLaunch(); } catch (e) {} }, 1200); }
+
   // 12a. Index officiel → profil cloud (classements, groupes)
   if (typeof lbSyncProfileIndex === 'function') { setTimeout(function() { try { lbSyncProfileIndex(); } catch (e) {} }, 2000); }
 

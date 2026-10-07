@@ -13,6 +13,10 @@
   if (typeof sgmCaptureFromUrl === 'function') {
     try { sgmCaptureFromUrl(); } catch (e) { console.warn('[TSG] partie partagée:', e.message); }
   }
+  // Lien d'ami (?ami=CODE) : gardé jusqu'à la connexion, inscription comprise
+  if (typeof frdCaptureFromUrl === 'function') {
+    try { frdCaptureFromUrl(); } catch (e) { console.warn('[TSG] lien d\'ami:', e.message); }
+  }
 
   // Page d'accueil (1re visite uniquement)
   if (typeof landingInit === 'function') {
@@ -27,6 +31,10 @@
   // Bandeau « Tu es invité dans un groupe »
   if (typeof invRenderAuthBanners === 'function') {
     try { invRenderAuthBanners(); } catch (e) {}
+  }
+  // Bandeau « Un ami t'invite »
+  if (typeof frdRenderAuthBanners === 'function') {
+    try { frdRenderAuthBanners(); } catch (e) {}
   }
 
   // Préparer les profils de démo (dans la section repliée)

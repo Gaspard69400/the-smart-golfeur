@@ -258,8 +258,24 @@ function buildCommunityPage(container) {
     } catch (e) { console.warn('[TSG] trophées du mois:', e.message); }
   }
 
+  // Mes amis (friends.js), juste sous l'en-tête : demandes reçues, amis, ajouter
+  if (typeof frdRenderPanel === 'function') {
+    try {
+      var head = container.querySelector('.dash-header');
+      var frdSlot = document.createElement('div');
+      frdSlot.className = 'frd-slot';
+      if (head && head.parentNode) head.parentNode.insertBefore(frdSlot, head.nextSibling);
+      else container.insertBefore(frdSlot, container.firstChild);
+      frdRenderPanel(frdSlot);
+    } catch (e) { console.warn('[TSG] amis:', e.message); }
+  }
+
+  // « Inviter un ami » : avec un compte, le lien d'ami relie directement ; sinon, le QR code de l'app
   var shareApp = container.querySelector('#comm-share-app');
-  if (shareApp) shareApp.addEventListener('click', function() { if (typeof insShareApp === 'function') insShareApp(); });
+  if (shareApp) shareApp.addEventListener('click', function() {
+    if (typeof frdOpenAdd === 'function' && typeof frdCloud === 'function' && frdCloud()) frdOpenAdd();
+    else if (typeof insShareApp === 'function') insShareApp();
+  });
 
   commRenderFeed();
 }
@@ -313,6 +329,14 @@ function commAchCard(a) {
 function commRenderFeed() {
   var host = document.getElementById('comm-feed');
   if (!host) return;
+  // Un clic sur un nom ouvre le profil du joueur (friends.js)
+  if (!host._frdWired && typeof frdOpenProfile === 'function') {
+    host._frdWired = true;
+    host.addEventListener('click', function(e) {
+      var t = e.target.closest('[data-frd-open]');
+      if (t && typeof frdCloud === 'function' && frdCloud()) frdOpenProfile(t.getAttribute('data-frd-open'));
+    });
+  }
 
   if (typeof cloudActive !== 'function' || !cloudActive()) {
     var mine = (lsGet('rounds') || []).slice(0, 10);
@@ -329,20 +353,28 @@ function commRenderFeed() {
   }
 
   var sb = window.sbClient, uid = currentUser.id;
-  sb.from('group_members').select('group_id').eq('user_id', uid).then(function(res) {
+  var friendIds = [];
+  // Amis (friends.js) : leurs parties arrivent dans le fil comme celles des membres de mes groupes
+  var withFriends = (typeof frdFriendIds === 'function')
+    ? new Promise(function(resolve) { frdFriendIds(function(ids) { friendIds = ids || []; resolve(); }); })
+    : Promise.resolve();
+  withFriends.then(function() { return sb.from('group_members').select('group_id').eq('user_id', uid); }).then(function(res) {
     var gids = (res.data || []).map(function(r) { return r.group_id; });
-    if (!gids.length) {
+    if (!gids.length && !friendIds.length) {
       var mine2 = (lsGet('rounds') || []).slice(0, 10);
       var cta2 = '<div class="comm-cta"><div class="comm-cta-ico">🎯</div>'
-        + '<div class="comm-cta-txt"><strong>Tu n\'es dans aucun groupe</strong><br>'
-        + 'Va dans l\'onglet Groupes, crée une équipe et invite tes amis pour activer le fil communautaire.</div></div>';
+        + '<div class="comm-cta-txt"><strong>Ton fil est encore vide</strong><br>'
+        + 'Ajoute des amis (en haut de cette page) ou rejoins un groupe : leurs parties apparaîtront ici.</div></div>';
       host.innerHTML = cta2 + '<div class="comm-feed-list">'
         + mine2.map(function(r) { return commFeedCard(currentUser, r, true); }).join('') + '</div>';
       commWireKudos(host);
       return;
     }
-    sb.from('group_members').select('user_id').in('group_id', gids).then(function(mres) {
-      var uids = {}; (mres.data || []).forEach(function(m) { uids[m.user_id] = 1; });
+    var members = gids.length ? sb.from('group_members').select('user_id').in('group_id', gids) : Promise.resolve({ data: [] });
+    members.then(function(mres) {
+      var uids = {}; uids[uid] = 1;
+      (mres.data || []).forEach(function(m) { uids[m.user_id] = 1; });
+      friendIds.forEach(function(id) { uids[id] = 1; });
       var idList = Object.keys(uids);
       Promise.all([
         sb.from('profiles').select('id, name, initials, color, bg, hcp').in('id', idList),
@@ -390,7 +422,7 @@ function commFeedCard(prof, r, isMe) {
 
   return '<div class="comm-card" data-rid="' + commEsc('' + r.id) + '" data-owner="' + commEsc(prof.id || '') + '">'
     + '<div class="comm-card-head">' + av
-    + '<div class="comm-card-who"><div class="comm-card-name">' + commEsc(prof.name || 'Joueur') + (isMe ? ' <span class="comm-me">toi</span>' : '') + '</div>'
+    + '<div class="comm-card-who"><div class="comm-card-name"' + (prof.id ? ' data-frd-open="' + commEsc(prof.id) + '" role="button" tabindex="0"' : '') + '>' + commEsc(prof.name || 'Joueur') + (isMe ? ' <span class="comm-me">toi</span>' : '') + '</div>'
     + '<div class="comm-card-when">' + commEsc(commRelDate(r.date)) + (r.course ? ' · ' + commEsc(r.course) : '') + '</div></div>'
     + (relStr ? '<div class="comm-card-score ' + relCls + '"><div class="comm-card-score-v">' + (r.score != null ? r.score : '—') + '</div><div class="comm-card-score-r">' + relStr + '</div></div>' : '')
     + '</div>'

@@ -162,6 +162,8 @@ function lbLoad(controls) {
 }
 
 function lbOpenCard(uid) {
+  // S68 : la fiche joueur est devenue un vrai profil, avec le bouton « Ajouter en ami »
+  if (typeof frdOpenProfile === 'function') { frdOpenProfile(uid); return; }
   var old = document.getElementById('lb-card');
   if (old) old.remove();
   var m = document.createElement('div');
