@@ -199,7 +199,16 @@ function onAuthenticated(session, silent) {
   window.tsgCloud = true;
   var uid = session.user.id;
 
-  loadCloudProfile(uid).then(function(profile) {
+  // Une connexion déclenche souvent DEUX appels (l'événement SIGNED_IN + le retour
+  // de signIn / getSession). Sans ce verrou, l'app se lançait deux fois et l'écran
+  // de bienvenue s'empilait en double, avec un bouton « C'est parti » inactif.
+  if (window._tsgAuthUid === uid && window._tsgAuthP) {
+    if (!silent) window._tsgAuthP.then(function() { showToast('Connecté ☁ — tes données sont synchronisées'); });
+    return;
+  }
+  window._tsgAuthUid = uid;
+
+  window._tsgAuthP = loadCloudProfile(uid).then(function(profile) {
     currentUser = profile;
     selectedProfile = profile;
     lsSet('lastUser', profile.id);
@@ -241,6 +250,8 @@ function authSignOut() {
   }
   window.tsgCloud = false;
   window._sbSession = null;
+  window._tsgAuthUid = null;
+  window._tsgAuthP = null;
   // Vider le cache local des données (elles restent dans le cloud)
   ['rounds', 'objectives', 'trainings', 'training_done'].forEach(function(k) {
     try { localStorage.removeItem('tsg_' + k); } catch (e) {}

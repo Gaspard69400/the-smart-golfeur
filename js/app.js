@@ -429,6 +429,7 @@ function launchAppCore() {
 /* \u2500\u2500\u2500 ONBOARDING (1er lancement) \u2500\u2500\u2500 */
 function maybeShowOnboarding() {
   if (lsGet('onboarded')) return;
+  if (document.querySelector('.onb-modal')) return;   // déjà affiché : jamais deux l'un sur l'autre
   var modal = document.createElement('div');
   modal.className = 'onb-modal';
   modal.innerHTML =
@@ -446,7 +447,7 @@ function maybeShowOnboarding() {
     + '</div></div>';
   document.body.appendChild(modal);
   function close() { lsSet('onboarded', true); modal.remove(); }
-  document.getElementById('onb-start').addEventListener('click', close);
+  modal.querySelector('#onb-start').addEventListener('click', close);
   modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
 }
 
