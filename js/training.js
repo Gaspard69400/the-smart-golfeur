@@ -126,6 +126,14 @@ function buildTrainingPage(container) {
   }
   wrap.appendChild(header);
 
+  /* Défis de la semaine (challenges.js) — dans Progresser depuis S71 */
+  if (typeof chRenderPanel === 'function') {
+    var chSlot = document.createElement('div');
+    chSlot.className = 'ch-slot';
+    wrap.appendChild(chSlot);
+    try { chRenderPanel(chSlot, false); } catch (e) { console.warn('[TSG] défis:', e.message); }
+  }
+
   /* Série de travail (streaks.js) */
   if (typeof stkRenderCard === 'function') {
     var stk = document.createElement('div');

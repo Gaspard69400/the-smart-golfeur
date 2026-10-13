@@ -86,8 +86,43 @@ var NAV_TABS = [
   { page: 'groups',      icon: '&#9673;', label: 'Groupes',      short: 'Groupes', primary: false },
   { page: 'courses',     icon: '&#9971;', label: 'Parcours',     short: 'Parcours',primary: false },
   { page: 'articles',    icon: '\ud83d\udcd6', label: 'Articles',     short: 'Articles',primary: false },
-  { page: 'leaderboard', icon: '&#8801;', label: 'Classements',  short: 'Classt',  primary: false }
+  { page: 'leaderboard', icon: '&#8801;', label: 'Classements',  short: 'Classt',  primary: false },
+  { page: 'profile',     icon: '&#9786;', label: 'Profil',       short: 'Profil',  primary: false }
 ];
+
+/* ─── LES 5 ESPACES DE LA NAVIGATION (S71) ───
+   Chaque espace regroupe une ou plusieurs pages (NAV_TABS) ; quand il en a
+   plusieurs, une barre de sous-onglets s'affiche en haut de la page.
+   showPage(pageId) marche toujours avec n'importe quelle page. */
+var TSG_ICO = {
+  home:     '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>',
+  play:     '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V4"/><path d="M6 4l11 4-11 4z"/></svg>',
+  progress: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+  social:   '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.3.2 4 1.8 4.5 4.5"/></svg>',
+  profile:  '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.2 4.2-6.5 8-6.5s7 2.3 8 6.5"/></svg>'
+};
+
+var NAV_HUBS = [
+  { id: 'home',     label: 'Accueil',    icon: TSG_ICO.home,
+    pages: [{ page: 'dashboard', label: 'Tableau de bord' }, { page: 'analyse', label: 'Mes stats' }] },
+  { id: 'play',     label: 'Jouer',      icon: TSG_ICO.play,
+    pages: [{ page: 'scorecard', label: 'Partie' }, { page: 'courses', label: 'Parcours' }] },
+  { id: 'progress', label: 'Progresser', icon: TSG_ICO.progress,
+    pages: [{ page: 'training', label: 'Entraînement' }, { page: 'articles', label: 'Articles' }] },
+  { id: 'social',   label: 'Social',     icon: TSG_ICO.social,
+    pages: [{ page: 'community', label: 'Fil & amis' }, { page: 'groups', label: 'Groupes' }, { page: 'leaderboard', label: 'Classements' }] },
+  { id: 'profile',  label: 'Profil',     icon: TSG_ICO.profile,
+    pages: [{ page: 'profile', label: 'Mon profil' }, { page: 'coach', label: 'Coach' }] }
+];
+
+/* L'espace qui contient une page (null si aucune) */
+function tsgHubOf(pageId) {
+  for (var i = 0; i < NAV_HUBS.length; i++) {
+    var ps = NAV_HUBS[i].pages;
+    for (var j = 0; j < ps.length; j++) if (ps[j].page === pageId) return NAV_HUBS[i];
+  }
+  return null;
+}
 
 /* ─── LIBELLÉS ET CLASSES CSS DES RÔLES ─── */
 

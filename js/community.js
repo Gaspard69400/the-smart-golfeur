@@ -180,10 +180,10 @@ function commCurrentLevel() {
 }
 
 /* ─── PAGE ─── */
-function buildCommunityPage(container) {
-  if (!container) return;
-  while (container.firstChild) container.removeChild(container.firstChild);
-
+/* Niveau, stats et trophées du joueur. Depuis S71 (5 onglets), ils vivent
+   dans le Profil (profile.js) ; l'onglet Social garde le fil et les amis. */
+function commRenderProgress(host) {
+  if (!host) return;
   var cl = commCurrentLevel();
   var s = cl.stats;
   var achs = cl.achievements;
@@ -203,7 +203,7 @@ function buildCommunityPage(container) {
     +     '<div class="comm-hero-title">' + commEsc(lv.title) + '</div>'
     +     '<div class="comm-hero-sub">Niveau ' + lv.level + ' · ' + s.xp + ' XP</div>'
     +   '</div>'
-    +   '<div class="comm-hero-streak"><div class="comm-streak-val">' + s.streak + '</div><div class="comm-streak-lbl">🔥 sem. de jeu</div></div>'
+    +   '<div class="comm-hero-streak"><div class="comm-streak-val">' + s.streak + '</div><div class="comm-streak-lbl">sem. de jeu</div></div>'
     + '</div>'
     + '<div class="comm-xp-bar"><div class="comm-xp-fill" style="width:' + pctLevel + '%"></div></div>'
     + '<div class="comm-xp-text">' + lv.into + ' / ' + lv.need + ' XP vers le niveau ' + (lv.level + 1) + '</div>'
@@ -221,42 +221,40 @@ function buildCommunityPage(container) {
   // ── Trophées à paliers ──
   var cards = achs.map(commAchCard).join('');
   var badgeSection = ''
-    + '<div class="comm-section-head"><div class="comm-section-title">🏅 Mes trophées</div>'
+    + '<div class="comm-section-head"><div class="comm-section-title">Mes trophées</div>'
     + '<div class="comm-section-sub">' + paliersDone + ' palier' + (paliersDone > 1 ? 's' : '') + ' débloqué' + (paliersDone > 1 ? 's' : '') + ' sur ' + paliersTot + '</div></div>'
     + '<div class="comm-ach-grid">' + cards + '</div>';
 
-  container.innerHTML = ''
-    + '<div class="dash-header"><div><div class="dash-greeting">Communauté</div>'
-    + '<div class="dash-meta">Franchis les paliers, débloque tes médailles et suis les performances de tes amis</div></div>'
-    + '<div><button class="dash-btn dash-btn-outline" type="button" id="comm-share-app">📣 Inviter un ami</button></div></div>'
-    + hero + pills + badgeSection
-    + '<div class="comm-section-head" style="margin-top:26px"><div class="comm-section-title">📣 Fil d\'activité</div>'
-    + '<div class="comm-section-sub">Les dernières parties de ta communauté</div></div>'
-    + '<div id="comm-feed"><div class="comm-feed-loading">Chargement…</div></div>';
-
-  // Défis de la semaine, juste sous le héros
-  if (typeof chRenderPanel === 'function') {
-    try {
-      var hero = container.querySelector('.comm-hero');
-      var slot = document.createElement('div');
-      slot.className = 'ch-slot';
-      if (hero && hero.parentNode) hero.parentNode.insertBefore(slot, hero.nextSibling);
-      else container.appendChild(slot);
-      chRenderPanel(slot, false);
-    } catch (e) { console.warn('[TSG] défis:', e.message); }
-  }
+  var box = document.createElement('div');
+  box.className = 'comm-progress';
+  box.innerHTML = hero + pills + badgeSection;
+  host.appendChild(box);
 
   // Trophées du mois, avant les trophées à paliers (streaks.js)
   if (typeof smRenderPanel === 'function') {
     try {
-      var pillsEl = container.querySelector('.comm-pills');
+      var pillsEl = box.querySelector('.comm-pills');
       var smSlot = document.createElement('div');
       smSlot.className = 'sm-slot';
       if (pillsEl && pillsEl.parentNode) pillsEl.parentNode.insertBefore(smSlot, pillsEl.nextSibling);
-      else container.appendChild(smSlot);
+      else box.appendChild(smSlot);
       smRenderPanel(smSlot);
     } catch (e) { console.warn('[TSG] trophées du mois:', e.message); }
   }
+}
+
+/* Onglet Social › Fil & amis : amis, demandes, puis le fil d'activité */
+function buildCommunityPage(container) {
+  if (!container) return;
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  container.innerHTML = ''
+    + '<div class="dash-header"><div><div class="dash-greeting">Fil &amp; amis</div>'
+    + '<div class="dash-meta">Les parties de tes amis et de tes groupes</div></div>'
+    + '<div><button class="dash-btn dash-btn-outline" type="button" id="comm-share-app">Inviter un ami</button></div></div>'
+    + '<div class="comm-section-head" style="margin-top:22px"><div class="comm-section-title">Fil d\'activité</div>'
+    + '<div class="comm-section-sub">Les dernières parties de ta communauté</div></div>'
+    + '<div id="comm-feed"><div class="comm-feed-loading">Chargement…</div></div>';
 
   // Mes amis (friends.js), juste sous l'en-tête : demandes reçues, amis, ajouter
   if (typeof frdRenderPanel === 'function') {
