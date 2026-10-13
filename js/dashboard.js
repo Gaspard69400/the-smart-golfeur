@@ -137,6 +137,88 @@ function openObjectivesModal() {
   });
 }
 
+/* ── Tuiles d'accueil (S73) ──
+   Reprend la maquette validée : grande tuile verte de l'index (courbe des
+   derniers différentiels), puis 4 tuiles — dernière partie, greens en
+   régulation, priorité (secteur Strokes Gained le plus faible) et amis. */
+function dashHeroTiles(o) {
+  function esc(x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fr(n, d) { return (n === null || n === undefined || isNaN(n)) ? '—' : Number(n).toFixed(d).replace('.', ','); }
+
+  // Index + courbe (différentiels, plus bas = mieux → la courbe descend quand on progresse)
+  var idx = parseFloat(o.hcp);
+  var diffs = o.data.map(function(r) { return (r.diff !== undefined && r.diff !== null) ? +r.diff : null; }).filter(function(v) { return v !== null && !isNaN(v); });
+  var spark = '';
+  if (diffs.length >= 3) {
+    var mn = Math.min.apply(null, diffs), mx = Math.max.apply(null, diffs), rg = (mx - mn) || 1;
+    var pts = diffs.map(function(v, i) { return (2 + i * (116 / (diffs.length - 1))).toFixed(1) + ',' + (40 - (v - mn) / rg * 34).toFixed(1); });
+    var last = pts[pts.length - 1].split(',');
+    spark = '<svg class="dh-spark" viewBox="0 0 120 46" aria-hidden="true"><polyline points="' + pts.join(' ') + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="' + last[0] + '" cy="' + last[1] + '" r="3.5" fill="currentColor"/></svg>';
+  }
+  var trendTxt = '';
+  if (diffs.length >= 6) {
+    var a = diffs.slice(-3).reduce(function(x, y) { return x + y; }, 0) / 3;
+    var b = diffs.slice(-6, -3).reduce(function(x, y) { return x + y; }, 0) / 3;
+    var d = a - b;
+    trendTxt = Math.abs(d) < 0.3 ? 'Stable sur tes dernières cartes' : (d < 0 ? 'En progrès : ' + fr(-d, 1) + ' de mieux' : 'En recul : ' + fr(d, 1) + ' de plus');
+  } else trendTxt = o.hasReal ? 'Joue quelques cartes pour voir ta courbe' : 'Exemple de démonstration';
+
+  // Dernière partie
+  var lastR = o.hasReal ? o.rounds[0] : o.data[o.data.length - 1];
+  var lastScore = lastR && lastR.score ? lastR.score : '—';
+  var lastSub = o.hasReal ? esc((lastR.course || lastR.courseName || 'Parcours').toString().slice(0, 26)) : 'Exemple';
+
+  // Greens en régulation (anneau)
+  var gir = Math.max(0, Math.min(100, parseInt(o.avgGIR, 10) || 0));
+  var circ = 2 * Math.PI * 26;
+  var ring = '<svg class="dh-ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" class="dh-ring-bg"/><circle cx="32" cy="32" r="26" class="dh-ring-fg" stroke-dasharray="' + (circ * gir / 100).toFixed(1) + ' ' + circ.toFixed(1) + '" transform="rotate(-90 32 32)"/></svg>';
+
+  // Priorité = secteur le plus faible
+  var NAMES = { sg_tee: 'Mise en jeu', sg_app: 'Approches', sg_arg: 'Petit jeu', sg_putt: 'Putting' };
+  var weak = null;
+  Object.keys(NAMES).forEach(function(k) { if (!isNaN(o.sg[k]) && (weak === null || o.sg[k] < o.sg[weak])) weak = k; });
+  var prioT = weak ? NAMES[weak] : 'Ton programme';
+  var prioS = weak && o.sg[weak] < 0 ? fr(-o.sg[weak], 1) + ' coup perdu par partie' : 'Exercices du jour';
+
+  var cloud = typeof frdCloud === 'function' && frdCloud();
+
+  var el = document.createElement('div');
+  el.className = 'dh-grid';
+  el.innerHTML = ''
+    + '<button type="button" class="dh-tile dh-index" data-dh="whs">'
+    +   '<span class="dh-index-l"><span class="dh-cap">Ton index</span><span class="dh-big">' + fr(idx, 1) + '</span></span>'
+    +   '<span class="dh-index-r">' + spark + '<span class="dh-trend">' + trendTxt + '</span></span>'
+    + '</button>'
+    + '<button type="button" class="dh-tile" data-dh="last"><span class="dh-cap2">Dernière partie</span><span class="dh-mid">' + esc(lastScore) + '</span><span class="dh-sub">' + lastSub + '</span></button>'
+    + '<button type="button" class="dh-tile dh-row" data-dh="stats"><span class="dh-ring-w">' + ring + '<span class="dh-ring-v">' + gir + '%</span></span><span class="dh-col"><span class="dh-cap2">Greens</span><span class="dh-sub">en régulation</span></span></button>'
+    + '<button type="button" class="dh-tile dh-gold" data-dh="train">'
+    +   '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>'
+    +   '<span class="dh-prio">' + prioT + '</span><span class="dh-sub">Ta priorité · ' + prioS + '</span></button>'
+    + '<button type="button" class="dh-tile" data-dh="friends"><span class="dh-cap2">Tes amis</span>'
+    +   '<span class="dh-mid" data-dh-friends>' + (cloud ? '…' : '+') + '</span><span class="dh-sub">' + (cloud ? 'Voir le fil' : 'Invite tes amis') + '</span></button>';
+
+  el.addEventListener('click', function(e) {
+    var b = e.target.closest('[data-dh]');
+    if (!b) return;
+    var k = b.getAttribute('data-dh');
+    if (k === 'whs' && typeof openWhsModal === 'function') openWhsModal();
+    else if (k === 'last' || k === 'stats') showPage('analyse');
+    else if (k === 'train') showPage('training');
+    else if (k === 'friends') {
+      if (cloud) showPage('community');
+      else if (typeof insShareApp === 'function') insShareApp();
+    }
+  });
+
+  if (cloud && typeof frdLoad === 'function') {
+    var fEl = el.querySelector('[data-dh-friends]');
+    frdLoad(function(list) {
+      if (fEl) fEl.textContent = (list || []).filter(function(f) { return f.status === 'friends'; }).length;
+    });
+  }
+  return el;
+}
+
 function buildDashboard(container) {
   // CRITIQUE : détruire les anciens graphiques Chart.js avant d'en créer de nouveaux
   // Sinon Chart.js refuse de réutiliser le canvas → graphiques absents
@@ -275,8 +357,20 @@ function buildDashboard(container) {
   header.appendChild(headerRight);
   wrap.appendChild(header);
 
+  // Tuiles d'accueil (S73, maquette « Mix 1 ») : index, dernière partie, greens, priorité, amis
+  // — juste sous l'en-tête, avant les bandeaux (installation, démo)
+  var dhEl = null;
+  try {
+    wrap.insertBefore(dhEl = dashHeroTiles({
+      hasReal: hasReal, rounds: rounds, data: data, hcp: hcp, avgGIR: avgGIR,
+      sg: { sg_tee: +sg_tee, sg_app: +sg_app, sg_arg: +sg_arg, sg_putt: +sg_putt }
+    }), header.nextSibling);
+  } catch (e) { console.warn('[TSG] tuiles accueil:', e.message); }
+
   // Installer l'app sur le téléphone (install.js)
   if (typeof insRenderBanner === 'function') { try { insRenderBanner(wrap); } catch (e) {} }
+  // Le bandeau d'installation se glisse sous l'en-tête : les tuiles restent au-dessus
+  if (dhEl && header.nextSibling !== dhEl) wrap.insertBefore(dhEl, header.nextSibling);
 
   /* ── 2. BANNIÈRE DÉMO (si pas de vraies données) ── */
   if (!hasReal) {
