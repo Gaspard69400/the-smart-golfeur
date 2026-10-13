@@ -3899,6 +3899,9 @@ html, body {
   .dash-wrap { padding: 16px 14px !important; }
 
   /* Scorecard : passer d'un layout 2 colonnes à un empilement vertical */
+  /* La page elle-même gardait la hauteur fixe du bureau (100vh, overflow hidden) : sur téléphone,
+     tout ce qui dépassait sous le choix du parcours (départ, format, cartes) était coupé et inatteignable. */
+  #page-scorecard.active { height: auto !important; overflow: visible !important; }
   .sc-layout { display: block !important; height: auto !important; overflow: visible !important; }
   .sc-sb { height: auto !important; overflow: visible !important; border-right: none !important; border-bottom: 1px solid var(--bd-card); }
   .sc-main { height: auto !important; overflow: visible !important; padding: 16px 14px !important; }
