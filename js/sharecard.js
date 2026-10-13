@@ -147,7 +147,7 @@ function scDraw(round) {
   var cv = document.createElement('canvas');
   cv.width = SC_W; cv.height = SC_H;
   var x = cv.getContext('2d');
-  var F = '"Plus Jakarta Sans", system-ui, sans-serif';
+  var F = '"Figtree", system-ui, sans-serif';
 
   /* Fond dégradé + halo doré */
   var g = x.createLinearGradient(0, 0, 0, SC_H);

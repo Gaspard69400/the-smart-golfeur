@@ -82,7 +82,7 @@ function tsgApplyTheme(mode) {
     if (m === 'auto') {
       try { dark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { dark = false; }
     }
-    meta.setAttribute('content', dark ? '#14100A' : '#C9A84C');
+    meta.setAttribute('content', dark ? '#0B261D' : '#E9E1CC');
   }
 }
 
@@ -597,6 +597,15 @@ function tsgOpenHub(hubId) {
   }
 }
 
+/* Le paysage de golf (collines, fairway) en tête de chaque espace — S72.
+   Couleurs par classes (.hh1…) pour suivre le thème clair / nuit. */
+var TSG_LANDSCAPE = '<div class="hub-land" aria-hidden="true"><svg viewBox="0 150 390 130" preserveAspectRatio="none">'
+  + '<path class="hh1" d="M0 175 C 70 140, 140 152, 210 142 S 330 126, 390 150 L 390 280 L 0 280 Z"/>'
+  + '<path class="hh2" d="M0 196 C 90 176, 170 188, 250 176 S 350 168, 390 182 L 390 280 L 0 280 Z"/>'
+  + '<path class="hh3" d="M-10 280 C 60 248, 140 222, 230 210 C 280 204, 320 200, 350 198 L 360 207 C 300 215, 230 230, 170 256 C 140 268, 120 276, 110 280 Z"/>'
+  + '<path class="hh4" d="M0 226 C 80 214, 140 230, 200 244 S 330 262, 390 250 L 390 280 L 0 280 Z"/>'
+  + '</svg></div>';
+
 /* Barre de sous-onglets en haut du contenu, quand l'espace a plusieurs pages */
 function tsgRenderHubSubnav(pageId) {
   var content = document.getElementById('app-content');
@@ -620,10 +629,12 @@ function tsgRenderHubSubnav(pageId) {
   }
   if (content.firstChild !== bar) content.insertBefore(bar, content.firstChild);
   content.classList.add('has-subnav');
-  bar.innerHTML = '<div class="hub-subnav-in">' + hub.pages.map(function(p) {
+  bar.innerHTML = TSG_LANDSCAPE + '<div class="hub-subnav-in">' + hub.pages.map(function(p) {
     var on = p.page === pageId;
     return '<button type="button" role="tab" class="hub-sub' + (on ? ' active' : '') + '" data-sub="' + p.page + '" aria-selected="' + on + '">' + p.label + '</button>';
   }).join('') + '</div>';
+  // Hauteur réelle de l'en-tête → la Scorecard (bureau) tient pile dans l'écran
+  try { content.style.setProperty('--hub-h', bar.offsetHeight + 'px'); } catch (e) {}
 }
 
 /* ─── BARRE DE NAVIGATION MOBILE (bas) ─── */

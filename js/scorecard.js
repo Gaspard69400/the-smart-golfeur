@@ -384,7 +384,7 @@ function buildPuttsInputs(course) {
     inp.id = 'putt-' + h.num;
     inp.placeholder = '—';
     inp.className = 'putts-inp';
-    inp.style.cssText = 'width:100%;max-width:44px;height:38px;background:var(--bg);border:1px solid var(--bd-card);border-radius:8px;text-align:center;color:var(--tx);font-family:"Plus Jakarta Sans",sans-serif;font-size:16px;font-weight:700;padding:0;outline:none;-moz-appearance:textfield;-webkit-appearance:none';
+    inp.style.cssText = 'width:100%;max-width:44px;height:38px;background:var(--bg);border:1px solid var(--bd-card);border-radius:8px;text-align:center;color:var(--tx);font-family:"Figtree",sans-serif;font-size:16px;font-weight:700;padding:0;outline:none;-moz-appearance:textfield;-webkit-appearance:none';
     inp.addEventListener('input', (function(num){ return function(){ onPuttInput(num, this); }; })(h.num));
     cell.appendChild(numLbl); cell.appendChild(inp);
     if (h.num <= 9) row1.appendChild(cell); else row2.appendChild(cell);
