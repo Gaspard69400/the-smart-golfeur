@@ -157,12 +157,75 @@ function shcImport(id, btn) {
   try {
     saveUserCourse(course);
     showToast('« ' + (course.name || 'Parcours') +' » ajouté à tes parcours ✓');
-    if (typeof crsRefresh === 'function') crsRefresh();
-    else shcRenderList();
+    if (typeof crsRefresh === 'function' && document.getElementById('page-courses')) { try { crsRefresh(); } catch (e) {} }
+    if (_shcListEl) shcRenderList();
+    return course;
   } catch (e) {
     showToast('Erreur : ' + e.message);
     if (btn) { btn.disabled = false; btn.textContent = '+ Ajouter'; }
   }
+  return null;
+}
+
+/* Charge (une fois par session) la liste des parcours partagés, puis cb(liste) */
+function shcFetch(cb) {
+  if (typeof cloudActive !== 'function' || !cloudActive() || !window.sbClient) { cb(null); return; }
+  if (_shcCache) { cb(_shcCache); return; }
+  window.sbClient.from('user_courses')
+    .select('id, name, region, ville, par_total, holes, author_name, user_id, data')
+    .eq('shared', true).order('name', { ascending: true }).limit(200)
+    .then(function(res) {
+      if (res.error) { cb(null); return; }
+      _shcCache = res.data || [];
+      cb(_shcCache);
+    }, function() { cb(null); });
+}
+
+/* Scorecard › « Choisir un parcours » : les parcours de la communauté que je n'ai pas
+   encore apparaissent sous les miens (S76). Avant, ils n'étaient visibles que dans
+   Jouer › Parcours — personne ne les trouvait. Un tap = copie chez moi + sélection. */
+var _shcPickTok = 0;
+function shcAppendToPicker(el) {
+  if (!el) return;
+  var tok = ++_shcPickTok;
+  shcFetch(function(rows) {
+    if (tok !== _shcPickTok || !rows || !document.body.contains(el)) return;
+    var old = el.querySelector('.shc-pick');
+    if (old) old.remove();
+    var mine = {}, myIds = {};
+    try { (getAllCourses() || []).forEach(function(c) { if (c.name) mine[c.name.toLowerCase().trim()] = true; if (c.importedFrom) myIds[c.importedFrom] = true; }); } catch (e) {}
+    var inp = document.getElementById('search-input');
+    var q = inp ? inp.value.toLowerCase().trim() : '';
+    var uid = (typeof sbUserId === 'function') ? sbUserId() : null;
+    var list = rows.filter(function(r) {
+      if (!r.data || r.user_id === uid || myIds[r.id]) return false;
+      if (r.name && mine[r.name.toLowerCase().trim()]) return false;
+      if (!q) return true;
+      return [r.name, r.ville, r.region].some(function(v) { return v && String(v).toLowerCase().indexOf(q) >= 0; });
+    });
+    if (!list.length) return;
+    var box = document.createElement('div');
+    box.className = 'shc-pick';
+    box.innerHTML = '<div class="shc-pick-head">Parcours de la communauté</div>' + list.map(function(r) {
+      var meta = [r.ville, r.holes ? r.holes + ' trous' : '', r.par_total ? 'Par ' + r.par_total : '', r.author_name ? 'ajouté par ' + r.author_name : ''].filter(Boolean).join(' · ');
+      return '<button type="button" class="course-item shc-pick-item" data-shc-id="' + shcEsc(r.id) + '">'
+        + '<span class="ci-name">' + shcEsc(r.name || 'Parcours') + '</span>'
+        + '<span class="shc-pick-meta">' + shcEsc(meta) + '</span>'
+        + '<span class="shc-pick-add">+ Ajouter et jouer</span></button>';
+    }).join('');
+    el.appendChild(box);
+    box.addEventListener('click', function(e) {
+      var b = e.target.closest('[data-shc-id]');
+      if (!b) return;
+      var course = shcImport(b.getAttribute('data-shc-id'), null);
+      if (!course) return;
+      if (typeof filterCourses === 'function') { try { filterCourses(); } catch (x) {} }
+      var all = (typeof getAllCourses === 'function') ? getAllCourses() : [];
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].id === course.id) { if (typeof selectCourse === 'function') selectCourse(all[i]); break; }
+      }
+    });
+  });
 }
 
 function shcEsc(s) {

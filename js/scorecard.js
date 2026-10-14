@@ -28,7 +28,9 @@ function renderCourseList(list) {
   const el = document.getElementById('course-list');
   if (!el) return;
   el.innerHTML = '';
-  if (!list.length) { el.innerHTML = '<div style="padding:12px;font-size:10px;color:var(--tx3);text-align:center">Aucun résultat</div>'; return; }
+  // Parcours partagés par les autres joueurs, sous les miens (S76)
+  if (typeof shcAppendToPicker === 'function') setTimeout(function() { shcAppendToPicker(el); }, 0);
+  if (!list.length) { el.innerHTML = '<div class="sc-no-course">Aucun de tes parcours ne correspond</div>'; return; }
   list.forEach(c => {
     const div = document.createElement('div');
     div.className = 'course-item' + (selectedCourse && selectedCourse.id === c.id ? ' selected' : '');
@@ -80,11 +82,10 @@ function renderCourseList(list) {
 
 function filterCourses() {
   const q = document.getElementById('search-input').value.toLowerCase();
+  // Un parcours créé à la main peut ne pas avoir de ville / région / département :
+  // sans ces gardes, la recherche plantait sur lui (S76)
   let list = (typeof getAllCourses === 'function' ? getAllCourses() : COURSES).filter(c =>
-    c.name.toLowerCase().includes(q) ||
-    c.ville.toLowerCase().includes(q) ||
-    c.region.toLowerCase().includes(q) ||
-    c.departement.toLowerCase().includes(q)
+    [c.name, c.ville, c.region, c.departement].some(v => String(v || '').toLowerCase().includes(q))
   );
   if (activeFilter !== 'all') {
     list = list.filter(c => c.region === activeFilter || c.niveau === activeFilter);
@@ -111,7 +112,7 @@ function selectCourse(c) {
   // Update course card
   document.getElementById('course-card').classList.add('visible');
   document.getElementById('cc-name').textContent = c.name;
-  document.getElementById('cc-loc').textContent = `${c.ville} · ${c.departement} · ${c.region}`;
+  document.getElementById('cc-loc').textContent = [c.ville, c.departement, c.region].filter(Boolean).join(' · ');
   document.getElementById('cc-par').textContent = c.par_total;
   document.getElementById('cc-sss').textContent = c.sss;
   document.getElementById('cc-slope').textContent = c.slope;
@@ -628,7 +629,7 @@ function startRound() {
   var dateEl   = document.getElementById('f-date');
   var teeEl    = document.getElementById('f-tee');
   var condEl   = document.getElementById('f-cond');
-  document.getElementById('sc-course-meta').textContent = selectedCourse.ville + ' · ' + selectedCourse.departement + ' · ' + (dateEl ? dateEl.value : '') + ' · ' + (teeEl ? teeEl.value : '') + ' · ' + (condEl ? condEl.options[condEl.selectedIndex].text : '');
+  document.getElementById('sc-course-meta').textContent = [selectedCourse.ville, selectedCourse.departement, dateEl ? dateEl.value : '', (typeof currentTee === 'function' && currentTee(selectedCourse)) ? 'Départ ' + currentTee(selectedCourse).name : '', condEl ? condEl.options[condEl.selectedIndex].text : ''].filter(Boolean).join(' · ');
 
   const info = document.getElementById('sc-header-info');
   info.innerHTML = `
