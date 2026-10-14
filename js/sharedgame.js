@@ -1006,7 +1006,7 @@ function sgmEnsureCourse(game) {
 function sgmBuildRound(game, players, player) {
   var course = sgmEnsureCourse(game);
   var holes = sgmHoles(game);
-  var tee = game.tee || getCourseTees(course)[0] || {};
+  var tee = game.tee || (typeof teeDefault === "function" ? teeDefault(course) : getCourseTees(course)[0]) || {};
   var scores = holes.map(function(h, i) { var s = player.scores ? player.scores[i] : null; return (s === null || s === undefined) ? null : s; });
   while (scores.length < 18) scores.push(null);
   var puttsBy = holes.map(function(h, i) { var p = player.putts ? player.putts[i] : null; return (p === null || p === undefined) ? null : p; });

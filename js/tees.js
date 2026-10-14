@@ -16,6 +16,7 @@
 
 /* Repères français usuels */
 var TEE_PRESETS = [
+  { id: 'noir',  name: 'Noir',  dot: '#1B1F1C', ring: '#000000' },
   { id: 'blanc', name: 'Blanc', dot: '#F5F1E6', ring: '#B9AE93' },
   { id: 'jaune', name: 'Jaune', dot: '#EFC93D', ring: '#C29B10' },
   { id: 'bleu',  name: 'Bleu',  dot: '#5B8DEF', ring: '#3C6BC0' },
@@ -23,6 +24,7 @@ var TEE_PRESETS = [
 ];
 
 function teeMeta(id) {
+  id = String(id || '').replace(/-dames$/, '');   // « Rouge (dames) » = même couleur que le rouge
   for (var i = 0; i < TEE_PRESETS.length; i++) {
     if (TEE_PRESETS[i].id === id) return TEE_PRESETS[i];
   }
@@ -44,10 +46,20 @@ function getCourseTees(course) {
   }];
 }
 
+/* Le départ proposé par défaut : `course.defaultTee` s'il existe (ex. jaune à
+   Lyon Salvagny, le plus joué), sinon le premier de la liste */
+function teeDefault(course) {
+  var tees = getCourseTees(course);
+  if (course && course.defaultTee) {
+    for (var i = 0; i < tees.length; i++) { if (tees[i].id === course.defaultTee) return tees[i]; }
+  }
+  return tees[0] || null;
+}
+
 function findTee(course, id) {
   var tees = getCourseTees(course);
   for (var i = 0; i < tees.length; i++) { if (tees[i].id === id) return tees[i]; }
-  return tees[0] || null;
+  return teeDefault(course);
 }
 
 /* Le départ retenu pour une partie : d'abord ce qui est enregistré dessus,
@@ -57,7 +69,7 @@ function roundTee(round, course) {
     return { id: round.teeId || 'default', name: round.teeName || 'Départ',
              rating: round.teeRating, slope: round.teeSlope };
   }
-  return getCourseTees(course)[0] || null;
+  return teeDefault(course);
 }
 
 /* Dernier départ choisi sur ce parcours (mémorisé d'une partie à l'autre) */
@@ -80,7 +92,7 @@ function teeFillSelect(course) {
   var wanted = teeRecall(course.id);
   var chosen = null;
   for (var i = 0; i < tees.length; i++) { if (tees[i].id === wanted) chosen = tees[i]; }
-  if (!chosen) chosen = tees[0];
+  if (!chosen) chosen = teeDefault(course);
 
   sel.innerHTML = tees.map(function(t) {
     var bits = [];
@@ -100,7 +112,7 @@ function teeFillSelect(course) {
 function currentTee(course) {
   var sel = document.getElementById('f-tee');
   if (!course) return null;
-  if (!sel || !sel.value) return getCourseTees(course)[0] || null;
+  if (!sel || !sel.value) return teeDefault(course);
   return findTee(course, sel.value);
 }
 

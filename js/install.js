@@ -43,6 +43,9 @@ function insPlatform() {
   var ua = navigator.userAgent || '';
   var iOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   if (iOS) return /CriOS|FxiOS|EdgiOS/.test(ua) ? 'ios-other' : 'ios';
+  // Samsung Internet : son installation d'appli web est cassée sur les Android récents
+  // (« conçue pour une ancienne version d'Android », blocage Play Protect) → on passe par Chrome
+  if (/Android/.test(ua) && /SamsungBrowser/.test(ua)) return 'android-samsung';
   if (/Android/.test(ua)) return 'android';
   return 'desktop';
 }
@@ -56,6 +59,13 @@ function insOpen() {
   var p = insPlatform(), body;
   if (insIsStandalone()) {
     body = '<p class="inv-text">✓ L\'app est déjà installée : tu l\'utilises en ce moment depuis ton écran d\'accueil.</p>';
+  } else if (p === 'android-samsung') {
+    body = '<p class="inv-text">Tu utilises <strong>Samsung Internet</strong>. Sur les Android récents, ce navigateur installe mal les applis web : '
+      + 'le téléphone affiche « conçue pour une ancienne version d\'Android » et bloque l\'installation. Ce n\'est pas l\'app, c\'est Samsung Internet.</p>'
+      + '<p class="inv-text"><strong>La solution : installer depuis Chrome.</strong></p>'
+      + '<a class="btn-express" id="ins-chrome" href="' + insChromeIntent() + '"><span class="btn-express-t">Ouvrir dans Chrome</span><span class="btn-express-s">puis menu ⋮ → « Installer l\'application »</span></a>'
+      + '<p class="ins-note">Pas de Chrome ? Dans Samsung Internet, touche le menu <strong>≡</strong> → <strong>« Ajouter la page à »</strong> → <strong>« Écran d\'accueil »</strong> : tu auras un raccourci, sans avertissement.</p>'
+      + '<button class="dash-btn dash-btn-outline" type="button" id="ins-copy">Copier l\'adresse</button>';
   } else if (_insPrompt) {
     body = '<p class="inv-text">Un tap et The Smart Golfer rejoint ton écran d\'accueil : plein écran, ouverture instantanée, et elle <strong>marche sans réseau</strong> sur le parcours.</p>'
       + '<button class="btn-express" type="button" id="ins-go"><span class="btn-express-t">📲 Installer l\'app</span><span class="btn-express-s">gratuit · aucune boutique d\'applications</span></button>';
@@ -100,6 +110,12 @@ function insOpen() {
   if (cp) cp.addEventListener('click', function() { insCopy(insAppUrl()); });
 }
 
+/* Lien qui rouvre l'app dans Chrome (Android) */
+function insChromeIntent() {
+  var u = insAppUrl().replace(/^https?:\/\//, '');
+  return 'intent://' + u + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(insAppUrl()) + ';end';
+}
+
 function insAppUrl() { return location.origin + location.pathname.replace(/index\.html$/, ''); }
 
 function insQr() {
@@ -124,7 +140,7 @@ function insRenderBanner(wrap) {
   b.className = 'ins-banner';
   b.innerHTML = '<span class="ins-b-ico">📲</span><div class="ins-b-txt"><strong>Installe l\'app sur ton téléphone</strong>'
     + '<span>Plein écran, plus rapide, et elle marche sans réseau au golf.</span></div>'
-    + '<button class="dash-btn dash-btn-gold" type="button" id="ins-b-go">' + (_insPrompt ? 'Installer' : 'Comment ?') + '</button>'
+    + '<button class="dash-btn dash-btn-gold" type="button" id="ins-b-go">' + (_insPrompt && p !== 'android-samsung' ? 'Installer' : 'Comment ?') + '</button>'
     + '<button class="ins-b-x" type="button" aria-label="Masquer">×</button>';
   var header = wrap.querySelector('.dash-header');
   if (header && header.nextSibling) wrap.insertBefore(b, header.nextSibling); else wrap.insertBefore(b, wrap.firstChild);

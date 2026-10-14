@@ -84,10 +84,10 @@ group('Différentiel & index WHS');
 
 // Net double bogey : un 9 sur un par 4 avec 1 coup reçu est ramené à 7 avant le calcul
 (function () {
-  // Parcours réel (Lyon Salvagny) : trou n°8 = par 4, SI 1 (le plus difficile).
+  // Parcours réel (Lyon Salvagny, carte corrigée S75) : trou n°4 = par 4, SI 1 (le plus difficile).
   // teeRating=72=par du parcours et teeSlope=113 ⇒ handicap de jeu = index tel quel (ici 1),
   // donc exactement 1 coup rendu, uniquement sur le trou SI 1.
-  var scores = [4,5,4,3,4,5,4,9,3,4,4,4,3,5,4,3,5,4];   // le 9 est au trou n°8 (index 7)
+  var scores = [4,4,5,9,3,5,3,4,4,5,4,4,4,3,5,4,3,4];   // le par partout, sauf 9 au trou n°4 (index 3)
   var round = { courseId: 'golf-lyon-salvagny', teeRating: 72, teeSlope: 113, score: null, scores: scores };
   var adj = whsAdjustedGross(round, 1);
   eq(adj.capped, 1, 'Net double bogey : exactement 1 trou plafonné');

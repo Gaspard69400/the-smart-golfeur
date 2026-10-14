@@ -45,11 +45,16 @@ var DEFAULT_PROFILES = [
 ];
 
 /* ─── PARCOURS DE GOLF ─── */
-/* Seul Lyon Salvagny est inclus pour l'instant.
+/* Seul Lyon Salvagny est inclus pour l'instant (parcours des Étangs).
    Les autres parcours seront ajoutés par l'utilisateur lui-même
    via la fonctionnalité "Ajouter mon parcours" (Session 8). */
 
-const COURSES = [{"id":"golf-lyon-salvagny","name":"Lyon Salvagny Golf Club","region":"Auvergne-Rhône-Alpes","departement":"Rhône","ville":"La Tour-de-Salvagny","cp":"69890","sss":73.8,"slope":138,"par_total":72,"longueur_totale":6107,"rating":73.8,"type":"18 trous","niveau":"Expert","trous":[{"num":1,"par":4,"longueur":358,"si":11},{"num":2,"par":5,"longueur":472,"si":5},{"num":3,"par":4,"longueur":332,"si":13},{"num":4,"par":3,"longueur":152,"si":17},{"num":5,"par":4,"longueur":388,"si":3},{"num":6,"par":5,"longueur":488,"si":7},{"num":7,"par":4,"longueur":368,"si":9},{"num":8,"par":4,"longueur":408,"si":1},{"num":9,"par":3,"longueur":165,"si":15},{"num":10,"par":4,"longueur":348,"si":12},{"num":11,"par":4,"longueur":410,"si":2},{"num":12,"par":4,"longueur":348,"si":14},{"num":13,"par":3,"longueur":158,"si":18},{"num":14,"par":5,"longueur":482,"si":8},{"num":15,"par":4,"longueur":378,"si":4},{"num":16,"par":3,"longueur":138,"si":16},{"num":17,"par":5,"longueur":502,"si":6},{"num":18,"par":4,"longueur":365,"si":10}]}];
+/* Lyon Salvagny — Les Étangs (S75, carte corrigée à la demande de Gaspard).
+   Pars confirmés par Gaspard (aller 4-4-5-4-3-5-3-4-4). SI et longueurs par repère :
+   carte publiée (GolfPass / SouslePar, mêmes chiffres) ; SSS / slope : valeurs FFGolf
+   relayées par des-balles-et-des-birdies.com (oct. 2026). `longueur` = repère jaune,
+   `longueurs` = par repère (appliquées au départ choisi, scApplyTee). */
+const COURSES = [{"id":"golf-lyon-salvagny","name":"Lyon Salvagny Golf Club","region":"Auvergne-Rhône-Alpes","departement":"Rhône","ville":"La Tour-de-Salvagny","cp":"69890","sss":71.8,"slope":137,"par_total":72,"longueur_totale":5591,"rating":71.8,"type":"18 trous","niveau":"Expert","defaultTee":"jaune","departs":[{"id":"noir","name":"Noir","rating":74.4,"slope":152,"longueur":6083},{"id":"blanc","name":"Blanc","rating":73.8,"slope":147,"longueur":5990},{"id":"jaune","name":"Jaune","rating":71.8,"slope":137,"longueur":5591},{"id":"bleu","name":"Bleu","rating":69.0,"slope":129,"longueur":5156},{"id":"rouge","name":"Rouge","rating":66.8,"slope":126,"longueur":4706},{"id":"jaune-dames","name":"Jaune (dames)","rating":78.0,"slope":146,"longueur":5591},{"id":"bleu-dames","name":"Bleu (dames)","rating":75.2,"slope":138,"longueur":5156},{"id":"rouge-dames","name":"Rouge (dames)","rating":71.8,"slope":130,"longueur":4706}],"trous":[{"num":1,"par":4,"longueur":310,"si":11,"longueurs":{"noir":326,"blanc":318,"jaune":310,"bleu":285,"rouge":285}},{"num":2,"par":4,"longueur":293,"si":7,"longueurs":{"noir":321,"blanc":321,"jaune":293,"bleu":274,"rouge":219}},{"num":3,"par":5,"longueur":451,"si":17,"longueurs":{"noir":485,"blanc":479,"jaune":451,"bleu":421,"rouge":412}},{"num":4,"par":4,"longueur":340,"si":1,"longueurs":{"noir":368,"blanc":354,"jaune":340,"bleu":326,"rouge":264}},{"num":5,"par":3,"longueur":146,"si":15,"longueurs":{"noir":163,"blanc":163,"jaune":146,"bleu":127,"rouge":127}},{"num":6,"par":5,"longueur":442,"si":5,"longueurs":{"noir":507,"blanc":488,"jaune":442,"bleu":428,"rouge":416}},{"num":7,"par":3,"longueur":134,"si":13,"longueurs":{"noir":153,"blanc":147,"jaune":134,"bleu":134,"rouge":114}},{"num":8,"par":4,"longueur":389,"si":3,"longueurs":{"noir":431,"blanc":424,"jaune":389,"bleu":274,"rouge":274}},{"num":9,"par":4,"longueur":307,"si":9,"longueurs":{"noir":327,"blanc":327,"jaune":307,"bleu":298,"rouge":262}},{"num":10,"par":5,"longueur":410,"si":10,"longueurs":{"noir":426,"blanc":426,"jaune":410,"bleu":388,"rouge":378}},{"num":11,"par":4,"longueur":369,"si":4,"longueurs":{"noir":403,"blanc":389,"jaune":369,"bleu":334,"rouge":263}},{"num":12,"par":4,"longueur":320,"si":14,"longueurs":{"noir":351,"blanc":351,"jaune":320,"bleu":284,"rouge":284}},{"num":13,"par":4,"longueur":355,"si":2,"longueurs":{"noir":378,"blanc":378,"jaune":355,"bleu":327,"rouge":308}},{"num":14,"par":3,"longueur":149,"si":8,"longueurs":{"noir":160,"blanc":160,"jaune":149,"bleu":136,"rouge":124}},{"num":15,"par":5,"longueur":435,"si":16,"longueurs":{"noir":460,"blanc":460,"jaune":435,"bleu":424,"rouge":382}},{"num":16,"par":4,"longueur":284,"si":18,"longueurs":{"noir":329,"blanc":310,"jaune":284,"bleu":261,"rouge":234}},{"num":17,"par":3,"longueur":164,"si":6,"longueurs":{"noir":183,"blanc":183,"jaune":164,"bleu":164,"rouge":150}},{"num":18,"par":4,"longueur":293,"si":12,"longueurs":{"noir":312,"blanc":312,"jaune":293,"bleu":271,"rouge":210}}]}];
 
 /* ─── CLUBS DISPONIBLES ─── */
 
@@ -164,7 +169,18 @@ function tsgRoundHolePars(round, courses) {
 function tsgStampHolePars() {
   var rounds = lsGet('rounds') || [];
   var courses = getAllCourses(), n = 0;
+  // S75 : l'ancienne carte de Lyon Salvagny avait des pars FAUX (aller 4-5-4-3-4-5-4-4-3).
+  // Les parties jouées dessus gardent leurs scores (vrais) mais reçoivent les bons pars.
+  // Relancé à chaque démarrage : la synchro cloud peut ramener l'ancienne liste.
+  var LS_OLD = '4,5,4,3,4,5,4,4,3,4,4,4,3,5,4,3,5,4';
+  var lsNew = null;
+  for (var i = 0; i < COURSES.length; i++) if (COURSES[i].id === 'golf-lyon-salvagny') lsNew = COURSES[i].trous.map(function(h) { return h.par; });
   rounds.forEach(function(r) {
+    if (lsNew && Array.isArray(r.holePars) && r.holePars.join(',') === LS_OLD
+        && (r.courseId === 'golf-lyon-salvagny' || /salvagny/i.test(String(r.course || '')))) {
+      r.holePars = lsNew.slice(); n++;
+      return;
+    }
     if (Array.isArray(r.holePars) || !Array.isArray(r.scores)) return;
     var pars = tsgRoundHolePars(r, courses);
     if (pars) { r.holePars = pars; n++; }

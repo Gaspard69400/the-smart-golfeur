@@ -197,6 +197,11 @@ function scApplyTee() {
   if (slo && t.slope) slo.textContent = t.slope;
   if (rat && t.rating) rat.textContent = Number(t.rating).toFixed(1);
   if (len && t.longueur) len.textContent = t.longueur + 'm';
+  // Longueur de chaque trou depuis CE départ, quand le parcours la connaît (Lyon Salvagny, S75)
+  var key = String(t.id || '').replace(/-dames$/, '');
+  (selectedCourse.trous || []).forEach(function(h) {
+    if (h.longueurs && h.longueurs[key]) h.longueur = h.longueurs[key];
+  });
 }
 
 // ── BUILD TABLES ──
