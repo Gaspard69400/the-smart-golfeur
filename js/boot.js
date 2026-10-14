@@ -14,6 +14,9 @@
     try { sgmCaptureFromUrl(); } catch (e) { console.warn('[TSG] partie partagée:', e.message); }
   }
   // Lien d'ami (?ami=CODE) : gardé jusqu'à la connexion, inscription comprise
+  if (typeof coachCaptureFromUrl === 'function') {
+    try { coachCaptureFromUrl(); } catch (e) { console.warn('[TSG] lien coach:', e.message); }
+  }
   if (typeof frdCaptureFromUrl === 'function') {
     try { frdCaptureFromUrl(); } catch (e) { console.warn('[TSG] lien d\'ami:', e.message); }
   }
@@ -35,6 +38,10 @@
   // Bandeau « Un ami t'invite »
   if (typeof frdRenderAuthBanners === 'function') {
     try { frdRenderAuthBanners(); } catch (e) {}
+  }
+  // Bandeau « Espace coach » (lien …/?coach)
+  if (typeof coachRenderAuthBanners === 'function') {
+    try { coachRenderAuthBanners(); } catch (e) {}
   }
 
   // Préparer les profils de démo (dans la section repliée)

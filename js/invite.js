@@ -253,3 +253,87 @@ function invOpenShare(group) {
     }).catch(function() {});
   });
 }
+
+/* ═════════════ LIEN COACH (…/?coach) — S74 ═════════════
+   Le lien à envoyer aux coachs : il ouvre l'inscription déjà réglée en
+   version coach (rôle « Head Coach »), au lieu de devoir trouver le rôle
+   dans « Options avancées ». Garde-fou : un compte JOUEUR existant n'est
+   jamais basculé sans confirmation. */
+var COACH_LINK_TTL_DAYS = 14;
+
+function coachCaptureFromUrl() {
+  var on = false;
+  try { on = new URLSearchParams(location.search).has('coach'); } catch (e) {}
+  if (!on) return false;
+  lsSet('pendingCoach', { ts: Date.now() });
+  try {
+    var params = new URLSearchParams(location.search);
+    params.delete('coach');
+    var qs = params.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+  } catch (e) {}
+  return true;
+}
+
+function coachPending() {
+  var p = lsGet('pendingCoach');
+  if (!p) return false;
+  if (Date.now() - (p.ts || 0) > COACH_LINK_TTL_DAYS * 86400000) { coachClearPending(); return false; }
+  return true;
+}
+function coachClearPending() { try { localStorage.removeItem('tsg_pendingCoach'); } catch (e) {} }
+
+/* Accueil + écran de connexion : bandeau « Espace coach », inscription pré-réglée */
+function coachRenderAuthBanners() {
+  if (!coachPending()) return;
+  document.querySelectorAll('.coach-banner').forEach(function(b) { b.remove(); });
+  var html = '<span class="inv-banner-ico">🎓</span><div><strong>Espace coach — The Smart Golfer</strong>'
+    + '<div class="inv-banner-sub">Crée ton compte : il sera directement en version coach (Coach Hub, suivi de tes joueurs, exercices à leur assigner).</div></div>';
+  var cta = document.querySelector('#landing .ld-cta');
+  if (cta) {
+    var b1 = document.createElement('div');
+    b1.className = 'inv-banner inv-banner-dark coach-banner';
+    b1.innerHTML = html;
+    cta.parentNode.insertBefore(b1, cta);
+  }
+  var box = document.getElementById('auth-box');
+  if (box) {
+    var b2 = document.createElement('div');
+    b2.className = 'inv-banner coach-banner';
+    b2.innerHTML = html;
+    box.insertBefore(b2, box.firstChild);
+    var tab = document.getElementById('auth-tab-signup');
+    if (tab) tab.click();
+    var role = document.getElementById('auth-role');
+    if (role) role.value = 'head';
+    var opt = document.querySelector('#auth-box details.qs-opt');
+    if (opt) opt.open = true;
+  }
+}
+
+/* Après le lancement : souhaite la bienvenue au coach et ouvre son espace */
+function coachOnLaunch() {
+  if (!coachPending() || !currentUser) return;
+  var isCoachRole = currentUser.role === 'head' || currentUser.role === 'coach';
+  if (isCoachRole) {
+    coachClearPending();
+    showToast('Bienvenue dans l\'espace coach : partage ton code d\'équipe à tes joueurs');
+    showPage('coach');
+    return;
+  }
+  // Compte joueur déjà existant (ou mode démo) : on demande avant de changer quoi que ce soit
+  if (!window.tsgCloud || !window.sbClient) {
+    coachClearPending();
+    showToast('La version coach demande un compte : crée-le depuis l\'écran de connexion');
+    return;
+  }
+  coachClearPending();
+  if (!confirm('Tu as ouvert le lien coach. Passer ce compte en version coach (Head Coach) ?\n\nTu pourras toujours jouer et enregistrer tes parties.')) return;
+  window.sbClient.from('profiles').update({ role: 'head' }).eq('id', currentUser.id).then(function(res) {
+    if (res && res.error) { showToast('Impossible de changer le rôle pour l\'instant'); return; }
+    currentUser.role = 'head';
+    try { updateNavUI(); buildPages(); } catch (e) {}
+    showToast('Ton compte est maintenant en version coach');
+    showPage('coach');
+  }, function() { showToast('Impossible de changer le rôle (réseau)'); });
+}

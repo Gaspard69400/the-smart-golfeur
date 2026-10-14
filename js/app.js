@@ -416,6 +416,9 @@ function launchAppCore() {
   // 12-bis. Amis : lien d'ami en attente, demandes reçues (friends.js)
   if (typeof frdOnLaunch === 'function') { setTimeout(function() { try { frdOnLaunch(); } catch (e) {} }, 1200); }
 
+  // 12-ter. Lien coach (…/?coach) : bienvenue + ouverture du Coach Hub (invite.js)
+  if (typeof coachOnLaunch === 'function') { setTimeout(function() { try { coachOnLaunch(); } catch (e) {} }, 1500); }
+
   // 12a. Index officiel → profil cloud (classements, groupes)
   if (typeof lbSyncProfileIndex === 'function') { setTimeout(function() { try { lbSyncProfileIndex(); } catch (e) {} }, 2000); }
 
