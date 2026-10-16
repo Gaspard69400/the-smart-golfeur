@@ -6374,3 +6374,5 @@ a.btn-express { text-decoration: none; }
 .shc-pick-add { font-size: 12.5px; font-weight: 800; color: var(--night); }
 :root[data-theme="dark"] .shc-pick-add { color: var(--gold); }
 @media (prefers-color-scheme: dark) { :root[data-theme="auto"] .shc-pick-add { color: var(--gold); } }
+/* Fairway : ← Gauche / Touché / Droite → (S77) */
+.qs-fir3 .qs-opt-b { flex: 1 1 0; white-space: nowrap; }

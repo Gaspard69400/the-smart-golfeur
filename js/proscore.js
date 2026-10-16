@@ -17,6 +17,7 @@ function openImmersiveScoring() {
   scores = new Array(18).fill(null);
   putts = new Array(18).fill(null);
   firState = {};
+  firMissSide = {};
   girState = {};
   if (typeof roundStarted !== 'undefined') roundStarted = true;
   window.sc_proMode = false;
@@ -69,8 +70,9 @@ function immRender() {
   if (!isPar3) {
     firHtml = '<div class="imm-sub-item"><div class="imm-sub-lbl">Fairway</div>'
       + '<div class="imm-fir-toggle">'
+      + '<button class="imm-fir ' + (firState[hole.num] === 'miss' && firMissSide[hole.num] === 'left' ? 'on' : '') + '" data-a="fir-left">← Gauche</button>'
       + '<button class="imm-fir ' + (firState[hole.num] === 'hit' ? 'on' : '') + '" data-a="fir-hit">Touché</button>'
-      + '<button class="imm-fir ' + (firState[hole.num] === 'miss' ? 'on' : '') + '" data-a="fir-miss">Raté</button>'
+      + '<button class="imm-fir ' + (firState[hole.num] === 'miss' && firMissSide[hole.num] === 'right' ? 'on' : '') + '" data-a="fir-right">Droite →</button>'
       + '</div></div>';
   }
   var navRight = (_immHole < 18)
@@ -129,8 +131,9 @@ function immAction(a) {
   else if (a === 's-') scores[idx] = Math.max(1, (scores[idx] || hole.par) - 1);
   else if (a === 'p+') putts[idx] = Math.min(10, (putts[idx] || 0) + 1);
   else if (a === 'p-') putts[idx] = Math.max(0, (putts[idx] || 0) - 1);
-  else if (a === 'fir-hit') firState[hole.num] = (firState[hole.num] === 'hit') ? undefined : 'hit';
-  else if (a === 'fir-miss') firState[hole.num] = (firState[hole.num] === 'miss') ? undefined : 'miss';
+  else if (a === 'fir-hit') scSetFairway(hole.num, 'hit');
+  else if (a === 'fir-left') scSetFairway(hole.num, 'left');
+  else if (a === 'fir-right') scSetFairway(hole.num, 'right');
   immComputeGir(hole);
   immRender();
 }

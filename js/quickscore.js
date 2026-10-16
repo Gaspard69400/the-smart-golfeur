@@ -28,6 +28,7 @@ function qsSaveDraft() {
     scores: scores,
     putts: putts,
     fir: firState,
+    firSide: firMissSide,
     gir: girState,
     updatedAt: new Date().toISOString()
   });
@@ -92,6 +93,7 @@ function qsResume() {
   scores = d.scores.slice();
   putts = d.putts ? d.putts.slice() : new Array(18).fill(null);
   firState = d.fir || {};
+  firMissSide = d.firSide || {};
   girState = d.gir || {};
   _qsHole = d.hole || 1;
   _qsUndo = [];
@@ -117,6 +119,7 @@ function openQuickScore() {
   scores = new Array(18).fill(null);
   putts = new Array(18).fill(null);
   firState = {};
+  firMissSide = {};
   girState = {};
   _qsHole = 1;
   _qsUndo = [];
@@ -221,12 +224,16 @@ function qsRender() {
     + (pt > 4 ? pt : '+') + '</button>';
   var firRow = '';
   if (par !== 3) {
+    // Manqué à gauche / touché / manqué à droite (S77)
+    var fMiss = firState[hole.num] === 'miss', fSide = firMissSide[hole.num];
+    var fl = (fMiss && fSide === 'left') ? ' on' : '';
     var fh = (firState[hole.num] === 'hit') ? ' on' : '';
-    var fm = (firState[hole.num] === 'miss') ? ' on' : '';
+    var fr = (fMiss && fSide === 'right') ? ' on' : '';
     firRow = '<div class="qs-opt-row"><span class="qs-opt-l">Fairway</span>'
-      + '<div class="qs-opt-btns">'
+      + '<div class="qs-opt-btns qs-fir3">'
+      + '<button class="qs-opt-b' + fl + '" data-fir="left" aria-label="Fairway manqué à gauche">← Gauche</button>'
       + '<button class="qs-opt-b' + fh + '" data-fir="hit">Touché</button>'
-      + '<button class="qs-opt-b' + fm + '" data-fir="miss">Raté</button>'
+      + '<button class="qs-opt-b' + fr + '" data-fir="right" aria-label="Fairway manqué à droite">Droite →</button>'
       + '</div></div>';
   }
 
@@ -345,7 +352,7 @@ function qsWire() {
     b.addEventListener('click', function() {
       var num = selectedCourse.trous[_qsHole - 1].num;
       var v = b.getAttribute('data-fir');
-      firState[num] = (firState[num] === v) ? undefined : v;
+      scSetFairway(num, v);
       qsSaveDraft();
       qsRender();
     });

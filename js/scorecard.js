@@ -16,6 +16,8 @@ let activeFilter = 'all';
 let scores = new Array(18).fill(null);
 let putts = new Array(18).fill(null);
 let firState = {};
+// Côté du fairway manqué (S77) : { numTrou: 'left' | 'right' } — saisie express et trou par trou
+let firMissSide = {};
 let girState = {};
 let roundStarted = false;
 let roundHistory = lsGet('rounds') || [];
@@ -610,6 +612,35 @@ function updateAnalysis() {
     </div>`;
 }
 
+/* Fairways pour l'analyse « Répartition des miss au drive » (S77) : la saisie détaillée
+   remplit sc_holeFairway ; la saisie express / trou par trou remplit firState + firMissSide.
+   On fusionne les deux (le détail l'emporte). */
+/* Un tap sur Gauche / Touché / Droite ; re-taper le même bouton efface (S77) */
+function scSetFairway(num, v) {
+  if (v === 'hit') {
+    firState[num] = (firState[num] === 'hit') ? undefined : 'hit';
+    delete firMissSide[num];
+    return;
+  }
+  if (firState[num] === 'miss' && firMissSide[num] === v) { firState[num] = undefined; delete firMissSide[num]; return; }
+  firState[num] = 'miss';
+  firMissSide[num] = v;
+}
+
+function scFairwayMap() {
+  var m = JSON.parse(JSON.stringify(typeof sc_holeFairway !== 'undefined' ? sc_holeFairway : {}));
+  Object.keys(firState).forEach(function(k) {
+    if (m[k] !== undefined) return;
+    if (firState[k] === 'hit') m[k] = 'yes'; else if (firState[k] === 'miss') m[k] = 'no';
+  });
+  return m;
+}
+function scFairwayMissMap() {
+  var m = JSON.parse(JSON.stringify(typeof sc_holeFairwayMissSide !== 'undefined' ? sc_holeFairwayMissSide : {}));
+  Object.keys(firMissSide).forEach(function(k) { if (m[k] === undefined && firState[k] === 'miss') m[k] = firMissSide[k]; });
+  return m;
+}
+
 // ── ROUND LIFECYCLE ──
 function startRound() {
   if (!selectedCourse) return;
@@ -617,6 +648,7 @@ function startRound() {
   scores = new Array(18).fill(null);
   putts = new Array(18).fill(null);
   firState = {};
+  firMissSide = {};
   girState = {};
   sc_detailData = {};
 
@@ -658,6 +690,7 @@ function resetRound() {
   scores = new Array(18).fill(null);
   putts = new Array(18).fill(null);
   firState = {};
+  firMissSide = {};
   girState = {};
   sc_detailData = {};
   clearDraftShots();
@@ -754,6 +787,8 @@ function saveRound() {
     // Trou par trou (S42) : putts, fairway, green — avant, seuls les totaux étaient gardés
     puttsByHole: putts.map(function(p) { return (p === null || p === undefined) ? null : p; }),
     firByHole: selectedCourse.trous.map(function(h) { return firState[h.num] === 'hit' ? 1 : firState[h.num] === 'miss' ? 0 : null; }),
+    // Côté du fairway manqué, trou par trou : 'L' / 'R' / null (S77)
+    firMissByHole: selectedCourse.trous.map(function(h) { return firState[h.num] === 'miss' && firMissSide[h.num] ? (firMissSide[h.num] === 'left' ? 'L' : 'R') : null; }),
     girByHole: selectedCourse.trous.map(function(h) { return girState[h.num] === 'hit' ? 1 : girState[h.num] === 'miss' ? 0 : null; }),
     // Strokes Gained : calculés plus bas par le modèle de référence (strokesgained.js)
     sg_tee: null, sg_app: null, sg_arg: null, sg_putt: null,
@@ -763,8 +798,8 @@ function saveRound() {
     shots: JSON.parse(JSON.stringify(sc_shotsByHole)),
     shotsOnGreen: JSON.parse(JSON.stringify(sc_holeOnGreen)),
     shotsPutts: JSON.parse(JSON.stringify(sc_holePutts)),
-    shotsFairway: JSON.parse(JSON.stringify(sc_holeFairway)),
-    shotsFairwayMissSide: JSON.parse(JSON.stringify(typeof sc_holeFairwayMissSide !== 'undefined' ? sc_holeFairwayMissSide : {})),
+    shotsFairway: scFairwayMap(),
+    shotsFairwayMissSide: scFairwayMissMap(),
     clubs: [],
     fairwayPos: [],
     distRemain: [],
