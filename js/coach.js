@@ -190,7 +190,7 @@ function coachRenderPlayerView(root) {
         var coaches = (r2 && r2.data) ? r2.data : [];
         var panel = document.createElement('div');
         panel.className = 'panel';
-        panel.innerHTML = '<div class="panel-header"><div class="panel-title">Mon coach</div></div>';
+        panel.innerHTML = '<div class="panel-header"><div class="panel-title">' + (coaches.length > 1 ? 'Mes coachs' : 'Mon coach') + '</div></div>';
         var b = document.createElement('div');
         b.className = 'panel-body';
         coaches.forEach(function(c) {
@@ -216,10 +216,13 @@ function coachRenderPlayerView(root) {
         var hint = document.createElement('div');
         hint.className = 'ch-code-hint';
         hint.style.marginTop = '12px';
-        hint.innerHTML = 'Ton coach voit tes statistiques (parties, objectifs, exercices faits) pour t\'accompagner.';
+        hint.innerHTML = (coaches.length > 1 ? 'Chacun de tes coachs voit' : 'Ton coach voit') + ' tes statistiques (parties, objectifs, exercices faits) pour t\'accompagner.';
         b.appendChild(hint);
         panel.appendChild(b);
         root.appendChild(panel);
+
+        // Plusieurs coachs possibles (S78) : on peut toujours en ajouter un autre
+        coachJoinPanel(root, true);
 
         // Tournois proposés par le(s) coach(s) — le joueur peut indiquer s'il joue
         coaches.forEach(function(c) {
@@ -229,41 +232,50 @@ function coachRenderPlayerView(root) {
         });
       });
     } else {
-      // Formulaire pour rejoindre un coach
-      var panel = document.createElement('div');
-      panel.className = 'panel';
-      panel.innerHTML = '<div class="panel-header"><div class="panel-title">Rejoindre un coach</div></div>'
-        + '<div class="panel-body">'
-        +   '<div class="ch-join-intro">Ton coach t\'a donné un <strong>code d\'équipe</strong> ? Saisis-le ci-dessous pour qu\'il puisse suivre ta progression.</div>'
-        +   '<div class="ch-join-row">'
-        +     '<input type="text" class="ch-join-input" id="ch-join-code" placeholder="Ex : A1B2C3" maxlength="12" autocomplete="off">'
-        +     '<button class="dash-btn dash-btn-gold" id="ch-join-btn">Rejoindre</button>'
-        +   '</div>'
-        +   '<div class="ch-join-error" id="ch-join-error" style="display:none"></div>'
-        + '</div>';
-      root.appendChild(panel);
-
-      var btn = document.getElementById('ch-join-btn');
-      var input = document.getElementById('ch-join-code');
-      function submit() {
-        var code = (input.value || '').trim();
-        var errEl = document.getElementById('ch-join-error');
-        if (!code) { errEl.style.display = 'block'; errEl.textContent = 'Saisis un code.'; return; }
-        btn.disabled = true; errEl.style.display = 'none';
-        sb.rpc('join_coach_by_code', { p_code: code }).then(function(res) {
-          btn.disabled = false;
-          var d = res.data;
-          if (res.error) { errEl.style.display = 'block'; errEl.textContent = res.error.message; return; }
-          if (d && d.ok) { showToast('Tu as rejoint ' + (d.coach_name || 'ton coach') + ' ✓'); coachRefresh(); }
-          else { errEl.style.display = 'block'; errEl.textContent = (d && d.error) || 'Code invalide.'; }
-        }, function(err) { btn.disabled = false; errEl.style.display = 'block'; errEl.textContent = err.message; });
-      }
-      if (btn) btn.addEventListener('click', submit);
-      if (input) input.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); });
+      coachJoinPanel(root, false);
     }
   }).catch(function(e) {
-    root.innerHTML = '<div class="an-empty-card"><div class="an-empty-title">Erreur</div><div class="an-empty-text">' + e.message + '</div></div>';
+    root.innerHTML = '<div class="an-empty-card"><div class="an-empty-title">Erreur</div><div class="an-empty-text">' + coachEsc(e.message) + '</div></div>';
   });
+}
+
+/* Formulaire « Rejoindre un coach » — aussi affiché quand on en a déjà un (ajouter un 2e coach) */
+function coachJoinPanel(root, already) {
+  var sb = window.sbClient;
+  var panel = document.createElement('div');
+  panel.className = 'panel';
+  if (already) panel.style.marginTop = '14px';
+  panel.innerHTML = '<div class="panel-header"><div class="panel-title">' + (already ? 'Ajouter un autre coach' : 'Rejoindre un coach') + '</div></div>'
+    + '<div class="panel-body">'
+    +   '<div class="ch-join-intro">' + (already
+          ? 'Tu travailles avec plusieurs coachs (swing, putting, préparation physique…) ? Saisis le <strong>code d\'équipe</strong> de chacun.'
+          : 'Ton coach t\'a donné un <strong>code d\'équipe</strong> ? Saisis-le ci-dessous pour qu\'il puisse suivre ta progression.') + '</div>'
+    +   '<div class="ch-join-row">'
+    +     '<input type="text" class="ch-join-input" placeholder="Ex : A1B2C3" maxlength="12" autocomplete="off" aria-label="Code d\'équipe du coach">'
+    +     '<button class="dash-btn dash-btn-gold" type="button">' + (already ? 'Ajouter' : 'Rejoindre') + '</button>'
+    +   '</div>'
+    +   '<div class="ch-join-error" style="display:none"></div>'
+    + '</div>';
+  root.appendChild(panel);
+
+  // Références directes : le panneau peut être hors du document au moment du rendu
+  var btn = panel.querySelector('.ch-join-row button');
+  var input = panel.querySelector('.ch-join-input');
+  var errEl = panel.querySelector('.ch-join-error');
+  function submit() {
+    var code = (input.value || '').trim();
+    if (!code) { errEl.style.display = 'block'; errEl.textContent = 'Saisis un code.'; return; }
+    btn.disabled = true; errEl.style.display = 'none';
+    sb.rpc('join_coach_by_code', { p_code: code }).then(function(res) {
+      btn.disabled = false;
+      var d = res.data;
+      if (res.error) { errEl.style.display = 'block'; errEl.textContent = res.error.message; return; }
+      if (d && d.ok) { showToast('Tu as rejoint ' + (d.coach_name || 'ton coach') + ' ✓'); coachRefresh(); }
+      else { errEl.style.display = 'block'; errEl.textContent = (d && d.error) || 'Code invalide.'; }
+    }, function(err) { btn.disabled = false; errEl.style.display = 'block'; errEl.textContent = err.message; });
+  }
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); });
 }
 
 function coachRefresh() {

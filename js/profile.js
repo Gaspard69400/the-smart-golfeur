@@ -68,7 +68,7 @@ function buildProfilePage(container) {
     +   (cloud ? prfRow('public', 'Mon profil public', 'Ce que voient tes amis') : '')
     +   prfRow('stats', 'Mes stats détaillées', 'Coups gagnés et perdus, évolution')
     +   prfRow('courses', 'Mes parcours', 'Ajouter ou modifier un parcours')
-    +   prfRow('coach', 'Mon coach', 'Rejoindre ton coach avec son code')
+    +   prfRow('coach', 'Mes coachs', 'Un ou plusieurs coachs, avec leur code')
     +   prfRow('invite', 'Inviter un ami', 'Lien ou QR code')
     +   prfRow('settings', 'Paramètres', 'Apparence, sauvegardes, confidentialité')
     +   prfRow('logout', 'Se déconnecter', '')

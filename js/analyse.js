@@ -335,10 +335,12 @@ function renderPrecision() {
   var dispCard = document.createElement('div');
   dispCard.className = 'an-card';
 
-  var firTotal = 0, firHit = 0, leftMiss = 0, rightMiss = 0, otherMiss = 0;
-  var hasDetail = false;
+  var firTotal = 0, firHit = 0, leftMiss = 0, rightMiss = 0, otherMiss = 0, unknownMiss = 0;
+  var hasDetail = false;      // au moins un côté réellement saisi
+  var estimated = false;      // une partie des fairways manqués n'a pas de côté
   rounds.forEach(function(r) {
-    if (r.fairwayPos && Array.isArray(r.fairwayPos)) {
+    // 1) Saisie détaillée (radar) : position exacte de la balle
+    if (r.fairwayPos && Array.isArray(r.fairwayPos) && r.fairwayPos.some(Boolean)) {
       hasDetail = true;
       r.fairwayPos.forEach(function(pos) {
         if (!pos) return;
@@ -348,17 +350,40 @@ function renderPrecision() {
         else if (pos === 'rough-r' || pos === 'bunker-r') rightMiss++;
         else otherMiss++;
       });
-    } else if (r.fir !== null && r.fir !== undefined) {
+      return;
+    }
+    // 2) Trou par trou (S77) : touché / manqué à gauche / à droite
+    var fb = Array.isArray(r.firByHole) ? r.firByHole : null;
+    var fm = Array.isArray(r.firMissByHole) ? r.firMissByHole : null;
+    var sideMap = r.shotsFairwayMissSide || {};
+    if (fb && fb.some(function(v) { return v === 0 || v === 1; })) {
+      fb.forEach(function(v, i) {
+        if (v !== 0 && v !== 1) return;
+        firTotal++;
+        if (v === 1) { firHit++; return; }
+        var side = (fm && fm[i]) ? (fm[i] === 'L' ? 'left' : 'right') : sideMap[i + 1];
+        if (side === 'left') { leftMiss++; hasDetail = true; }
+        else if (side === 'right') { rightMiss++; hasDetail = true; }
+        else { unknownMiss++; estimated = true; }
+      });
+      return;
+    }
+    // 3) Seulement le total de la partie : côté inconnu
+    if (r.fir !== null && r.fir !== undefined) {
       firTotal += (r.firTotal || 14);
       firHit += r.fir;
+      unknownMiss += Math.max(0, (r.firTotal || 14) - r.fir);
+      estimated = true;
     }
   });
 
-  if (!hasDetail) {
-    // Estimation : répartir les misses équitablement
-    var misses = firTotal - firHit;
-    leftMiss = Math.floor(misses / 2);
-    rightMiss = misses - leftMiss;
+  // Fairways manqués sans côté connu : répartis comme ceux dont on connaît le côté
+  // (moitié-moitié si on n'en connaît aucun)
+  if (unknownMiss) {
+    var known = leftMiss + rightMiss;
+    var addL = known ? Math.round(unknownMiss * leftMiss / known) : Math.floor(unknownMiss / 2);
+    leftMiss += addL;
+    rightMiss += unknownMiss - addL;
   }
 
   var leftPct = firTotal > 0 ? Math.round(leftMiss / firTotal * 100) : 0;
@@ -368,7 +393,7 @@ function renderPrecision() {
   dispCard.innerHTML = ''
     + '<div class="an-card-header">'
     +   '<div class="an-card-title">Dispersion au départ <span class="info-tip" title="Où finit ta balle après le drive. Plus la zone centrale est grande, plus tu es précis. Une forte tendance vers la gauche ou la droite signale un défaut de swing à corriger.">?</span></div>'
-    +   '<div class="an-card-sub">' + firTotal + ' départs analysés' + (hasDetail ? '' : ' · données estimées') + '</div>'
+    +   '<div class="an-card-sub">' + firTotal + ' départs analysés' + (!hasDetail ? ' · données estimées' : (estimated ? ' · côté estimé pour les anciennes parties' : '')) + '</div>'
     + '</div>'
     + '<div class="an-card-body">'
     +   '<div class="an-dispersion">'
@@ -376,7 +401,7 @@ function renderPrecision() {
     +     '<div class="an-disp-zone center"><div class="an-disp-value">' + centerPct + '%</div><div class="an-disp-label">Fairway</div></div>'
     +     '<div class="an-disp-zone"><div class="an-disp-value">' + rightPct + '%</div><div class="an-disp-label">Droite</div></div>'
     +   '</div>'
-    +   (hasDetail ? '' : '<div style="margin-top:12px;padding:10px 14px;background:var(--gold-dim2);border-radius:8px;font-size:11px;color:var(--tx2);line-height:1.5"><strong style="color:var(--gold-d)">Astuce :</strong> Active la <strong>saisie détaillée</strong> dans la Scorecard pour avoir la vraie dispersion (gauche/centre/droite) au lieu d\'une estimation.</div>')
+    +   (hasDetail ? '' : '<div style="margin-top:12px;padding:10px 14px;background:var(--gold-dim2);border-radius:8px;font-size:11px;color:var(--tx2);line-height:1.5"><strong style="color:var(--gold-d)">Astuce :</strong> pendant la saisie de ta carte, indique si tu as manqué le fairway <strong>à gauche ou à droite</strong> (Détail → Fairway) pour avoir ta vraie dispersion au lieu d\'une estimation.</div>')
     + '</div>';
   page.appendChild(dispCard);
 
@@ -386,13 +411,16 @@ function renderPrecision() {
 
   var girPar3 = { hit: 0, total: 0 }, girPar4 = { hit: 0, total: 0 }, girPar5 = { hit: 0, total: 0 };
   rounds.forEach(function(r) {
-    var crs = (typeof COURSES !== 'undefined') ? COURSES.find(function(c) { return c.id === r.courseId; }) : null;
-    if (!crs || !crs.trous) return;
-    if (r.scores && r.scores.length === 18) {
+    // Pars de la partie (bons même pour un parcours perso ou une carte corrigée — S78)
+    var parsArr = (typeof tsgRoundHolePars === 'function') ? tsgRoundHolePars(r) : null;
+    if (!parsArr) return;
+    var gb = Array.isArray(r.girByHole) ? r.girByHole : null;
+    if (r.scores && r.scores.length) {
       r.scores.forEach(function(s, i) {
-        if (s === null) return;
-        var par = crs.trous[i] ? crs.trous[i].par : 4;
-        var hit = (s - par) <= 0;  // approximation : score <= par signifie probablement GIR
+        if (s === null || s === undefined || !parsArr[i]) return;
+        var par = parsArr[i];
+        // Green en régulation saisi (ou déduit des putts) ; sinon approximation score ≤ par
+        var hit = (gb && (gb[i] === 0 || gb[i] === 1)) ? gb[i] === 1 : (s - par) <= 0;
         if (par === 3) { girPar3.total++; if (hit) girPar3.hit++; }
         else if (par === 4) { girPar4.total++; if (hit) girPar4.hit++; }
         else if (par === 5) { girPar5.total++; if (hit) girPar5.hit++; }
@@ -415,7 +443,7 @@ function renderPrecision() {
 
   girCard.innerHTML = ''
     + '<div class="an-card-header">'
-    +   '<div class="an-card-title">Greens par type de trou <span class="info-tip" title="Approximation basée sur le score. Si tu fais le par ou mieux, on considère que tu as touché le green en régulation. Pour la vraie donnée GIR, active la saisie détaillée.">?</span></div>'
+    +   '<div class="an-card-title">Greens par type de trou <span class="info-tip" title="Green en régulation trou par trou quand tu saisis tes putts (score − putts ≤ par − 2). Sur les anciennes cartes sans putts : approximation, le par ou mieux compte comme green touché.">?</span></div>'
     +   '<div class="an-card-sub">Pourcentage de greens atteints en régulation</div>'
     + '</div>'
     + '<div class="an-card-body">'
