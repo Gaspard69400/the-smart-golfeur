@@ -14,6 +14,12 @@
  * ════════════════════════════════════════════ */
 
 var QS_DRAFT_KEY = 'scdraft';
+
+/* Date du jour au format AAAA-MM-JJ, en heure locale */
+function qsLocalDay() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 var _qsHole = 1;
 var _qsUndo = [];
 
@@ -424,7 +430,7 @@ function openQuickTotal() {
     var selAttr = (selectedCourse && selectedCourse.id === c.id) ? ' selected' : '';
     return '<option value="' + qsEsc(c.id) + '"' + selAttr + '>' + qsEsc(c.name) + '</option>';
   }).join('');
-  var today = new Date().toISOString().slice(0, 10);
+  var today = qsLocalDay();
 
   var m = document.createElement('div');
   m.id = 'qt-modal';
@@ -472,9 +478,11 @@ function openQuickTotal() {
     for (var i = 0; i < all.length; i++) { if (all[i].id === cid) { crs = all[i]; break; } }
     if (!selT || !crs || typeof getCourseTees !== 'function') return;
     var tees = getCourseTees(crs);
+    // Départ proposé : le dernier joué sur ce parcours, sinon le départ par défaut (jaune à Lyon Salvagny)
+    var want = (typeof teeRecall === 'function' && teeRecall(crs.id)) || ((typeof teeDefault === 'function' && teeDefault(crs)) || {}).id;
     selT.innerHTML = tees.map(function(t) {
       var extra = t.rating ? (' · SSS ' + Number(t.rating).toFixed(1)) : '';
-      return '<option value="' + qsEsc(t.id) + '">' + qsEsc(t.name + extra) + '</option>';
+      return '<option value="' + qsEsc(t.id) + '"' + (t.id === want ? ' selected' : '') + '>' + qsEsc(t.name + extra) + '</option>';
     }).join('');
     selT.disabled = tees.length < 2;
   }
@@ -498,7 +506,11 @@ function qtSave(close) {
   var total = parseInt(document.getElementById('qt-score').value, 10);
   if (!total || total < 30) { showToast('Renseigne ton score total'); return; }
 
-  var date = document.getElementById('qt-date').value || new Date().toISOString().slice(0, 10);
+  // ⚠️ S79 : `today` n'était PAS défini ici (variable d'openQuickTotal) → ReferenceError à
+  // chaque enregistrement depuis S52 : « J'ai déjà joué — entrer juste le score » ne
+  // sauvegardait jamais rien. Date locale (pas toISOString, qui passe en UTC après minuit).
+  var today = qsLocalDay();
+  var date = document.getElementById('qt-date').value || today;
   var vPutts = parseInt(document.getElementById('qt-putts').value, 10);
   var vGir = parseInt(document.getElementById('qt-gir').value, 10);
   var vFir = parseInt(document.getElementById('qt-fir').value, 10);
