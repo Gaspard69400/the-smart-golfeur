@@ -66,6 +66,7 @@ function buildProfilePage(container) {
     + '</div>'
     + '<div class="prf-list">'
     +   (cloud ? prfRow('public', 'Mon profil public', 'Ce que voient tes amis') : '')
+    +   prfRow('rounds', 'Mes parties', 'Voir toutes tes cartes, en corriger ou en supprimer une')
     +   prfRow('stats', 'Mes stats détaillées', 'Coups gagnés et perdus, évolution')
     +   prfRow('courses', 'Mes parcours', 'Ajouter ou modifier un parcours')
     +   prfRow('coach', 'Mes coachs', 'Un ou plusieurs coachs, avec leur code')
@@ -97,6 +98,7 @@ function buildProfilePage(container) {
     if (k === 'whs' && typeof openWhsModal === 'function') openWhsModal();
     else if (k === 'friends') showPage('community');
     else if (k === 'public' && typeof frdOpenProfile === 'function') frdOpenProfile(u.id);
+    else if (k === 'rounds' && typeof mrOpen === 'function') mrOpen();
     else if (k === 'stats') showPage('analyse');
     else if (k === 'courses') showPage('courses');
     else if (k === 'coach') showPage('coach');

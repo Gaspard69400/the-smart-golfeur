@@ -367,16 +367,29 @@ function syncMergeRounds(cloud) {
   var byId = {};
   local.forEach(function(l) { byId[String(l.id)] = l; });
   var inCloud = {};
+  var pending = syncPendingIds();
+  // S82 : une partie supprimée sur cet appareil dont la suppression n'est pas encore
+  // passée côté serveur (hors-ligne) ne doit pas revenir ; on retente la suppression.
+  var deleted = (lsGet('roundsDeleted') || []).map(String);
+  cloud = cloud.filter(function(c) {
+    if (deleted.indexOf(String(c.id)) === -1) return true;
+    setTimeout(function() { if (window.tsgSync) window.tsgSync.deleteRound(c.id); }, 1500);
+    return false;
+  });
   var merged = cloud.map(function(c) {
     inCloud[String(c.id)] = true;
     var l = byId[String(c.id)];
+    // S82 : partie MODIFIÉE ici et pas encore renvoyée → la version locale gagne
+    if (l && pending.indexOf(String(c.id)) !== -1) {
+      setTimeout(function() { if (window.tsgSync) window.tsgSync.pushRound(l); }, 1500);
+      return l;
+    }
     if (l) Object.keys(l).forEach(function(k) { if (c[k] === undefined) c[k] = l[k]; });
     return c;
   });
-  var pending = syncPendingIds();
   local.forEach(function(l) {
     var id = String(l.id);
-    if (inCloud[id]) { if (pending.indexOf(id) !== -1) syncMarkPending(id, false); return; }
+    if (inCloud[id]) return;
     if (pending.indexOf(id) === -1) return;          // supprimée depuis un autre appareil
     merged.push(l);
     setTimeout(function() { if (window.tsgSync) window.tsgSync.pushRound(l); }, 1500);
@@ -418,7 +431,13 @@ window.tsgSync = {
   deleteRound: function(id) {
     syncMarkPending(id, false);
     if (!cloudActive()) return;
-    window.sbClient.from('rounds').delete().eq('id', id).eq('user_id', sbUserId()).then(null, logSync('deleteRound'));
+    // Pierre tombale tant que le serveur n'a pas confirmé (sinon la partie revient au prochain chargement)
+    var key = String(id), tomb = (lsGet('roundsDeleted') || []).map(String);
+    if (tomb.indexOf(key) === -1) { tomb.push(key); lsSet('roundsDeleted', tomb); }
+    window.sbClient.from('rounds').delete().eq('id', id).eq('user_id', sbUserId()).then(function(res) {
+      if (res && res.error) { console.warn('[TSG] sync deleteRound:', res.error.message); return; }
+      lsSet('roundsDeleted', (lsGet('roundsDeleted') || []).map(String).filter(function(x) { return x !== key; }));
+    }, logSync('deleteRound'));
   },
   pushObjectives: function(o) {
     if (!cloudActive()) return;

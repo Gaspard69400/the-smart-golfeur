@@ -996,7 +996,8 @@ function initScorecardPage() {
     '</button>',
 
     '<div class="sc-sb-section-title" id="hist-title" style="display:none">Historique</div>',
-    '<div id="roundHistory-section" style="display:none"><div id="history-list"></div></div>'
+    '<div id="roundHistory-section" style="display:none"><div id="history-list"></div>'
+    + '<button type="button" class="mr-open-btn">Toutes mes parties · corriger ou supprimer</button></div>'
   ].join('');
 
   // ── MAIN ──
