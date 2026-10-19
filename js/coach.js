@@ -74,7 +74,8 @@ function coachRenderCoachView(root) {
       + '<div class="panel-body ch-code-body">'
       +   '<div class="ch-code" id="ch-code-val">' + code + '</div>'
       +   '<button class="dash-btn dash-btn-outline" id="ch-copy-btn">Copier</button>'
-      +   '<div class="ch-code-hint">Partage ce code à tes joueurs. Ils le saisissent dans <strong>Coach Hub → Rejoindre un coach</strong> pour apparaître ici.</div>'
+      +   '<div class="ch-code-hint">Partage ce code à tes joueurs. Ils le saisissent dans <strong>Profil → Coach</strong> pour apparaître ici.</div>'
+      +   '<div class="ch-code-hint">Tu suis une équipe ? Rejoins son groupe (<strong>Social → Groupes</strong>, avec le code du groupe) : tu y verras les stats de chaque joueur et <strong>la moyenne du groupe par secteur de jeu</strong>.</div>'
       + '</div>';
     root.appendChild(codePanel);
     var copyBtn = document.getElementById('ch-copy-btn');
@@ -327,6 +328,8 @@ function openPlayerDetailModal(playerId, displayName, opts) {
     pdRender(document.getElementById('pd-body'), rounds, obj, done, trainings, prof);
     var nm = document.getElementById('pd-name');
     if (nm && prof.name) nm.textContent = prof.name;
+    // Bouton ami (S80) : la fiche ouverte depuis un groupe ou le Coach Hub n'en avait pas
+    pdRenderFriendButton(modal, playerId);
     // Contrôles coach (notes + assignation d'exercice)
     if (opts.canCoach && coachIsCoachRole() && typeof pdRenderCoachControls === 'function') {
       pdRenderCoachControls(document.getElementById('pd-body'), playerId);
@@ -335,6 +338,32 @@ function openPlayerDetailModal(playerId, displayName, opts) {
     var b = document.getElementById('pd-body');
     if (b) b.innerHTML = '<div class="ch-empty-inline">Erreur : ' + e.message + '</div>';
   });
+}
+
+/* « + Ajouter en ami » / « Demande envoyée » / « ✓ Amis » sous le nom, dans la fiche joueur (S80) */
+function pdRenderFriendButton(modal, playerId) {
+  if (!modal || !playerId || !currentUser || playerId === currentUser.id) return;
+  if (typeof frdCloud !== 'function' || !frdCloud() || typeof frdStatusButton !== 'function') return;
+  window.sbClient.rpc('friend_status', { other: playerId }).then(function(res) {
+    if (res.error || !document.body.contains(modal)) return;
+    var st = res.data || 'none';
+    if (st === 'self') return;
+    var head = modal.querySelector('.trn-modal-head > div');
+    if (!head) return;
+    var slot = document.createElement('div');
+    slot.className = 'pd-frd';
+    slot.innerHTML = frdStatusButton(st, playerId, false);
+    head.appendChild(slot);
+    slot.addEventListener('click', function(e) {
+      var b = e.target.closest('[data-frd-act]');
+      if (!b) return;
+      b.disabled = true;
+      frdAction(b.getAttribute('data-frd-act'), playerId, function(d) {
+        var next = (d && d.status) || (b.getAttribute('data-frd-act') === 'add' ? 'pending_out' : 'friends');
+        slot.innerHTML = frdStatusButton(next, playerId, false);
+      });
+    });
+  }, function() {});
 }
 
 function pdRender(body, rounds, obj, done, trainings, prof) {

@@ -180,6 +180,14 @@ function grpBuildDetail(wrap, groupId) {
   recPanel.innerHTML = '<div class="panel-body" id="grp-records"><div class="ch-loading">…</div></div>';
   wrap.appendChild(recPanel);
 
+  // Le groupe par secteur de jeu (S80) — surtout utile au coach qui a rejoint le groupe
+  var secPanel = document.createElement('div');
+  secPanel.className = 'panel grp-sec-panel';
+  secPanel.innerHTML = '<div class="panel-header"><div><div class="panel-title">Le groupe par secteur de jeu</div>'
+    + '<div class="panel-sub">Où le groupe gagne et perd des coups, comparé au niveau de chaque joueur</div></div></div>'
+    + '<div class="panel-body grp-sec-body"><div class="ch-loading">…</div></div>';
+  wrap.appendChild(secPanel);
+
   // Défis entre amis (groupchallenges.js)
   if (typeof gchRenderPanel === 'function') gchRenderPanel(wrap, groupId, _grpView.groupName);
 
@@ -254,7 +262,7 @@ function grpBuildDetail(wrap, groupId) {
     if (!ids.length) { document.getElementById('grp-lb-body').innerHTML = '<div class="ch-empty-inline">Aucun membre.</div>'; return; }
     Promise.all([
       sb.from('profiles').select('id, name, initials, color, bg, hcp').in('id', ids),
-      sb.from('rounds').select('user_id, score, par, gir, fir, fir_total, putts, course, played_on').in('user_id', ids)
+      sb.from('rounds').select('user_id, score, par, gir, fir, fir_total, putts, course, played_on, created_at, sg_tee, sg_app, sg_arg, sg_putt').in('user_id', ids)
     ]).then(function(r) {
       var profiles = r[0].data || [];
       var rounds = r[1].data || [];
@@ -262,6 +270,122 @@ function grpBuildDetail(wrap, groupId) {
       grpRenderLeaderboard(document.getElementById('grp-lb-body'), _grpState.rows, _grpState.criterion, uid);
       grpRenderRecords(document.getElementById('grp-records'), rounds, profiles);
       grpRenderFeed(document.getElementById('grp-feed'), rounds, profiles);
+      grpRenderSectors(secPanel.querySelector('.grp-sec-body'), rounds, profiles);
+    });
+  });
+}
+
+/* ── Le groupe par secteur de jeu (S80) ──
+   Pour chaque joueur : ses 10 dernières parties (90 derniers jours). Strokes Gained
+   moyens par secteur = coups gagnés (+) ou perdus (−) par partie comparé à un
+   joueur de SON niveau ; la moyenne du groupe donne le même poids à chaque joueur.
+   + Moyennes brutes du groupe (score, fairways, greens, putts). */
+var GRP_SECTORS = [
+  { k: 'sg_tee',  l: 'Départ',    s: 'Départ' },
+  { k: 'sg_app',  l: 'Approche',  s: 'Appro.' },
+  { k: 'sg_arg',  l: 'Petit jeu', s: 'P. jeu' },
+  { k: 'sg_putt', l: 'Putting',   s: 'Putting' }
+];
+
+function grpRenderSectors(body, allRounds, profiles) {
+  if (!body) return;
+  var since = Date.now() - 90 * 86400000;
+  function fmt(v) { var r = Math.round(v * 10) / 10; return (r > 0 ? '+' : (r < 0 ? '−' : '')) + Math.abs(r).toFixed(1).replace('.', ','); }
+  var players = profiles.map(function(p) {
+    var rs = allRounds.filter(function(r) {
+      if (r.user_id !== p.id) return false;
+      var t = Date.parse(r.played_on || r.created_at || '');
+      return !t || t >= since;
+    }).sort(function(a, b) { return String(b.played_on || '').localeCompare(String(a.played_on || '')); }).slice(0, 10);
+    var sg = {}, any = false;
+    GRP_SECTORS.forEach(function(s) {
+      var sum = 0, c = 0;
+      rs.forEach(function(r) { if (r[s.k] != null && !isNaN(r[s.k])) { sum += Number(r[s.k]); c++; } });
+      sg[s.k] = c ? sum / c : null;
+      if (c) any = true;
+    });
+    var weak = null;
+    GRP_SECTORS.forEach(function(s) { if (sg[s.k] != null && (weak === null || sg[s.k] < sg[weak])) weak = s.k; });
+    return { p: p, n: rs.length, rs: rs, sg: sg, any: any, weak: weak };
+  }).filter(function(x) { return x.n > 0; });
+
+  if (!players.length) {
+    body.innerHTML = '<div class="ch-empty-inline">Les moyennes apparaîtront dès que les membres auront entré des parties.</div>';
+    return;
+  }
+
+  // Moyenne du groupe par secteur (chaque joueur pèse pareil)
+  var grp = {};
+  GRP_SECTORS.forEach(function(s) {
+    var vals = players.map(function(x) { return x.sg[s.k]; }).filter(function(v) { return v != null; });
+    grp[s.k] = vals.length ? vals.reduce(function(a, b) { return a + b; }, 0) / vals.length : null;
+  });
+  var gWeak = null;
+  GRP_SECTORS.forEach(function(s) { if (grp[s.k] != null && (gWeak === null || grp[s.k] < grp[gWeak])) gWeak = s.k; });
+  var nWeak = gWeak ? players.filter(function(x) { return x.weak === gWeak; }).length : 0;
+  var label = {}; GRP_SECTORS.forEach(function(s) { label[s.k] = s.l; });
+
+  // Moyennes brutes
+  var all = []; players.forEach(function(x) { all = all.concat(x.rs); });
+  function mean(arr, f) { var v = arr.map(f).filter(function(z) { return z != null && !isNaN(z); }); return v.length ? v.reduce(function(a, b) { return a + b; }, 0) / v.length : null; }
+  var full = all.filter(function(r) { return r.score && r.score >= 60; });
+  var mScore = mean(full, function(r) { return r.score; });
+  var mFir = mean(all, function(r) { return r.fir != null ? r.fir / (r.fir_total || 14) * 100 : null; });
+  var mGir = mean(all, function(r) { return r.gir != null ? r.gir / 18 * 100 : null; });
+  var mPutts = mean(full, function(r) { return r.putts; });
+
+  var bars = GRP_SECTORS.map(function(s) {
+    var v = grp[s.k];
+    if (v == null) return '<div class="grp-sec-row"><div class="grp-sec-l">' + s.l + '</div><div class="grp-sec-track"></div><div class="grp-sec-v">—</div></div>';
+    var w = Math.min(50, Math.abs(v) / 2 * 50);
+    var bar = '<div class="grp-sec-bar ' + (v >= 0 ? 'pos' : 'neg') + '" style="width:' + w.toFixed(0) + '%"></div>';
+    return '<div class="grp-sec-row' + (s.k === gWeak ? ' weak' : '') + '"><div class="grp-sec-l">' + s.l + '</div>'
+      + '<div class="grp-sec-track"><div class="grp-sec-mid"></div>' + bar + '</div>'
+      + '<div class="grp-sec-v ' + (v >= 0 ? 'pos' : 'neg') + '">' + fmt(v) + '</div></div>';
+  }).join('');
+
+  // Répartition des points faibles individuels (ex. « Putting : 3 · Approche : 1 »)
+  var weakCount = {};
+  players.forEach(function(x) { if (x.weak && x.sg[x.weak] < 0) weakCount[x.weak] = (weakCount[x.weak] || 0) + 1; });
+  var weakList = GRP_SECTORS.filter(function(s) { return weakCount[s.k]; })
+    .sort(function(a, b) { return weakCount[b.k] - weakCount[a.k]; })
+    .map(function(s) { return s.l + ' : ' + weakCount[s.k]; }).join(' · ');
+  var lost = gWeak != null ? Math.round(-grp[gWeak] * 10) / 10 : 0;
+  var verdict;
+  if (gWeak && lost >= 0.3) {
+    verdict = '<strong>À travailler en priorité : ' + label[gWeak] + '</strong> — le groupe y perd ' + fmt(lost).replace('+', '') + ' coup' + (lost >= 2 ? 's' : '') + ' par partie en moyenne'
+      + (players.length > 1 ? ', et c\'est le point faible de ' + nWeak + ' joueur' + (nWeak > 1 ? 's' : '') + ' sur ' + players.length : '') + '.';
+  } else if (gWeak && lost > 0) {
+    verdict = 'Pas de grosse faiblesse commune : le secteur le plus faible du groupe est <strong>' + label[gWeak] + '</strong> (' + fmt(grp[gWeak]) + ' coup par partie). Mieux vaut travailler joueur par joueur.';
+  } else {
+    verdict = 'Le groupe est au niveau attendu (ou au-dessus) dans tous les secteurs.';
+  }
+  if (weakList && players.length > 1) verdict += '<div class="grp-sec-weaks">Points faibles des joueurs — ' + weakList + '</div>';
+  verdict = '<div class="grp-sec-verdict">' + verdict + '</div>';
+
+  var avg = '<div class="grp-sec-avgs">'
+    + '<div><span>' + (mScore != null ? mScore.toFixed(1).replace('.', ',') : '—') + '</span>Score moyen</div>'
+    + '<div><span>' + (mFir != null ? Math.round(mFir) + '%' : '—') + '</span>Fairways</div>'
+    + '<div><span>' + (mGir != null ? Math.round(mGir) + '%' : '—') + '</span>Greens</div>'
+    + '<div><span>' + (mPutts != null ? mPutts.toFixed(1).replace('.', ',') : '—') + '</span>Putts</div></div>';
+
+  var rows = players.sort(function(a, b) { return (a.p.name || '').localeCompare(b.p.name || ''); }).map(function(x) {
+    var cells = GRP_SECTORS.map(function(s) {
+      var v = x.sg[s.k];
+      if (v == null) return '<td>—</td>';
+      return '<td class="' + (v >= 0 ? 'pos' : 'neg') + (s.k === x.weak && v < 0 ? ' weak' : '') + '">' + fmt(v) + '</td>';
+    }).join('');
+    return '<tr data-uid="' + grpEsc(x.p.id) + '"><th>' + grpEsc(x.p.name || 'Joueur') + '<small>' + x.n + ' partie' + (x.n > 1 ? 's' : '') + '</small></th>' + cells + '</tr>';
+  }).join('');
+
+  body.innerHTML = avg + bars + verdict
+    + '<div class="grp-sec-tblw"><table class="grp-sec-tbl"><thead><tr><th>Joueur</th>'
+    + GRP_SECTORS.map(function(s) { return '<th title="' + s.l + '">' + s.s + '</th>'; }).join('') + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+    + '<div class="grp-sec-note">Coups gagnés (+) ou perdus (−) par partie comparé à un joueur de même niveau · 10 dernières parties de chacun (90 jours) · en gras : le point faible du joueur. Touche un nom pour voir sa fiche.</div>';
+
+  body.querySelectorAll('tr[data-uid]').forEach(function(tr) {
+    tr.addEventListener('click', function() {
+      if (typeof openPlayerDetailModal === 'function') openPlayerDetailModal(tr.getAttribute('data-uid'), tr.querySelector('th').firstChild.textContent);
     });
   });
 }

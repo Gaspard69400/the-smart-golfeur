@@ -6376,3 +6376,35 @@ a.btn-express { text-decoration: none; }
 @media (prefers-color-scheme: dark) { :root[data-theme="auto"] .shc-pick-add { color: var(--gold); } }
 /* Fairway : ← Gauche / Touché / Droite → (S77) */
 .qs-fir3 .qs-opt-b { flex: 1 1 0; white-space: nowrap; }
+
+/* Groupe par secteur de jeu (S80) */
+.grp-sec-panel { margin-bottom: 14px; }
+.grp-sec-avgs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.grp-sec-avgs > div { background: var(--bg); border: 1px solid var(--bd-card); border-radius: 14px; padding: 10px 6px; text-align: center; font-size: 11.5px; color: var(--tx3); display: flex; flex-direction: column; gap: 2px; }
+.grp-sec-avgs span { font-family: var(--serif); font-size: 20px; font-weight: 600; color: var(--tx); }
+.grp-sec-row { display: grid; grid-template-columns: 82px minmax(0, 1fr) 48px; align-items: center; gap: 8px; padding: 5px 0; }
+.grp-sec-row.weak .grp-sec-l { font-weight: 800; color: var(--tx); }
+.grp-sec-l { font-size: 13px; font-weight: 600; color: var(--tx2); }
+.grp-sec-track { position: relative; height: 16px; background: var(--bg3); border-radius: 6px; }
+.grp-sec-mid { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1.5px; background: var(--tx4); }
+.grp-sec-bar { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; }
+.grp-sec-bar.pos { left: 50%; background: var(--ok2); }
+.grp-sec-bar.neg { right: 50%; background: var(--gold); }
+.grp-sec-v { font-size: 13px; font-weight: 800; text-align: right; }
+.grp-sec-v.pos, .grp-sec-tbl td.pos { color: var(--ok2); }
+.grp-sec-v.neg, .grp-sec-tbl td.neg { color: var(--gold-d); }
+.grp-sec-verdict { margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: var(--gold-dim); font-size: 13px; color: var(--tx2); line-height: 1.45; }
+.grp-sec-tblw { overflow-x: auto; }
+.grp-sec-tbl { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.grp-sec-tbl thead th:first-child, .grp-sec-tbl tbody th { width: 30%; }
+.grp-sec-tbl th, .grp-sec-tbl td { padding: 8px 3px; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--bd3); text-align: center; }
+.grp-sec-tbl thead th { font-size: 11.5px; color: var(--tx3); font-weight: 700; }
+.grp-sec-tbl tbody th { text-align: left; font-weight: 700; color: var(--tx); }
+.grp-sec-tbl tbody th small { display: block; font-weight: 500; font-size: 11px; color: var(--tx3); }
+.grp-sec-tbl td.weak { font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.grp-sec-tbl tbody tr { cursor: pointer; }
+.grp-sec-tbl tbody tr:hover { background: var(--bg3); }
+.grp-sec-note { margin-top: 8px; font-size: 11.5px; color: var(--tx3); line-height: 1.45; }
+.pd-frd { margin-top: 8px; }
+@media (max-width: 420px) { .grp-sec-avgs span { font-size: 17px; } }
+.grp-sec-weaks { margin-top: 6px; font-size: 12.5px; color: var(--tx3); }
