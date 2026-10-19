@@ -45,18 +45,65 @@ function initDashboard() {
 /* ════════════════════════════════════════════
    OBJECTIFS DE SAISON — modifiables à tout moment (par utilisateur)
 ════════════════════════════════════════════ */
-var DEFAULT_OBJECTIVES = { score: 80, hcp: 11, gir: 50, fir: 60, putts: 32 };
+var DEFAULT_OBJECTIVES = { score: 80, hcp: 11, gir: 50, fir: 60, putts: 32 };   // repli seulement (aucun index connu)
+
+/* Objectifs PROPOSÉS selon le niveau (S83). Avant, tout le monde avait 80 / 11 / 50 % / 60 % / 32,
+   quel que soit son niveau : un joueur à −0,7 voyait « Handicap −0,7 → 11 : atteint ». Désormais
+   la cible = le niveau juste au-dessus du sien (index − 1 à − 5 selon le niveau), et les stats
+   visées = celles d'un joueur de cet index (barèmes SG_BENCHMARKS, prolongés sous le scratch). */
+function objIndexNow() {
+  var idx = null;
+  try { if (typeof calcHandicapFromRounds === 'function') idx = calcHandicapFromRounds(); } catch (e) {}
+  if ((idx === null || idx === undefined) && currentUser && currentUser.hcp != null) idx = Number(currentUser.hcp);
+  if ((idx === null || idx === undefined || isNaN(idx)) && typeof bgnDefaultIndex === 'function') { try { idx = bgnDefaultIndex(); } catch (e) {} }
+  return (idx === null || idx === undefined || isNaN(idx)) ? null : Number(idx);
+}
+
+function objBaseline(h) {
+  if (typeof sgBaseline !== 'function') return null;
+  if (h >= 0) return sgBaseline(h);
+  // Sous le scratch : on prolonge la tendance 0 → 5 (un point d'index ≈ 1 coup, +1 % de fairways, +2,8 % de greens, −0,2 putt)
+  var a = sgBaseline(0), b = sgBaseline(5), k = h / 5;
+  return { score: a.score + (b.score - a.score) * k, fir: a.fir + (b.fir - a.fir) * k, gir: a.gir + (b.gir - a.gir) * k, putts: a.putts + (b.putts - a.putts) * k };
+}
+
+function suggestedObjectives() {
+  var idx = objIndexNow();
+  if (idx === null) return { score: DEFAULT_OBJECTIVES.score, hcp: DEFAULT_OBJECTIVES.hcp, gir: DEFAULT_OBJECTIVES.gir, fir: DEFAULT_OBJECTIVES.fir, putts: DEFAULT_OBJECTIVES.putts };
+  var step = idx <= 5 ? 1 : (idx <= 15 ? 2 : (idx <= 30 ? 3 : 5));
+  var target = Math.max(-6, Math.round((idx - step) * 10) / 10);
+  var b = objBaseline(target);
+  if (!b) return { score: DEFAULT_OBJECTIVES.score, hcp: target, gir: DEFAULT_OBJECTIVES.gir, fir: DEFAULT_OBJECTIVES.fir, putts: DEFAULT_OBJECTIVES.putts };
+  return {
+    // Score MOYEN visé sur un par 72 : l'index ne garde que les meilleures cartes, une carte
+    // moyenne est ≈ 2,5 coups au-dessus (−1,7 → 72,8 ; 8 → 82,5 ; 27 → 101,5)
+    score: Math.round((72 + target + 2.5) * 10) / 10,
+    hcp:   target,
+    gir:   Math.min(95, Math.round(b.gir * 100)),
+    fir:   Math.min(95, Math.round(b.fir * 100)),
+    putts: Math.round(b.putts * 10) / 10
+  };
+}
+
+/* true si le joueur n'a jamais fixé ses objectifs (on affiche alors les objectifs proposés) */
+function objectivesAreSuggested() {
+  var all = lsGet('objectives') || {};
+  var uid = (currentUser && currentUser.id) || 'default';
+  var o = all[uid];
+  return !o || ['score', 'hcp', 'gir', 'fir', 'putts'].every(function(k) { return o[k] == null; });
+}
 
 function getObjectives() {
   var all = lsGet('objectives') || {};
   var uid = (currentUser && currentUser.id) || 'default';
   var o = all[uid] || {};
+  var d = suggestedObjectives();
   return {
-    score: (o.score != null ? o.score : DEFAULT_OBJECTIVES.score),
-    hcp:   (o.hcp   != null ? o.hcp   : DEFAULT_OBJECTIVES.hcp),
-    gir:   (o.gir   != null ? o.gir   : DEFAULT_OBJECTIVES.gir),
-    fir:   (o.fir   != null ? o.fir   : DEFAULT_OBJECTIVES.fir),
-    putts: (o.putts != null ? o.putts : DEFAULT_OBJECTIVES.putts)
+    score: (o.score != null ? o.score : d.score),
+    hcp:   (o.hcp   != null ? o.hcp   : d.hcp),
+    gir:   (o.gir   != null ? o.gir   : d.gir),
+    fir:   (o.fir   != null ? o.fir   : d.fir),
+    putts: (o.putts != null ? o.putts : d.putts)
   };
 }
 
@@ -102,11 +149,11 @@ function openObjectivesModal() {
     +     '<button class="obj-close" id="obj-close-btn">×</button>'
     +   '</div>'
     +   '<div class="obj-body">'
-    +     '<div class="obj-intro">Fixe tes cibles. Tu peux les modifier à tout moment — les jauges du dashboard s\'adaptent automatiquement.</div>'
+    +     '<div class="obj-intro">Fixe tes cibles. Tu peux les modifier à tout moment — les jauges du dashboard s\'adaptent automatiquement. « Proposer pour mon niveau » remet des cibles calculées pour l\'index juste au-dessus du tien.</div>'
     +     rows
     +   '</div>'
     +   '<div class="obj-actions">'
-    +     '<button class="dash-btn dash-btn-outline" id="obj-reset-btn">Réinitialiser</button>'
+    +     '<button class="dash-btn dash-btn-outline" id="obj-reset-btn">Proposer pour mon niveau</button>'
     +     '<button class="dash-btn dash-btn-gold" id="obj-save-btn">Enregistrer</button>'
     +   '</div>'
     + '</div>';
@@ -118,8 +165,9 @@ function openObjectivesModal() {
   modal.addEventListener('click', function(ev) { if (ev.target === modal) close(); });
 
   document.getElementById('obj-reset-btn').addEventListener('click', function() {
+    var sug = suggestedObjectives();
     modal.querySelectorAll('.obj-input').forEach(function(inp) {
-      inp.value = DEFAULT_OBJECTIVES[inp.getAttribute('data-obj')];
+      inp.value = sug[inp.getAttribute('data-obj')];
     });
   });
 
@@ -128,7 +176,7 @@ function openObjectivesModal() {
     modal.querySelectorAll('.obj-input').forEach(function(inp) {
       var k = inp.getAttribute('data-obj');
       var v = parseFloat(inp.value);
-      newObj[k] = isNaN(v) ? DEFAULT_OBJECTIVES[k] : v;
+      newObj[k] = isNaN(v) ? suggestedObjectives()[k] : v;
     });
     saveObjectives(newObj);
     close();
@@ -653,6 +701,12 @@ function buildDashboard(container) {
 
   var goalsBody = document.createElement('div');
   goalsBody.className = 'panel-body';
+  if (objectivesAreSuggested()) {
+    var sugNote = document.createElement('div');
+    sugNote.className = 'goal-suggest';
+    sugNote.innerHTML = 'Objectifs <strong>proposés pour ton niveau</strong> : ceux d\'un joueur d\'index ' + String(obj.hcp).replace('.', ',') + '. Touche « Modifier » pour fixer les tiens.';
+    goalsBody.appendChild(sugNote);
+  }
 
   // Valeurs réelles (progress.js) : cartes 18 trous, stats saisies, index WHS
   var gNow = (hasReal && typeof pgsGoalNow === 'function') ? pgsGoalNow() : null;

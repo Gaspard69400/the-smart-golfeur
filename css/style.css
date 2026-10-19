@@ -6438,3 +6438,5 @@ a.btn-express { text-decoration: none; }
 .mr-actions .dash-btn { flex: 0 0 auto; }
 .mr-actions .btn-start-round { flex: 1; margin: 0; }
 .mr-open-btn { display: block; width: 100%; margin-top: 8px; min-height: 40px; border: 1px dashed var(--bd-card); border-radius: 12px; background: transparent; font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--tx2); cursor: pointer; }
+/* Objectifs proposés selon le niveau (S83) */
+.goal-suggest { font-size: 12.5px; color: var(--tx3); background: var(--gold-dim2); border-radius: 12px; padding: 9px 12px; margin-bottom: 12px; line-height: 1.45; }
