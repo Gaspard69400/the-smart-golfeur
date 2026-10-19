@@ -78,6 +78,26 @@ function coachRenderCoachView(root) {
       +   '<div class="ch-code-hint">Tu suis une équipe ? Rejoins son groupe (<strong>Social → Groupes</strong>, avec le code du groupe) : tu y verras les stats de chaque joueur et <strong>la moyenne du groupe par secteur de jeu</strong>.</div>'
       + '</div>';
     root.appendChild(codePanel);
+
+    // S81 : compte passé coach par erreur (lien coach ouvert par un joueur) → il corrige lui-même
+    var notCoach = document.createElement('button');
+    notCoach.type = 'button';
+    notCoach.className = 'ch-not-coach';
+    notCoach.textContent = 'Je ne suis pas coach : repasser en compte joueur';
+    notCoach.addEventListener('click', function() {
+      if (ids.length) { showToast('Des joueurs sont reliés à toi : ils doivent d\'abord se délier'); return; }
+      if (!confirm('Repasser ton compte en version joueur ?\n\nTu retrouves ton niveau, tes trophées et ton coach éventuel. Tes parties ne bougent pas.')) return;
+      notCoach.disabled = true;
+      sb.from('profiles').update({ role: 'player' }).eq('id', uid).then(function(r) {
+        if (r && r.error) { notCoach.disabled = false; showToast('Impossible pour le moment'); return; }
+        currentUser.role = 'player';
+        try { updateNavUI(); buildPages(); } catch (e) {}
+        showToast('Ton compte est de nouveau un compte joueur');
+        showPage('profile');
+      }, function() { notCoach.disabled = false; showToast('Pas de réseau — réessaie plus tard'); });
+    });
+    root.appendChild(notCoach);
+
     var copyBtn = document.getElementById('ch-copy-btn');
     if (copyBtn) copyBtn.addEventListener('click', function() {
       try { navigator.clipboard.writeText(code); showToast('Code copié : ' + code); }

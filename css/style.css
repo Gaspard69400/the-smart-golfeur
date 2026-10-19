@@ -6408,3 +6408,5 @@ a.btn-express { text-decoration: none; }
 .pd-frd { margin-top: 8px; }
 @media (max-width: 420px) { .grp-sec-avgs span { font-size: 17px; } }
 .grp-sec-weaks { margin-top: 6px; font-size: 12.5px; color: var(--tx3); }
+/* Coach Hub : sortie de secours pour un joueur passé coach par erreur (S81) */
+.ch-not-coach { display: block; margin: -4px 0 16px auto; background: none; border: none; padding: 8px 4px; min-height: 40px; font-family: inherit; font-size: 12.5px; color: var(--tx3); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
