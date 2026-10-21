@@ -391,7 +391,7 @@ function buildDashboard(container) {
   var btnScorecard = document.createElement('button');
   btnScorecard.className = 'dash-btn dash-btn-outline';
   btnScorecard.textContent = '+ Nouvelle partie';
-  btnScorecard.addEventListener('click', function() { showPage('scorecard'); });
+  btnScorecard.addEventListener('click', function() { if (typeof ecOpen === 'function') ecOpen(); else showPage('scorecard'); });
 
   var btnAnalyse = document.createElement('button');
   btnAnalyse.className = 'dash-btn dash-btn-gold';

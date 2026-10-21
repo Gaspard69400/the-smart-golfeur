@@ -147,7 +147,7 @@ function selectCourse(c) {
   var scEmpty = document.getElementById('sc-empty');
   if (scEmpty) {
     var scEmptyP = scEmpty.querySelector('p');
-    if (scEmptyP) scEmptyP.textContent = 'Touche « ⚡ Saisie express » pour commencer ta carte sur ' + c.name + '.';
+    if (scEmptyP) scEmptyP.textContent = 'Parcours choisi : ' + c.name + '. Lance la saisie avec « Entrer ma carte », ou depuis les options avancées.';
   }
 
   // Météo du jour sur ce parcours (weather.js) : pastille + « Conditions » réglées toutes seules
@@ -921,6 +921,17 @@ function initScorecardPage() {
   sb.id = 'sc-sidebar';
 
   sb.innerHTML = [
+    // S85 : UN seul chemin évident pour entrer une partie (entercard.js) ; le reste est replié
+    '<div id="qs-resume-host"></div>',
+    '<div class="ec-hero">',
+      '<button type="button" class="ec-hero-btn" id="ec-start">',
+        '<span class="ec-hero-t">Entrer ma carte</span>',
+        '<span class="ec-hero-s">Parcours, départ, puis trou par trou ou score total</span>',
+      '</button>',
+    '</div>',
+    '<details class="sc-adv" id="sc-adv">',
+    '<summary>Options avancées <small>choix du parcours à la main, plan de jeu, tableau complet, saisie immersive</small></summary>',
+    '<div class="sc-adv-body">',
     '<div class="sc-sb-section-title">Choisir un parcours</div>',
 
     '<div class="search-wrap">',
@@ -995,6 +1006,8 @@ function initScorecardPage() {
       '✎ J\'ai déjà joué — entrer juste le score',
     '</button>',
 
+    '</div></details>',
+
     '<div class="sc-sb-section-title" id="hist-title" style="display:none">Historique</div>',
     '<div id="roundHistory-section" style="display:none"><div id="history-list"></div>'
     + '<button type="button" class="mr-open-btn">Toutes mes parties · corriger ou supprimer</button></div>'
@@ -1005,10 +1018,7 @@ function initScorecardPage() {
   main.className = 'sc-main';
   main.id = 'sc-main';
 
-  // Bannière « reprendre la partie en cours » (saisie express)
-  var resumeHost = document.createElement('div');
-  resumeHost.id = 'qs-resume-host';
-  main.appendChild(resumeHost);
+  // (La bannière « reprendre la partie en cours » est en tête de la colonne : #qs-resume-host, S85)
 
   // Empty state
   var empty = document.createElement('div');
@@ -1017,7 +1027,7 @@ function initScorecardPage() {
   empty.innerHTML = [
     '<div class="sc-empty-icon">⛳</div>',
     '<h3>Prêt à jouer ?</h3>',
-    '<p>Sélectionnez un parcours dans la liste pour démarrer votre scorecard.</p>'
+    '<p>Touche « Entrer ma carte » : on choisit le parcours ensemble.</p>'
   ].join('');
 
   // Round area (hidden until started) — contient TOUT le contenu de la partie
