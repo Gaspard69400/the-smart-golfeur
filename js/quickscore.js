@@ -297,8 +297,8 @@ function qsRender() {
     /* Navigation */
     + '<div class="qs-nav">'
     +   '<button class="qs-nav-b" id="qs-undo"' + undoDisabled + '>↺ Annuler</button>'
-    +   '<button class="qs-nav-b" id="qs-prev"' + (_qsHole === 1 ? ' disabled' : '') + '>← Trou ' + (_qsHole - 1) + '</button>'
-    +   '<button class="qs-nav-b" id="qs-next"' + (_qsHole >= course.trous.length ? ' disabled' : '') + '>Trou ' + (_qsHole + 1) + ' →</button>'
+    +   '<button class="qs-nav-b" id="qs-prev"' + (_qsHole === 1 ? ' disabled>← Trou précédent' : '>← Trou ' + (_qsHole - 1)) + '</button>'
+    +   '<button class="qs-nav-b" id="qs-next"' + (_qsHole >= course.trous.length ? ' disabled>Dernier trou' : '>Trou ' + (_qsHole + 1) + ' →') + '</button>'
     + '</div>';
 
   qsWire();

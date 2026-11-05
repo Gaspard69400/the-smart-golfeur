@@ -754,7 +754,7 @@ html, body {
   font-size: 12px;
   font-weight: 600;
   font-family: 'Figtree', sans-serif;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
   border: 1px solid;
   display: inline-flex;
   align-items: center;
@@ -1162,7 +1162,7 @@ html, body {
   letter-spacing: 0.03em;
   color: var(--tx3);
   background: var(--bg);
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
   font-family: 'Figtree', sans-serif;
 }
 
@@ -1190,7 +1190,7 @@ html, body {
   border-radius: 10px;
   padding: 12px 14px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .course-item:hover { border-color: rgba(168,133,30,0.3); background: var(--gold-dim2); }
@@ -1445,7 +1445,7 @@ html, body {
   font-weight: 700;
   padding: 3px 0;
   outline: none;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
   -moz-appearance: textfield;
 }
 
@@ -1476,7 +1476,7 @@ html, body {
   text-align: center;
   padding: 10px 6px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
   font-size: 11px;
   font-weight: 600;
   color: var(--tx3);
@@ -1540,7 +1540,7 @@ html, body {
   font-weight: 600;
   cursor: pointer;
   font-family: 'Figtree', sans-serif;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .btn-reset-sc:hover { border-color: var(--ng2); color: var(--ng2); }
@@ -1735,7 +1735,7 @@ html, body {
   font-size: 12px;
   font-weight: 600;
   color: var(--tx3);
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .an-period-btn:hover { color: var(--tx2); }
@@ -1765,7 +1765,7 @@ html, body {
   font-size: 13px;
   font-weight: 500;
   color: var(--tx3);
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -2005,7 +2005,7 @@ html, body {
   font-size: 10px;
   font-weight: 600;
   color: var(--tx3);
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .sc-mode-btn.active {
@@ -2327,7 +2327,7 @@ html, body {
   stroke: var(--white);
   stroke-width: 2.5;
   filter: drop-shadow(0 2px 4px rgba(192, 57, 43, 0.4));
-  transition: all 0.15s ease;
+  transition: cx 0.15s ease, cy 0.15s ease, r 0.15s ease;
 }
 
 .radar-cardinal {
@@ -2386,7 +2386,7 @@ html, body {
   border: 1px solid var(--bd-card);
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .radar-green-toggle:hover { border-color: var(--ok2); }
@@ -2406,7 +2406,7 @@ html, body {
   justify-content: center;
   flex-shrink: 0;
   background: var(--white);
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .radar-green-toggle.checked .radar-green-checkbox {
@@ -2450,7 +2450,7 @@ html, body {
   font-size: 12px;
   font-weight: 600;
   color: var(--tx3);
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .radar-fairway-btn.active.yes {
@@ -2483,7 +2483,7 @@ html, body {
   font-weight: 700;
   cursor: pointer;
   border: 1px solid;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .radar-btn-cancel {
@@ -2563,7 +2563,7 @@ html, body {
   font-weight: 600;
   color: var(--tx2);
   width: 100%;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .shot-add-btn:hover {
@@ -2645,7 +2645,7 @@ html, body {
   color: var(--tx3);
   font-size: 14px;
   border-radius: 6px;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .shot-action-btn:hover { background: var(--bg3); color: var(--tx); }
@@ -2732,7 +2732,7 @@ html, body {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
   flex-shrink: 0;
   margin-bottom: 4px;
 }
@@ -2768,7 +2768,7 @@ html, body {
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .ci-delete-btn:hover {
@@ -3030,7 +3030,7 @@ html, body {
   font-weight: 700;
   cursor: pointer;
   border: 1px solid;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .cc-btn-cancel {
@@ -3074,7 +3074,7 @@ html, body {
   font-size: 18px;
   color: var(--tx2);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
   margin-right: 4px;
   padding: 0;
   flex-shrink: 0;
@@ -3103,7 +3103,7 @@ html, body {
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .ci-edit-btn:hover {
@@ -3276,7 +3276,7 @@ html, body {
   font-weight: 700;
   cursor: pointer;
   border: 1px solid;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .settings-btn-icon {
@@ -3367,7 +3367,7 @@ html, body {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3528,7 +3528,7 @@ html, body {
   padding: 4px 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 .goal-edit-btn:hover { background: var(--gold); color: var(--night); border-color: var(--gold); }
 
@@ -3721,7 +3721,7 @@ html, body {
   font-weight: 600;
   color: var(--tx3);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 .auth-tab.on {
   background: var(--white);
@@ -4081,7 +4081,7 @@ html, body {
 .cal-av:first-child { margin-left: 0; }
 .cal-part-txt { font-size: 12px; color: var(--tx3); font-weight: 600; }
 .cal-actions { display: flex; gap: 8px; align-items: center; }
-.cal-rsvp { flex: 1; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--bd-card); background: var(--white); font-family: 'Figtree', sans-serif; font-size: 12px; font-weight: 600; color: var(--tx2); cursor: pointer; transition: all 0.15s; }
+.cal-rsvp { flex: 1; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--bd-card); background: var(--white); font-family: 'Figtree', sans-serif; font-size: 12px; font-weight: 600; color: var(--tx2); cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s; }
 .cal-in.on { background: var(--ok-bg); border-color: var(--ok2); color: var(--ok); }
 .cal-out.on { background: var(--ng-bg); border-color: var(--ng2); color: var(--ng); }
 .cal-rsvp:hover { border-color: var(--gold); }
@@ -4116,7 +4116,7 @@ html, body {
   width: 100%; margin-top: 8px; padding: 12px; border-radius: 12px;
   border: 1px solid var(--gold); background: var(--gold-dim); color: var(--gold-d);
   font-family: 'Figtree', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
 }
 .btn-immersive:hover:not(:disabled) { background: var(--gold); color: var(--night); }
 .btn-immersive:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -4143,7 +4143,7 @@ html, body {
 
 .imm-panel { background: var(--white); border-radius: 22px 22px 0 0; padding: 18px 18px calc(14px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 24px rgba(0,0,0,0.25); }
 .imm-score-block { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 4px 14px; }
-.imm-step { width: 58px; height: 58px; border-radius: 18px; border: 1px solid var(--bd-card); background: var(--bg2); font-size: 30px; font-weight: 300; color: var(--tx); cursor: pointer; line-height: 1; flex-shrink: 0; transition: all 0.12s; }
+.imm-step { width: 58px; height: 58px; border-radius: 18px; border: 1px solid var(--bd-card); background: var(--bg2); font-size: 30px; font-weight: 300; color: var(--tx); cursor: pointer; line-height: 1; flex-shrink: 0; transition: background-color 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.12s, opacity 0.12s; }
 .imm-step:active { transform: scale(0.94); }
 .imm-plus { background: var(--gold); border-color: var(--gold); color: var(--night); }
 .imm-score-mid { text-align: center; flex: 1; }
@@ -6656,3 +6656,45 @@ a.btn-express { text-decoration: none; }
 .wm-bbar { display: block; height: 5px; border-radius: 3px; background: var(--bd-card); margin-top: 4px; overflow: hidden; }
 .wm-bbar span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-l)); }
 .wm-bmin { flex: none; font-weight: 800; font-size: 13.5px; color: var(--tx); }
+
+/* ════════════ FINITIONS TACTILES (S90, audit design du 5 nov. 2026) ════════════ */
+/* Toucher : pas de zoom au double-tap sur les boutons, pas de flash bleu Android
+   (le retour visuel est déjà donné par :active, S51) */
+html { -webkit-tap-highlight-color: transparent; }
+button, a, summary, label, select, input, textarea, [role="button"], [data-go], .kpi-card, .course-item, .plan-ex-item { touch-action: manipulation; }
+
+/* Fenêtres et feuilles : arrivé en bas, la page derrière ne défile plus */
+[role="dialog"], [role="dialog"] *, [class*="-modal"], [class*="-modal"] *, [class*="-overlay"], [class*="-overlay"] *, [class*="-sheet"], [class*="-sheet"] * { overscroll-behavior: contain; }
+
+/* Croix « Fermer » : zone de 44 × 44 px sans changer la mise en page */
+.trn-modal-close, .qt-close {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; margin: -10px -12px -10px 0; padding: 0;
+}
+.ins-b-x { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: -12px -12px -12px 0; }
+
+/* « Se déconnecter » lisible en mode sombre (rouge clair sur vert nuit) */
+:root[data-theme="dark"] .prf-row[data-prf="logout"] .prf-row-t { color: #FF9C94; }
+@media (prefers-color-scheme: dark) { :root[data-theme="auto"] .prf-row[data-prf="logout"] .prf-row-t { color: #FF9C94; } }
+
+@media (max-width: 820px) {
+  /* iPhone : un champ écrit en moins de 16 px fait zoomer l'écran dès qu'on tape */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+  .mr-hole input { font-size: 17px !important; }
+
+  /* Boutons à la taille du doigt */
+  .filter-btn { min-height: 34px; padding-top: 6px; padding-bottom: 6px; font-size: 11.5px; }
+  .qs-opt-btns { flex: 1; min-width: 0; justify-content: flex-end; gap: 6px; }
+  .qs-opt-b { min-height: 44px; flex: 1 1 0; min-width: 0; max-width: 64px; padding-left: 4px; padding-right: 4px; font-size: 13.5px; }
+  .qs-opt-b:not(.qs-putt) { max-width: 96px; }
+  .goal-edit-btn, .an-period-btn { min-height: 36px; }
+  .bk-restore { min-height: 36px; }
+  .auth-guest-toggle { min-height: 44px; font-size: 13px; }
+
+  /* Petits textes : 11 px minimum sur téléphone */
+  .trn-type, .trn-lib-badge, .art-tag-lv, .art-tag-new, .comm-ach-count, .panel-sub, .wm-col span,
+  .stk-dl, .ch-count, .sc-fl, .crs-stat-lbl, .kpi-label, .goal-arrow, .sg-label, .comm-pill-l,
+  .sc-sb-section-title, .ci-meta span, .cc-stat-lbl, .cc-bar-lbl, .cc-bar-val, .sm-medal,
+  .plan-prio-tag, .ci-tag, .cc-loc, .btn-express-s, .crs-lvl, .comm-streak-lbl { font-size: 11px; }
+  .sg-card > div:not([class]) { font-size: 10.5px !important; line-height: 1.25; }
+}
