@@ -417,6 +417,8 @@ function launchAppCore() {
   if (typeof frdOnLaunch === 'function') { setTimeout(function() { try { frdOnLaunch(); } catch (e) {} }, 1200); }
 
   // 12-ter. Lien coach (…/?coach) : bienvenue + ouverture du Coach Hub (invite.js)
+  /* S89 : bilan de la semaine passée, une fois par semaine */
+  if (typeof wmWeeklyRecap === 'function') { setTimeout(function() { try { wmWeeklyRecap(); } catch (e) {} }, 6000); }
   /* S88 : nouveau plan du coach → message une fois */
   if (typeof cpOnLaunch === 'function') { setTimeout(function() { try { cpOnLaunch(); } catch (e) {} }, 2600); }
   /* S86 : journal d'entraînement en ligne (récupère / envoie les séances) */

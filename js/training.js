@@ -150,6 +150,14 @@ function buildTrainingPage(container) {
     try { tlRenderPanel(tlHost); } catch (e) { console.warn('[TSG] journal:', e.message); }
   }
 
+  /* Mon hiver : heures cumulées, paliers, série (wintermotiv.js, S89) */
+  if (typeof wmRenderCard === 'function') {
+    var wmHost = document.createElement('div');
+    wmHost.id = 'wm-host';
+    wrap.appendChild(wmHost);
+    try { wmRenderCard(wmHost); } catch (e) { console.warn('[TSG] mon hiver:', e.message); }
+  }
+
   /* Série de travail (streaks.js) */
   if (typeof stkRenderCard === 'function') {
     var stk = document.createElement('div');

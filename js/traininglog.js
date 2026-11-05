@@ -265,6 +265,9 @@ function tlRenderPanel(host) {
             + (log.length > 5 ? '<button type="button" class="tl-all-btn" data-tl="all">Tout mon journal (' + log.length + ' séances)</button>' : '')
           : '<p class="tl-empty">Aucune séance notée pour l\'instant. Fais un exercice de la bibliothèque, ou note ta séance de practice, de salle ou de simulateur.</p>')
     + '</div></div>';
+  // « Mon hiver » (S89) suit le journal
+  var wm = document.getElementById('wm-host');
+  if (wm && typeof wmRenderCard === 'function') { try { wmRenderCard(wm); } catch (e) {} }
   host.onclick = function(e) {
     var b = e.target.closest('[data-tl]');
     if (!b) return;

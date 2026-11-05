@@ -180,6 +180,9 @@ function grpBuildDetail(wrap, groupId) {
   recPanel.innerHTML = '<div class="panel-body" id="grp-records"><div class="ch-loading">…</div></div>';
   wrap.appendChild(recPanel);
 
+  // Défi d'hiver : minutes d'entraînement du groupe (wintermotiv.js, S89)
+  if (typeof wmGroupBoardPanel === 'function') wrap.appendChild(wmGroupBoardPanel(groupId));
+
   // Le groupe par secteur de jeu (S80) — surtout utile au coach qui a rejoint le groupe
   var secPanel = document.createElement('div');
   secPanel.className = 'panel grp-sec-panel';

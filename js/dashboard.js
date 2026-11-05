@@ -419,6 +419,8 @@ function buildDashboard(container) {
   if (typeof insRenderBanner === 'function') { try { insRenderBanner(wrap); } catch (e) {} }
   // Le bandeau d'installation se glisse sous l'en-tête : les tuiles restent au-dessus
   if (dhEl && header.nextSibling !== dhEl) wrap.insertBefore(dhEl, header.nextSibling);
+  // S89 : carte « Ton hiver » (entraînement de la semaine) juste sous les tuiles
+  if (typeof wmRenderHome === 'function') { try { wmRenderHome(wrap, dhEl || header); } catch (e) { console.warn('[TSG] hiver accueil:', e.message); } }
 
   /* ── 2. BANNIÈRE DÉMO (si pas de vraies données) ── */
   if (!hasReal) {
