@@ -90,20 +90,23 @@ function chGetWeek() {
 }
 
 /* ── Journal d'entraînement (la carte « training_done » ne garde que la dernière date) ── */
-function chLogTraining(trainingId, result) {
-  var log = lsGet('trainingLog') || [];
-  var cat = null;
+function chLogTraining(trainingId, result, extra) {
+  var cat = null, title = null;
   try {
     var all = (typeof getAllExercises === 'function') ? getAllExercises() : [];
-    for (var i = 0; i < all.length; i++) { if (all[i].id === trainingId) { cat = all[i].category; break; } }
+    for (var i = 0; i < all.length; i++) { if (all[i].id === trainingId) { cat = all[i].category; title = all[i].title; break; } }
   } catch (e) {}
-  var entry = { id: trainingId, category: cat, date: new Date().toISOString() };
+  var entry = { id: trainingId, category: cat, title: title, date: new Date().toISOString(), src: 'library' };
   if (result && result.score !== null && result.score !== undefined && !isNaN(result.score)) {
     entry.score = Number(result.score);
     if (result.max) entry.max = Number(result.max);
   }
+  if (extra) { entry.duration = extra.duration; entry.feeling = extra.feeling; entry.note = extra.note; if (extra.src) entry.src = extra.src; }
+  /* S86 : journal en ligne (traininglog.js) — même format local + envoi au compte */
+  if (typeof tlAdd === 'function') { tlAdd(entry); return; }
+  var log = lsGet('trainingLog') || [];
   log.push(entry);
-  if (log.length > 500) log = log.slice(-500);
+  if (log.length > 1500) log = log.slice(-1500);
   lsSet('trainingLog', log);
 }
 

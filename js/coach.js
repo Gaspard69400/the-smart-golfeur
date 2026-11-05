@@ -350,6 +350,10 @@ function openPlayerDetailModal(playerId, displayName, opts) {
     if (nm && prof.name) nm.textContent = prof.name;
     // Bouton ami (S80) : la fiche ouverte depuis un groupe ou le Coach Hub n'en avait pas
     pdRenderFriendButton(modal, playerId);
+    // Journal d'entraînement du joueur (S86) — lisible par son coach uniquement (RLS)
+    if (opts.canCoach && coachIsCoachRole() && typeof tlRenderForCoach === 'function') {
+      tlRenderForCoach(document.getElementById('pd-body'), playerId);
+    }
     // Contrôles coach (notes + assignation d'exercice)
     if (opts.canCoach && coachIsCoachRole() && typeof pdRenderCoachControls === 'function') {
       pdRenderCoachControls(document.getElementById('pd-body'), playerId);

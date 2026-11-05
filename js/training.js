@@ -48,7 +48,7 @@ function trnGetDone(id) {
   var uid = (currentUser && currentUser.id) || 'default';
   return (map[uid] && map[uid][id]) || null;
 }
-function trnMarkDone(id, result) {
+function trnMarkDone(id, result, extra) {
   var map = trnGetDoneMap();
   var uid = (currentUser && currentUser.id) || 'default';
   if (!map[uid]) map[uid] = {};
@@ -59,7 +59,7 @@ function trnMarkDone(id, result) {
   lsSet('training_done', map);
   if (window.tsgSync) window.tsgSync.pushTrainingDone(id, cur);
   // Journal daté (les défis de la semaine en ont besoin) + vérification
-  if (typeof chLogTraining === 'function') { try { chLogTraining(id, result); chCheck(true); } catch (e) {} }
+  if (typeof chLogTraining === 'function') { try { chLogTraining(id, result, extra); chCheck(true); } catch (e) {} }
 }
 
 function TRAINING_SEED() {
@@ -132,6 +132,14 @@ function buildTrainingPage(container) {
     chSlot.className = 'ch-slot';
     wrap.appendChild(chSlot);
     try { chRenderPanel(chSlot, false); } catch (e) { console.warn('[TSG] défis:', e.message); }
+  }
+
+  /* Journal d'entraînement en ligne (traininglog.js, S86) */
+  if (typeof tlRenderPanel === 'function') {
+    var tlHost = document.createElement('div');
+    tlHost.id = 'tl-host';
+    wrap.appendChild(tlHost);
+    try { tlRenderPanel(tlHost); } catch (e) { console.warn('[TSG] journal:', e.message); }
   }
 
   /* Série de travail (streaks.js) */
@@ -465,6 +473,7 @@ function openTrainingDetail(t, opts) {
             + (t.measure.max ? '<span class="trn-result-max">/ ' + t.measure.max + '</span>' : (t.measure.unit ? '<span class="trn-result-max">' + trnEsc(t.measure.unit) + '</span>' : ''))
             + '</div></div>'
           : '')
+    +     (typeof tlExtraFieldsHtml === 'function' ? tlExtraFieldsHtml(t.duration || null) : '')
     +   '</div>'
     +   '<div class="trn-modal-actions">'
     +     '<button class="dash-btn dash-btn-outline" id="trn-detail-cancel">Fermer</button>'
@@ -477,6 +486,7 @@ function openTrainingDetail(t, opts) {
   document.getElementById('trn-detail-close').addEventListener('click', close);
   document.getElementById('trn-detail-cancel').addEventListener('click', close);
   modal.addEventListener('click', function(ev) { if (ev.target === modal) close(); });
+  var tlRead = (typeof tlWireExtra === 'function') ? tlWireExtra(modal) : null;
   document.getElementById('trn-detail-done').addEventListener('click', function() {
     var result = null;
     var inp = document.getElementById('trn-result-in');
@@ -489,7 +499,7 @@ function openTrainingDetail(t, opts) {
       }
       result = { score: v, max: t.measure ? t.measure.max : null };
     }
-    trnMarkDone(t.id, result);
+    trnMarkDone(t.id, result, tlRead ? tlRead() : null);
     showToast(result ? 'Bravo ! ' + result.score + (result.max ? '/' + result.max : '') + ' enregistré ✓' : 'Bravo ! Exercice marqué comme fait ✓');
     close();
     if (typeof opts.onDone === 'function') opts.onDone(t, result);

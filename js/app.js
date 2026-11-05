@@ -417,6 +417,8 @@ function launchAppCore() {
   if (typeof frdOnLaunch === 'function') { setTimeout(function() { try { frdOnLaunch(); } catch (e) {} }, 1200); }
 
   // 12-ter. Lien coach (…/?coach) : bienvenue + ouverture du Coach Hub (invite.js)
+  /* S86 : journal d'entraînement en ligne (récupère / envoie les séances) */
+  if (typeof tlSync === 'function') { setTimeout(function() { try { tlSync(function() { var h = document.getElementById('tl-host'); if (h && typeof tlRenderPanel === 'function') tlRenderPanel(h); }); } catch (e) {} }, 1800); }
   if (typeof coachOnLaunch === 'function') { setTimeout(function() { try { coachOnLaunch(); } catch (e) {} }, 1500); }
 
   // 12a. Index officiel → profil cloud (classements, groupes)
