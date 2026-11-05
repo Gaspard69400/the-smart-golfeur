@@ -125,7 +125,7 @@ function tsgShowRecovery(err) {
       if (a === 'export' && typeof exportUserData === 'function') exportUserData();
       if (a === 'restore') {
         tsgListBackups().then(function(list) {
-          if (!list.length) { alert('Aucune sauvegarde automatique trouvée sur cet appareil.'); return; }
+          if (!list.length) { showToast('Aucune sauvegarde automatique sur cet appareil pour l\'instant.'); return; }
           if (!confirm('Restaurer la sauvegarde du ' + tsgFmtDate(list[0].date) + ' (' + list[0].rounds + ' parties) ?')) return;
           tsgRestoreBackup(list[0].id).then(function() { location.reload(); });
         });

@@ -566,7 +566,7 @@ function openTrainingCreator(existing) {
     +       '<div class="obj-field trn-col-2"><label class="obj-label">Objectif</label>'
     +         '<input type="text" class="obj-input" data-f="objective" placeholder="ex. Maîtriser les putts courts" value="' + trnEsc(f.objective) + '"></div>'
     +       '<div class="obj-field trn-col-2"><label class="obj-label">Consignes <span class="obj-hint">· une étape par ligne</span></label>'
-    +         '<textarea class="obj-input trn-textarea" data-f="description" rows="6" placeholder="1. ...\n2. ...">' + trnEsc(f.description) + '</textarea></div>'
+    +         '<textarea class="obj-input trn-textarea" data-f="description" rows="6" placeholder="1. …\n2. …">' + trnEsc(f.description) + '</textarea></div>'
     +     '</div>'
     +   '</div>'
     +   '<div class="trn-modal-actions">'

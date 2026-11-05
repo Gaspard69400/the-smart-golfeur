@@ -6719,3 +6719,28 @@ button, a, summary, label, select, input, textarea, [role="button"], [data-go], 
 .hr-score small { font-family: inherit; font-size: 11px; font-weight: 600; }
 .hr-diff { font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 26px; text-align: right; }
 .roundHistory-row .hr-share { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; min-height: 34px; padding: 0; font-size: 15px; }
+
+/* ════════════ ACCESSIBILITÉ ET DÉTAILS (S92, points verts de l'audit) ════════════ */
+/* Lien « Aller au contenu » : invisible, apparaît quand on arrive dessus au clavier */
+.skip-link {
+  position: fixed; top: 8px; left: 8px; z-index: 20000; transform: translateY(-160%);
+  background: var(--night); color: #F5F0E4; padding: 10px 16px; border-radius: 10px;
+  font-weight: 700; font-size: 14px; text-decoration: none; transition: transform .15s ease;
+}
+.skip-link:focus { transform: none; }
+main.app-content:focus { outline: none; }
+
+/* Champs de Jouer : le libellé est une vraie étiquette (cliquer dessus active le champ) */
+label.sc-fl { display: block; cursor: pointer; }
+
+/* Éléments cliquables devenus boutons : contour clavier */
+[role="button"]:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* Contrastes : petits textes un cran plus foncés */
+.ch-count, .comm-ach-count, .goal-arrow, .art-card-foot { color: var(--tx3); }
+.qs-cell { color: var(--tx3); }
+:root[data-theme="dark"] .goal-delta[style*="--ng2"] { color: #F49A94 !important; }
+@media (prefers-color-scheme: dark) { :root[data-theme="auto"] .goal-delta[style*="--ng2"] { color: #F49A94 !important; } }
+
+/* Titres : pas de mot seul sur la dernière ligne */
+h1, h2, h3, .panel-title, .dash-greeting, .trn-modal-title, .settings-title, .qt-title, .art-title { text-wrap: balance; }

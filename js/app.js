@@ -1200,18 +1200,18 @@ function importUserData(file) {
         localStorage.setItem('tsg_user_courses', JSON.stringify(existingUC));
       }
 
-      showToast('Import r\u00e9ussi \u2713  Rechargement...');
+      showToast('Import r\u00e9ussi \u2713  Rechargement…');
       closeSettingsModal();
       // Recharger pour appliquer
       setTimeout(function() { window.location.reload(); }, 1200);
 
     } catch(ex) {
       console.error('Import :', ex);
-      alert('Erreur lors de l\'import : ' + ex.message + '\n\nV\u00e9rifie que le fichier est un export The Smart Golfer valide.');
+      showToast('Import impossible : v\u00e9rifie que le fichier est bien un export The Smart Golfer (' + ex.message + ')');
     }
   };
   reader.onerror = function() {
-    alert('Erreur de lecture du fichier');
+    showToast('Lecture du fichier impossible : r\u00e9essaie avec un autre fichier.');
   };
   reader.readAsText(file);
 }

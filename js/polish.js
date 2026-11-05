@@ -126,6 +126,8 @@ function tsgCountUp(el, duration) {
 
 /* Boutons faits d'un seul symbole : un nom lisible pour les lecteurs d'écran */
 var TSG_ARIA = [
+  ['.shc-search, .crs-search-input', 'Chercher un parcours'],
+  ['.art-search', 'Chercher un article'],
   ['.trn-modal-close, .qs-x, .gp-close, .settings-close, .qt-close, #sgm-overlay [data-sgm="close"]', 'Fermer'],
   ['.sgm-b[data-d="-1"], .qs-step[data-adj="-1"]', 'Un coup de moins'],
   ['.sgm-b[data-d="1"], .qs-step[data-adj="1"]', 'Un coup de plus'],
@@ -156,6 +158,33 @@ function tsgA11yPass(root) {
     .observe(document.documentElement, { childList: true, subtree: true });
   run();
 })();
+
+/* Éléments cliquables qui ne sont pas des boutons (S92) : atteignables au clavier (Tab)
+   et annoncés comme boutons ; Entrée ou Espace = clic */
+var TSG_CLICKABLE = '.kpi-card.kpi-clickable, .plan-ex-item, .course-item, .info-tip';
+function tsgClickablePass(root) {
+  root.querySelectorAll(TSG_CLICKABLE).forEach(function(el) {
+    if (el.getAttribute('role')) return;
+    el.setAttribute('role', 'button');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+  });
+}
+(function watchClickable() {
+  var pending = false;
+  new MutationObserver(function() {
+    if (pending) return; pending = true;
+    setTimeout(function() { pending = false; try { tsgClickablePass(document); } catch (e) {} }, 80);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+  try { tsgClickablePass(document); } catch (e) {}
+})();
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  var el = e.target;
+  if (!el || !el.getAttribute || el.getAttribute('role') !== 'button') return;
+  if (/^(BUTTON|A|INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(el.tagName)) return;
+  e.preventDefault();
+  el.click();
+});
 
 /* Échap ferme la fenêtre du dessus (sans perdre une saisie en cours : on passe par son bouton Fermer) */
 document.addEventListener('keydown', function(e) {

@@ -949,7 +949,7 @@ function initScorecardPage() {
     '<div class="search-wrap">',
       '<span class="search-icon">&#9906;</span>',
       '<input class="search-input" id="search-input" type="text"',
-      ' placeholder="Nom, ville, région..." oninput="filterCourses()">',
+      ' placeholder="Nom, ville, région…" aria-label="Chercher un parcours" oninput="filterCourses()">',
     '</div>',
 
     '<div class="filter-row" id="filter-row">',
@@ -979,19 +979,19 @@ function initScorecardPage() {
 
     '<div class="sc-sb-section-title">Paramètres de la partie</div>',
 
-    '<div class="sc-fg"><div class="sc-fl">Date</div><input class="sc-fi" type="date" id="f-date"></div>',
+    '<div class="sc-fg"><label class="sc-fl" for="f-date">Date</label><input class="sc-fi" type="date" id="f-date"></div>',
 
     '<div class="sc-fr">',
-      '<div class="sc-fg"><div class="sc-fl">Départ</div><select class="sc-fs" id="f-tee"><option>—</option></select></div>',
-      '<div class="sc-fg"><div class="sc-fl">Format</div><select class="sc-fs" id="f-format"><option value="stroke">Stroke play</option><option value="stableford">Stableford</option></select></div>',
+      '<div class="sc-fg"><label class="sc-fl" for="f-tee">Départ</label><select class="sc-fs" id="f-tee"><option>—</option></select></div>',
+      '<div class="sc-fg"><label class="sc-fl" for="f-format">Format</label><select class="sc-fs" id="f-format"><option value="stroke">Stroke play</option><option value="stableford">Stableford</option></select></div>',
     '</div>',
 
     '<div class="sc-fr">',
-      '<div class="sc-fg"><div class="sc-fl">Conditions</div><select class="sc-fs" id="f-cond"><option value="calme">Calme</option><option value="vent-mod">Vent modéré</option><option value="vent-fort">Vent fort</option><option value="pluie">Pluie</option></select><div id="wx-host" class="wx-host"></div></div>',
-      '<div class="sc-fg"><div class="sc-fl">Handicap joué</div><input class="sc-fi" type="number" id="f-hcp" step="0.1" min="-10" max="54"></div>',
+      '<div class="sc-fg"><label class="sc-fl" for="f-cond">Conditions</label><select class="sc-fs" id="f-cond"><option value="calme">Calme</option><option value="vent-mod">Vent modéré</option><option value="vent-fort">Vent fort</option><option value="pluie">Pluie</option></select><div id="wx-host" class="wx-host"></div></div>',
+      '<div class="sc-fg"><label class="sc-fl" for="f-hcp">Handicap joué</label><input class="sc-fi" type="number" id="f-hcp" step="0.1" min="-10" max="54"></div>',
     '</div>',
 
-    '<div class="sc-fg"><div class="sc-fl">Notes</div><input class="sc-fi" id="f-notes" placeholder="Observations..."></div>',
+    '<div class="sc-fg"><label class="sc-fl" for="f-notes">Notes</label><input class="sc-fi" id="f-notes" placeholder="Observations…"></div>',
 
     '<button class="btn-quicktotal" id="btn-gameplan" onclick="if(selectedCourse&&typeof gpOpenCourse===\'function\')gpOpenCourse(selectedCourse)" disabled>',
       '🧭 Mon plan de jeu sur ce parcours',
