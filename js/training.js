@@ -150,7 +150,7 @@ function buildTrainingPage(container) {
     try { stkRenderCard(stk); } catch (e) { console.warn('[TSG] série:', e.message); }
   }
 
-  /* Programme de 4 semaines (le plan qui se déroule) */
+  /* Programme (4 semaines, ou 12 semaines d'hiver — winter.js) */
   var prog = document.createElement('div');
   prog.id = 'trn-program';
   wrap.appendChild(prog);
@@ -181,6 +181,7 @@ function buildTrainingPage(container) {
     return b;
   }
   filterRow.appendChild(chip('all', 'Tout'));
+  if (all.some(function(t) { return t.winter; })) filterRow.appendChild(chip('winter', '❄ Hiver'));
   TRAINING_CATEGORIES.forEach(function(c) {
     if (all.some(function(t) { return t.category === c; })) filterRow.appendChild(chip(c, c));
   });
@@ -280,7 +281,8 @@ function trnRenderGrid() {
   var grid = document.getElementById('trn-grid');
   if (!grid) return;
   var all = (typeof getAllExercises === 'function') ? getAllExercises() : getTrainings();
-  var list = (trn_filter === 'all') ? all : all.filter(function(t) { return t.category === trn_filter; });
+  var list = (trn_filter === 'all') ? all
+    : (trn_filter === 'winter' ? all.filter(function(t) { return t.winter; }) : all.filter(function(t) { return t.category === trn_filter; }));
 
   while (grid.firstChild) grid.removeChild(grid.firstChild);
 
@@ -316,7 +318,8 @@ function trnBuildCard(t) {
     + '<span class="trn-type trn-type-' + (t.type === 'entrainement' ? 'training' : 'exercise') + '">'
     +   (t.type === 'entrainement' ? 'Entraînement' : 'Exercice') + '</span>'
     + '<span class="trn-cat">' + trnEsc(t.category) + '</span>'
-    + (t.library ? '<span class="trn-lib-badge">★ Bibliothèque</span>' : '');
+    + (t.winter ? '<span class="trn-lib-badge trn-win-badge">❄ Hiver · ' + trnEsc((t.where || []).map(function(w) { return { maison: 'maison', practice: 'practice', salle: 'salle', simu: 'simulateur', parcours: 'parcours' }[w]; }).join(', ')) + '</span>'
+       : (t.library ? '<span class="trn-lib-badge">★ Bibliothèque</span>' : ''));
   card.appendChild(head);
 
   var titleEl = document.createElement('div');

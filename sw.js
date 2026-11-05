@@ -7,7 +7,7 @@
  * Ne touche JAMAIS aux requêtes cross-origin (Supabase, Google Fonts).
  * ⚠️ Bumper V à chaque session qui touche css/js (idem ?v= dans index.html).
  * ════════════════════════════════════════════ */
-var V = '98';
+var V = '99';
 var CACHE = 'tsg-cache-v' + V;
 
 /* Tout ce qu'il faut pour démarrer l'app sans réseau */
@@ -51,6 +51,7 @@ var PRECACHE = [
   './js/courses.js?v=' + V,
   './js/training.js?v=' + V,
   './js/program.js?v=' + V,
+  './js/winter.js?v=' + V,
   './js/coach.js?v=' + V,
   './js/groups.js?v=' + V,
   './js/groupchallenges.js?v=' + V,

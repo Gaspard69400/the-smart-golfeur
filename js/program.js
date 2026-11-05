@@ -40,7 +40,7 @@ function prgMidnight(ymd) {
 
 /* Choisit `count` exercices d'un secteur, au bon niveau, en variant d'une semaine à l'autre */
 function prgPick(sector, count, targetRank, offset) {
-  var lib = getLibrary().filter(function(e) { return e.category === sector; });
+  var lib = getLibrary().filter(function(e) { return e.category === sector && !e.winter; });
   if (!lib.length) return [];
   lib.sort(function(a, b) {
     var da = Math.abs((PRG_LEVEL_RANK[a.level] || 1) - targetRank) + (a.measure ? 0 : 0.35);
@@ -109,12 +109,12 @@ function prgEx(id) {
 function prgGet() { return lsGet('program'); }
 function prgSave(p) { lsSet('program', p); }
 
-/* Semaine courante (1 à 4), ou 5 = programme terminé */
+/* Semaine courante (1 à N), ou N+1 = programme terminé (N = 4, ou 12 pour l'hiver) */
 function prgCurrentWeek(p) {
   // Jours CALENDAIRES écoulés (arrondi : absorbe les changements d'heure).
   // Avant : départ ancré à midi → chaque lundi matin affichait encore la semaine précédente.
   var days = Math.round((prgMidnight().getTime() - prgMidnight(p.startDate).getTime()) / 86400000);
-  return Math.max(1, Math.min(5, Math.floor(days / 7) + 1));
+  return Math.max(1, Math.min(p.weeks.length + 1, Math.floor(days / 7) + 1));
 }
 
 function prgSessionDone(p, s) {
@@ -163,16 +163,19 @@ function prgRenderPanel(host) {
     var why = sectors
       ? 'Construit sur <strong>' + PRG_SECTOR_LABEL[sectors[0].key] + '</strong> (ton secteur le plus faible) et <strong>' + PRG_SECTOR_LABEL[sectors[1].key] + '</strong>.'
       : 'Enregistre quelques parties pour un programme sur mesure — en attendant, il couvre les secteurs clés.';
+    var winter = (typeof winIsWinter === 'function') && winIsWinter();
     panel.innerHTML = '<div class="prg-cta">'
-      + '<div class="prg-cta-ico">🗓️</div>'
-      + '<div class="prg-cta-txt"><div class="prg-cta-t">Passe au programme de 4 semaines</div>'
-      + '<div class="prg-cta-d">3 séances par semaine, de difficulté croissante. ' + why
-      + ' La dernière semaine, tu refais tes exercices mesurés pour voir le chemin parcouru.</div></div>'
+      + '<div class="prg-cta-ico">' + (winter ? '❄️' : '🗓️') + '</div>'
+      + '<div class="prg-cta-txt"><div class="prg-cta-t">' + (winter ? 'Lance ton programme d\'hiver' : 'Passe au programme de 4 semaines') + '</div>'
+      + '<div class="prg-cta-d">' + (winter
+          ? '12 semaines pour revenir plus fort au printemps : le corps et la technique, puis le petit jeu, puis la reprise. Faisable à la maison, au practice, en salle ou au simulateur. '
+          : '3 séances par semaine, de difficulté croissante. ') + why + '</div></div>'
       + '<button class="dash-btn dash-btn-gold prg-start" id="prg-start">Créer mon programme</button>'
       + '</div>';
     host.appendChild(panel);
     // (référence directe : au lancement, la page n'est pas encore dans le document)
     panel.querySelector('#prg-start').addEventListener('click', function() {
+      if (typeof prgOpenChooser === 'function') { prgOpenChooser(host); return; }
       prgSave(prgGenerate());
       _prgViewWeek = null;
       if (typeof showToast === 'function') showToast('Programme créé — c\'est parti pour la semaine 1 ✓');
@@ -181,9 +184,11 @@ function prgRenderPanel(host) {
     return;
   }
 
+  var N = p.weeks.length;
+  var isWinter = p.kind === 'hiver';
   var cur = prgCurrentWeek(p);
-  var finished = cur >= 5;
-  var view = _prgViewWeek || Math.min(cur, 4);
+  var finished = cur > N;
+  var view = Math.min(_prgViewWeek || Math.min(cur, N), N);
   var wk = p.weeks[view - 1];
   var st = prgStats(p);
 
@@ -216,7 +221,7 @@ function prgRenderPanel(host) {
 
   var report = prgReport(p);
   var reportHtml = '';
-  if (report.length && (view === 4 || finished)) {
+  if (report.length && (view === N || finished)) {
     reportHtml = '<div class="prg-report"><div class="prg-report-t">📈 Ton bilan depuis le début du programme</div>'
       + report.map(function(r) {
         var unit = r.ex.measure.unit ? ' ' + r.ex.measure.unit : (r.ex.measure.max ? '/' + r.ex.measure.max : '');
@@ -227,17 +232,29 @@ function prgRenderPanel(host) {
       }).join('') + '</div>';
   }
 
-  var headTitle = finished ? 'Programme terminé 🎉' : ('Semaine ' + cur + ' sur 4 — ' + p.weeks[cur - 1].theme);
+  var headTitle = finished ? 'Programme terminé 🎉' : ('Semaine ' + cur + ' sur ' + N + ' — ' + p.weeks[cur - 1].theme);
+  /* Temps d'entraînement de la semaine (journal, toutes séances confondues) vs prévu */
+  var weekHtml = '';
+  if (!finished && typeof tlWeekStats === 'function' && typeof tlAll === 'function') {
+    var ws = tlWeekStats(tlAll());
+    var plan = p.weeks[cur - 1].sessions.reduce(function(a, s) {
+      return a + s.exercises.reduce(function(b, id) { var ex = prgEx(id); return b + ((ex && ex.duration) || 0); }, 0);
+    }, 0);
+    var pctW = plan ? Math.min(100, Math.round(100 * ws.minutes / plan)) : 0;
+    weekHtml = '<div class="prg-weekmin"><span>Cette semaine : <strong>' + ws.minutes + ' min</strong> d\'entraînement sur ' + plan + ' prévues</span>'
+      + '<div class="prg-progress-bar"><div class="prg-progress-fill prg-weekmin-fill" style="width:' + pctW + '%"></div></div></div>';
+  }
   panel.innerHTML = '<div class="panel-header prg-head">'
-    + '<div><div class="panel-title">🗓️ Mon programme</div>'
+    + '<div><div class="panel-title">' + (isWinter ? '❄️ Mon programme d\'hiver' : '🗓️ Mon programme') + '</div>'
     + '<div class="panel-sub">' + prgEsc(headTitle) + ' · axé sur ' + prgEsc(PRG_SECTOR_LABEL[p.primary] || p.primary) + '</div></div>'
     + '<button class="prg-reset" id="prg-reset" title="Générer un nouveau programme">↻ Nouveau</button>'
     + '</div>'
     + '<div class="panel-body">'
     +   '<div class="prg-progress"><div class="prg-progress-bar"><div class="prg-progress-fill" style="width:' + st.pct + '%"></div></div>'
     +   '<span>' + st.done + '/' + st.total + ' séances</span></div>'
-    +   '<div class="prg-tabs">' + tabs + '</div>'
-    +   '<div class="prg-week-desc"><strong>' + prgEsc(wk.theme) + '</strong> — ' + prgEsc(wk.desc) + '</div>'
+    +   weekHtml
+    +   '<div class="prg-tabs' + (N > 4 ? ' prg-tabs-long' : '') + '">' + tabs + '</div>'
+    +   '<div class="prg-week-desc"><strong>' + (N > 4 ? 'Semaine ' + view + ' · ' : '') + prgEsc(wk.theme) + '</strong> — ' + prgEsc(wk.desc) + '</div>'
     +   '<div class="prg-sessions">' + sessions + '</div>'
     +   reportHtml
     + '</div>';
@@ -250,6 +267,7 @@ function prgRenderPanel(host) {
     b.addEventListener('click', function() { prgOpenSession(b.getAttribute('data-session'), host); });
   });
   panel.querySelector('#prg-reset').addEventListener('click', function() {
+    if (typeof prgOpenChooser === 'function') { prgOpenChooser(host); return; }
     if (!confirm('Générer un nouveau programme ? Ta progression sur celui-ci sera remise à zéro (tes résultats d\'exercices, eux, sont conservés).')) return;
     prgSave(prgGenerate());
     _prgViewWeek = null;
@@ -286,7 +304,7 @@ function prgOpenSession(key, host) {
   m.id = 'prg-modal';
   m.className = 'trn-modal';
   m.innerHTML = '<div class="trn-modal-card">'
-    + '<div class="trn-modal-head"><div><div class="trn-modal-tag">' + prgEsc(key.replace(/^w(\d)s(\d)$/, 'Semaine $1')) + '</div>'
+    + '<div class="trn-modal-head"><div><div class="trn-modal-tag">' + prgEsc(key.replace(/^w(\d+)s(\d+)$/, 'Semaine $1')) + '</div>'
     +   '<div class="trn-modal-title">' + prgEsc(sess.title) + '</div></div>'
     +   '<button class="trn-modal-close" id="prg-m-close">×</button></div>'
     + '<div class="trn-modal-body">'
