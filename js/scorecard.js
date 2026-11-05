@@ -868,10 +868,20 @@ function saveRound() {
   }, 800);
 }
 
+/* Date d'une partie de l'historique : « 18 oct. 2026 » (S91) */
+function scHistDate(d) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
+  if (!m) return qsEsc(d || '');
+  try {
+    return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+      .format(new Date(+m[1], +m[2] - 1, +m[3]));
+  } catch (e) { return qsEsc(d); }
+}
+
 function renderHistory() {
   if (!roundHistory.length) return;
   var section = document.getElementById('roundHistory-section');
-  if (section) section.style.display = 'flex';
+  if (section) section.style.display = 'block';
   var titleEl = document.getElementById('hist-title');
   if (titleEl) titleEl.style.display = 'block';
   // L'ID peut être 'roundHistory-list' ou 'history-list' selon les versions
@@ -881,11 +891,13 @@ function renderHistory() {
     const vsPar = e.score - e.par;
     const col = vsPar < 0 ? 'var(--ok2)' : vsPar <= 7 ? 'var(--wn2)' : 'var(--ng2)';
     return `<div class="roundHistory-row">
-      <div class="hr-date">${e.date}</div>
-      <div class="hr-course" style="font-size:10px">${qsEsc(e.course)}${e.matchResult ? ' · <strong>' + qsEsc(e.matchResult) + '</strong>' : ''}</div>
-      <div class="hr-score" style="color:${col}">${e.points != null ? e.points + ' pts' : e.score}</div>
+      <div class="hr-info">
+        <div class="hr-course">${qsEsc(e.course)}${e.matchResult ? ' · <strong>' + qsEsc(e.matchResult) + '</strong>' : ''}</div>
+        <div class="hr-date">${scHistDate(e.date)}</div>
+      </div>
+      <div class="hr-score" style="color:${col}">${e.points != null ? e.points + '<small> pts</small>' : e.score}</div>
       <div class="hr-diff" style="color:${vsPar>=0?'var(--wn2)':'var(--ok2)'}">${vsPar>=0?'+':''}${vsPar}</div>
-      <button class="hr-share" data-share="${i}" title="Partager cette partie">📸</button>
+      <button class="hr-share" data-share="${i}" title="Partager cette partie" aria-label="Partager cette partie">📸</button>
     </div>`;
   }).join('');
   cont.querySelectorAll('[data-share]').forEach(function(btn) {

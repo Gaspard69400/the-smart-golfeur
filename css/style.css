@@ -6698,3 +6698,24 @@ button, a, summary, label, select, input, textarea, [role="button"], [data-go], 
   .plan-prio-tag, .ci-tag, .cc-loc, .btn-express-s, .crs-lvl, .comm-streak-lbl { font-size: 11px; }
   .sg-card > div:not([class]) { font-size: 10.5px !important; line-height: 1.25; }
 }
+
+/* ════════════ JOUER SUR ORDINATEUR : COLONNE DE GAUCHE + HISTORIQUE (S91) ════════════ */
+/* La colonne de gauche (carte, parcours, historique) était fixée à 320 px : trop étroite à côté
+   d'une zone de droite souvent vide. Elle suit maintenant la largeur de l'écran. */
+.sc-layout { grid-template-columns: clamp(360px, 36vw, 480px) minmax(0, 1fr); }
+
+/* Historique : une ligne par partie (avant : morceaux empilés sans style) */
+#roundHistory-section { display: block; }
+#history-list { display: flex; flex-direction: column; gap: 6px; }
+.roundHistory-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px;
+  padding: 10px 12px; background: var(--white); border: 1px solid var(--bd-card); border-radius: 12px;
+}
+.hr-info { min-width: 0; }
+.hr-course { font-size: 13px; font-weight: 700; color: var(--tx); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hr-course strong { color: var(--gold-d); }
+.hr-date { font-size: 11.5px; color: var(--tx3); margin-top: 2px; }
+.hr-score { font-family: var(--serif); font-size: 20px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; }
+.hr-score small { font-family: inherit; font-size: 11px; font-weight: 600; }
+.hr-diff { font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 26px; text-align: right; }
+.roundHistory-row .hr-share { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; min-height: 34px; padding: 0; font-size: 15px; }
