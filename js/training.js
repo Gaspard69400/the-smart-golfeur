@@ -134,6 +134,14 @@ function buildTrainingPage(container) {
     try { chRenderPanel(chSlot, false); } catch (e) { console.warn('[TSG] défis:', e.message); }
   }
 
+  /* Plan donné par le coach (coachplans.js, S88) */
+  if (typeof cpRenderPlayerPanel === 'function') {
+    var cpHost = document.createElement('div');
+    cpHost.id = 'cp-host';
+    wrap.appendChild(cpHost);
+    try { cpRenderPlayerPanel(cpHost); } catch (e) { console.warn('[TSG] plan coach:', e.message); }
+  }
+
   /* Journal d'entraînement en ligne (traininglog.js, S86) */
   if (typeof tlRenderPanel === 'function') {
     var tlHost = document.createElement('div');

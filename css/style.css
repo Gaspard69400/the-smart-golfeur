@@ -6581,3 +6581,46 @@ a.btn-express { text-decoration: none; }
 :root[data-theme="dark"] .trn-win-badge { color: #A9C8E2; }
 @media (prefers-color-scheme: dark) { :root[data-theme="auto"] .prg-kind.on { border-color: var(--gold); } :root[data-theme="auto"] .trn-win-badge { color: #A9C8E2; } }
 .prg-place-fixed { display: inline-flex; align-items: center; cursor: default; opacity: .85; }
+
+/* ════ PLANS DU COACH (S88) ════ */
+.cp-panel { border-color: var(--gold); }
+.cp-sub { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 12px; color: var(--tx3); margin-top: 2px; }
+.cp-msg { font-size: 13.5px; font-style: italic; color: var(--tx); background: rgba(201,164,92,.12); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; overflow-wrap: anywhere; }
+.cp-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.cp-bar-l { display: flex; justify-content: space-between; gap: 6px; font-size: 11.5px; color: var(--tx3); margin-bottom: 5px; }
+.cp-bar-l strong { color: var(--tx); font-size: 13px; white-space: nowrap; }
+.cp-fill-ok { background: linear-gradient(90deg, #6E9A5B, #2F7A4A); }
+.cp-fill-mid { background: linear-gradient(90deg, var(--gold), var(--gold-l)); }
+.cp-fill-low { background: linear-gradient(90deg, #D08A3E, #B4533C); }
+.cp-ex-title { font-size: 12px; font-weight: 800; color: var(--tx2, var(--tx)); text-transform: uppercase; letter-spacing: .04em; margin: 4px 0 6px; }
+.cp-ex-list, .cp-pick-list { display: flex; flex-direction: column; gap: 6px; }
+.cp-pick-list { max-height: 300px; overflow-y: auto; margin-bottom: 14px; }
+.cp-ex, .cp-pick { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border: 1px solid var(--bd-card); border-radius: 12px; background: var(--white); font: inherit; color: var(--tx); cursor: pointer; }
+.cp-ex.is-done, .cp-pick.on { border-color: #6E9A5B; background: rgba(110,154,91,.10); }
+.cp-ex-check { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--bd-card); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; }
+.cp-ex.is-done .cp-ex-check, .cp-pick.on .cp-ex-check { background: #2F7A4A; border-color: #2F7A4A; }
+.cp-ex-t { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; }
+.cp-ex-t small { display: block; font-size: 11.5px; font-weight: 500; color: var(--tx3); margin-top: 1px; }
+.cp-ex-go { color: var(--tx3); font-size: 18px; }
+.cp-in { width: 100%; box-sizing: border-box; text-align: left; font-weight: 600; font-size: 15px; }
+.cp-grid3 { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; margin: 12px 0 6px; }
+.cp-grid3 .trn-result-l { font-size: 11.5px; }
+.cp-ex-head { margin-top: 12px; }
+.cp-chosen { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.cp-chip { font: inherit; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 0; background: var(--night); color: #F5F0E4; cursor: pointer; }
+.cp-q { margin-bottom: 8px; }
+.cp-cats { flex-wrap: nowrap; overflow-x: auto; margin-bottom: 8px; padding-bottom: 2px; }
+.cp-cats .filter-btn { white-space: nowrap; }
+.cp-coach { margin-top: 6px; }
+.cp-csum { font-size: 13px; color: var(--tx); line-height: 1.5; margin-bottom: 8px; }
+.cp-weeks { display: flex; flex-direction: column; margin-bottom: 10px; }
+.cp-wrow { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--bd-card); font-size: 12.5px; }
+.cp-wn { width: 74px; font-weight: 800; color: var(--tx); }
+.cp-wn small { font-weight: 500; color: var(--tx3); }
+.cp-wv { flex: 1; color: var(--tx3); }
+.cp-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.cp-dot-ok { background: #2F7A4A; } .cp-dot-mid { background: #C9A45C; } .cp-dot-low { background: #B4533C; } .cp-dot-cur { background: transparent; border: 2px solid #C9A45C; box-sizing: border-box; }
+.cp-cactions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.cp-card-line { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--tx); margin: 8px 0 4px; padding-top: 8px; border-top: 1px solid var(--bd-card); line-height: 1.4; }
+.cp-card-line .cp-dot { margin-top: 4px; }
+.cp-card-line small { color: var(--tx3); }

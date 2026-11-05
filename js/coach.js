@@ -168,6 +168,7 @@ function coachRenderPlayerList(body, profiles, allRounds) {
     var st = coachComputeStats(rounds);
     var card = document.createElement('div');
     card.className = 'ch-player-card';
+    card.setAttribute('data-pid', p.id);
     var initials = p.initials || (p.name ? p.name.slice(0, 2).toUpperCase() : '?');
     card.innerHTML =
       '<div class="ch-player-head">'
@@ -193,6 +194,8 @@ function coachRenderPlayerList(body, profiles, allRounds) {
   });
 
   body.appendChild(grid);
+  // S88 : l'entraînement de la semaine sous chaque joueur (journal + plan)
+  if (typeof cpDecoratePlayerCards === 'function') cpDecoratePlayerCards(grid, profiles.map(function(p) { return p.id; }));
 }
 
 /* ─────────────── VUE JOUEUR ─────────────── */
@@ -353,6 +356,10 @@ function openPlayerDetailModal(playerId, displayName, opts) {
     // Journal d'entraînement du joueur (S86) — lisible par son coach uniquement (RLS)
     if (opts.canCoach && coachIsCoachRole() && typeof tlRenderForCoach === 'function') {
       tlRenderForCoach(document.getElementById('pd-body'), playerId);
+    }
+    // Plan d'entraînement donné par le coach + suivi semaine par semaine (S88)
+    if (opts.canCoach && coachIsCoachRole() && typeof cpRenderCoachSection === 'function') {
+      cpRenderCoachSection(document.getElementById('pd-body'), playerId);
     }
     // Contrôles coach (notes + assignation d'exercice)
     if (opts.canCoach && coachIsCoachRole() && typeof pdRenderCoachControls === 'function') {
